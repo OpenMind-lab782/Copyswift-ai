@@ -561,8 +561,7 @@ def home():
     flw_url = f"https://flutterwave.com/pay/copyswift-pro"
     return render_template_string(HTML, result=result, error=error, product=product, audience=audience,
         selected_type=selected_type, copy_types=COPY_TYPES, used=used, free_limit=FREE_LIMIT,
-        limit_reached=limit_reached, is_pro=is_pro, cashapp_tag=CASHAPP_TAG,
-        cashapp_amount=CASHAPP_AMOUNT, cashapp_url=cashapp_url,
+        limit_reached=limit_reached, is_pro=is_pro,
         crypto_wallets=CRYPTO_WALLETS, promo_error=None)
 
 @app.route('/pay-paystack', methods=['GET','POST'])
