@@ -550,7 +550,7 @@ def home():
         if selected_type not in COPY_TYPES: selected_type = 'ad'
         prompt = COPY_TYPES[selected_type]['prompt'].format(product=product, audience=audience)
         try:
-            cc = client.chat.completions.create(messages=[{"role":"user","content":prompt}], model="llama3-8b-8192")
+            cc = client.chat.completions.create(messages=[{"role":"user","content":prompt}], model="llama-3.1-8b-instant")
             result = cc.choices[0].message.content
             if not is_pro:
                 session['used'] = used + 1
