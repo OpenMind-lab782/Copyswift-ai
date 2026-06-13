@@ -1,7 +1,7 @@
-from flask import Flask, render_template_string, request, session, redirect, jsonify
+from flask import Flask, render_template_string, render_template, request, session, redirect, jsonify
 from groq import Groq
 import os, hashlib, json, requests, time, sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 
 app = Flask(__name__)
@@ -55,6 +55,9 @@ def init_db():
             email TEXT UNIQUE NOT NULL,
             activated_at TEXT DEFAULT (datetime('now')),
             activated_by TEXT DEFAULT 'auto')""")
+        db.execute("CREATE TABLE IF NOT EXISTS free_usage (id INTEGER PRIMARY KEY AUTOINCREMENT, fingerprint TEXT UNIQUE NOT NULL, count INTEGER DEFAULT 0, week_start TEXT)")
+        db.execute("CREATE TABLE IF NOT EXISTS affiliates (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL, ref_code TEXT UNIQUE NOT NULL, wallet_coin TEXT DEFAULT 'USDT', wallet_address TEXT DEFAULT '', total_earned REAL DEFAULT 0, pending_payout REAL DEFAULT 0, created_at TEXT DEFAULT (datetime('now')))")
+        db.execute("CREATE TABLE IF NOT EXISTS referrals (id INTEGER PRIMARY KEY AUTOINCREMENT, ref_code TEXT NOT NULL, subscriber_email TEXT NOT NULL, amount_earned REAL DEFAULT 2.0, status TEXT DEFAULT 'pending', created_at TEXT DEFAULT (datetime('now')), paid_at TEXT)")
         db.commit()
 
 init_db()
@@ -76,6 +79,52 @@ def save_payment(email, method, amount="", tx_ref="", coin="", status="pending")
         db.execute("INSERT INTO payments (email,method,amount,tx_ref,coin,status) VALUES (?,?,?,?,?,?)",
                    (email, method, amount, tx_ref, coin, status))
         db.commit()
+
+
+def get_fingerprint():
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "unknown")
+    ua = request.headers.get("User-Agent", "")
+    return hashlib.md5((ip + ua).encode()).hexdigest()
+
+def get_week_start():
+    today = datetime.now()
+    monday = today - timedelta(days=today.weekday())
+    return monday.strftime("%Y-%m-%d")
+
+def get_free_usage():
+    fp = get_fingerprint()
+    week = get_week_start()
+    with get_db() as db:
+        row = db.execute("SELECT * FROM free_usage WHERE fingerprint=?", (fp,)).fetchone()
+        if not row:
+            db.execute("INSERT INTO free_usage (fingerprint, count, week_start) VALUES (?,0,?)", (fp, week))
+            db.commit()
+            return 0
+        if row["week_start"] != week:
+            db.execute("UPDATE free_usage SET count=0, week_start=? WHERE fingerprint=?", (week, fp))
+            db.commit()
+            return 0
+        return row["count"]
+
+def increment_free_usage():
+    fp = get_fingerprint()
+    week = get_week_start()
+    with get_db() as db:
+        db.execute("INSERT INTO free_usage (fingerprint, count, week_start) VALUES (?,1,?) ON CONFLICT(fingerprint) DO UPDATE SET count=count+1, week_start=?", (fp, week, week))
+        db.commit()
+
+def make_ref_code(name):
+    base = name.upper().replace(" ","")[:6]
+    suffix = hashlib.md5(str(time.time()).encode()).hexdigest()[:4].upper()
+    return base + suffix
+
+def record_referral(ref_code, subscriber_email):
+    with get_db() as db:
+        existing = db.execute("SELECT 1 FROM referrals WHERE subscriber_email=?", (subscriber_email,)).fetchone()
+        if not existing and ref_code:
+            db.execute("INSERT INTO referrals (ref_code, subscriber_email) VALUES (?,?)", (ref_code, subscriber_email))
+            db.execute("UPDATE affiliates SET total_earned=total_earned+2.0, pending_payout=pending_payout+2.0 WHERE ref_code=?", (ref_code,))
+            db.commit()
 
 def make_ref():
     return "cs_" + hashlib.sha256(str(time.time()).encode()).hexdigest()[:16]
@@ -534,15 +583,16 @@ p{color:#64748b;font-size:14px;line-height:1.7;margin-bottom:16px}
 
 @app.route('/', methods=['GET','POST'])
 def home():
-    if 'used' not in session: session['used'] = 0
-    used = session['used']
     is_pro = session.get('is_pro', False)
     if not is_pro and session.get('user_email'):
         is_pro = is_pro_email(session['user_email'])
         if is_pro: session['is_pro'] = True
+    used = 0 if is_pro else get_free_usage()
     limit_reached = (used >= FREE_LIMIT) and not is_pro
     result = error = product = audience = None
     selected_type = 'ad'
+    ref_code = request.args.get('ref', session.get('ref_code',''))
+    if ref_code: session['ref_code'] = ref_code
     if request.method == 'POST' and not limit_reached:
         product = request.form.get('product','').strip()
         audience = request.form.get('audience','').strip() or 'customers'
@@ -553,8 +603,8 @@ def home():
             cc = client.chat.completions.create(messages=[{"role":"user","content":prompt}], model="llama-3.1-8b-instant")
             result = cc.choices[0].message.content
             if not is_pro:
-                session['used'] = used + 1
-                used = session['used']
+                increment_free_usage()
+                used = get_free_usage()
                 limit_reached = (used >= FREE_LIMIT)
         except Exception as e:
             error = str(e)
@@ -688,6 +738,48 @@ def admin_activate_manual():
         activate_pro_email(email, by="admin-manual")
         session['admin_flash'] = f"Pro manually activated for {email}"
     return redirect('/admin')
+
+
+@app.route('/affiliate', methods=['GET','POST'])
+def affiliate():
+    msg = error = None
+    if request.method == 'POST':
+        name = request.form.get('name','').strip()
+        email = request.form.get('email','').strip()
+        wallet_coin = request.form.get('wallet_coin','USDT').strip()
+        wallet_address = request.form.get('wallet_address','').strip()
+        if not name or not email or not wallet_address:
+            error = 'All fields are required.'
+        else:
+            with get_db() as db:
+                existing = db.execute("SELECT 1 FROM affiliates WHERE email=?", (email,)).fetchone()
+                if existing:
+                    error = 'This email is already registered.'
+                else:
+                    ref_code = make_ref_code(name)
+                    db.execute("INSERT INTO affiliates (name,email,ref_code,wallet_coin,wallet_address) VALUES (?,?,?,?,?)", (name, email, ref_code, wallet_coin, wallet_address))
+                    db.commit()
+                    session['affiliate_code'] = ref_code
+                    session['affiliate_email'] = email
+                    msg = ref_code
+    ref_code = session.get('affiliate_code','')
+    app_url = os.environ.get('APP_URL','https://copyswift-ai.onrender.com')
+    ref_link = f"{app_url}/?ref={ref_code}" if ref_code else ""
+    return render_template('affiliate.html', msg=msg, error=error, ref_code=ref_code, ref_link=ref_link)
+
+@app.route('/affiliate/dashboard')
+def affiliate_dashboard():
+    email = session.get('affiliate_email','')
+    if not email:
+        return redirect('/affiliate')
+    with get_db() as db:
+        aff = db.execute("SELECT * FROM affiliates WHERE email=?", (email,)).fetchone()
+        if not aff:
+            return redirect('/affiliate')
+        referrals = [dict(r) for r in db.execute("SELECT * FROM referrals WHERE ref_code=? ORDER BY created_at DESC", (aff['ref_code'],)).fetchall()]
+    app_url = os.environ.get('APP_URL','https://copyswift-ai.onrender.com')
+    ref_link = f"{app_url}/?ref={aff['ref_code']}"
+    return render_template('affiliate_dash.html', aff=dict(aff), referrals=referrals, ref_link=ref_link)
 
 @app.route('/api/check-pro')
 def api_check_pro():

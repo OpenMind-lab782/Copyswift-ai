@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Affiliate Dashboard - CopySwift AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#060912;color:#e2e8f0;min-height:100vh;padding:20px 16px 60px}
+.header{text-align:center;padding:28px 0 20px;max-width:520px;margin:auto}
+h1{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;margin-bottom:4px}
+.subtitle{color:#64748b;font-size:13px}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:520px;margin:auto;margin-bottom:20px}
+.stat-card{background:#0d1424;border:1px solid #1e2d45;border-radius:16px;padding:18px}
+.stat-label{font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.stat-value{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700}
+.card{background:#0d1424;border:1px solid #1e2d45;border-radius:20px;padding:20px;max-width:520px;margin:auto;margin-bottom:20px}
+.card h3{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;margin-bottom:14px}
+.ref-box{background:#111827;border:1px solid #1e2d45;border-radius:10px;padding:12px;word-break:break-all;font-size:12px;color:#00d4ff;font-family:monospace;margin-bottom:10px}
+.copy-btn{width:100%;padding:11px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:10px;color:#00d4ff;font-weight:600;font-size:14px;cursor:pointer;margin-bottom:6px}
+.referral-item{padding:12px 0;border-bottom:1px solid #1e2d45;display:flex;justify-content:space-between;align-items:center}
+.referral-item:last-child{border-bottom:none}
+.ref-email{font-size:13px;color:#e2e8f0}
+.ref-date{font-size:11px;color:#64748b}
+.ref-amount{font-size:13px;font-weight:600;color:#10b981}
+.status-badge{font-size:10px;padding:3px 8px;border-radius:100px;font-weight:600}
+.status-pending{background:rgba(245,158,11,.12);color:#f59e0b;border:1px solid rgba(245,158,11,.3)}
+.status-paid{background:rgba(16,185,129,.12);color:#10b981;border:1px solid rgba(16,185,129,.3)}
+.empty{text-align:center;color:#64748b;padding:24px;font-size:13px}
+.back{display:block;text-align:center;color:#64748b;font-size:13px;margin-top:14px;text-decoration:none}
+.notice{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:12px;padding:14px;font-size:12px;color:#fcd34d;line-height:1.6;max-width:520px;margin:auto;margin-bottom:20px}
+</style></head><body>
+<div class="header">
+  <h1>💰 Affiliate Dashboard</h1>
+  <p class="subtitle">Welcome, {{ aff.name }} &bull; Code: <strong style="color:#f59e0b">{{ aff.ref_code }}</strong></p>
+</div>
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-label">Total Earned</div>
+    <div class="stat-value" style="color:#10b981">${{ '%.2f'|format(aff.total_earned) }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Pending Payout</div>
+    <div class="stat-value" style="color:#f59e0b">${{ '%.2f'|format(aff.pending_payout) }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total Referrals</div>
+    <div class="stat-value" style="color:#00d4ff">{{ referrals|length }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Monthly Income</div>
+    <div class="stat-value" style="color:#a78bfa">${{ '%.2f'|format(referrals|length * 2.0) }}</div>
+  </div>
+</div>
+<div class="card">
+  <h3>Your Referral Link</h3>
+  <div class="ref-box" id="refLink">{{ ref_link }}</div>
+  <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('refLink').innerText).then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy My Referral Link',2000)})">Copy My Referral Link</button>
+  <p style="font-size:11px;color:#64748b">Share this link. You earn $2 for every person who subscribes through it.</p>
+</div>
+<div class="notice">
+  Payouts processed monthly in {{ aff.wallet_coin }} to your wallet. Minimum payout: $5.
+</div>
+<div class="card">
+  <h3>Your Referrals</h3>
+  {% if referrals %}
+    {% for r in referrals %}
+    <div class="referral-item">
+      <div>
+        <div class="ref-email">{{ r.subscriber_email[:3] }}***@{{ r.subscriber_email.split('@')[1] if '@' in r.subscriber_email else '?' }}</div>
+        <div class="ref-date">{{ r.created_at[:10] }}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="ref-amount">+${{ '%.2f'|format(r.amount_earned) }}</div>
+        <span class="status-badge status-{{ r.status }}">{{ r.status }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty">No referrals yet. Share your link to start earning!</div>
+  {% endif %}
+</div>
+<a href="/" class="back">Back to CopySwift AI</a>
+</body></html>
