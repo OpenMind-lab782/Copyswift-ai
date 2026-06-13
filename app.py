@@ -214,10 +214,10 @@ input[type=hidden]{display:none}
       <div class="pay-sub">Debit card, bank transfer</div>
       <span class="pay-badge badge-green">Paystack · ₦5,000</span>
     </a>
-    <a href="{{ cashapp_url }}" target="_blank" class="pay-method" onclick="showCashApp()">
-      <div class="pay-icon">💸</div><div class="pay-title">Cash App</div>
-      <div class="pay-sub">Send ${{ cashapp_amount }} USD</div>
-      <span class="pay-badge badge-green">{{ cashapp_tag }}</span>
+    <a href="{{ flw_url }}" target="_blank" class="pay-method">
+      <div class="pay-icon">🌍</div><div class="pay-title">Flutterwave</div>
+      <div class="pay-sub">Card, bank, mobile money</div>
+      <span class="pay-badge badge-green">Nigeria · Botswana · Global</span>
     </a>
     <div class="pay-method crypto-method" onclick="openCryptoModal()">
       <div class="pay-icon">🪙</div>
@@ -311,7 +311,7 @@ function openCryptoModal(){document.getElementById('cryptoModal').classList.add(
 function closeCryptoModal(){document.getElementById('cryptoModal').classList.remove('open')}
 function selectCoin(coin){document.querySelectorAll('.coin-tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.coin-detail').forEach(d=>d.classList.remove('active'));event.target.classList.add('active');document.getElementById('coin-'+coin).classList.add('active');document.getElementById('selected_coin_input').value=coin}
 function copyAddr(coin){const addr=document.getElementById('addr-'+coin).innerText;navigator.clipboard.writeText(addr).then(()=>{const b=event.target;b.textContent='✅ Copied!';setTimeout(()=>b.textContent='📋 Copy '+coin+' Address',2000)})}
-function showCashApp(){setTimeout(()=>alert('Send $5 to {{ cashapp_tag }} on Cash App.\\n\\nAfter sending, email your screenshot to:\\ncopyswift.support@gmail.com\\n\\nSubject: CopySwift Pro - Cash App\\nInclude your email. Pro activates within the hour.'),300)}
+
 document.getElementById('cryptoModal')?.addEventListener('click',e=>{if(e.target===document.getElementById('cryptoModal'))closeCryptoModal()})
 </script>
 </body></html>"""
@@ -558,7 +558,7 @@ def home():
                 limit_reached = (used >= FREE_LIMIT)
         except Exception as e:
             error = str(e)
-    cashapp_url = f"https://cash.app/{CASHAPP_TAG.lstrip('$')}/{CASHAPP_AMOUNT}"
+    flw_url = f"https://flutterwave.com/pay/copyswift-pro"
     return render_template_string(HTML, result=result, error=error, product=product, audience=audience,
         selected_type=selected_type, copy_types=COPY_TYPES, used=used, free_limit=FREE_LIMIT,
         limit_reached=limit_reached, is_pro=is_pro, cashapp_tag=CASHAPP_TAG,
@@ -614,11 +614,10 @@ def promo():
         session['is_pro'] = True
         session['used'] = 0
         return redirect('/')
-    cashapp_url = f"https://cash.app/{CASHAPP_TAG.lstrip('$')}/{CASHAPP_AMOUNT}"
+    flw_url = f"https://flutterwave.com/pay/copyswift-pro"
     return render_template_string(HTML, result=None, error=None, product=None, audience=None,
         selected_type='ad', copy_types=COPY_TYPES, used=session['used'], free_limit=FREE_LIMIT,
-        limit_reached=True, is_pro=False, cashapp_tag=CASHAPP_TAG, cashapp_amount=CASHAPP_AMOUNT,
-        cashapp_url=cashapp_url, crypto_wallets=CRYPTO_WALLETS,
+        limit_reached=True, is_pro=False, flw_url=flw_url, crypto_wallets=CRYPTO_WALLETS,
         promo_error="Invalid promo code. Try again.")
 
 @app.route('/reset')
