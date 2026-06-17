@@ -1,28 +1,54 @@
+from dotenv import load_dotenv
+load_dotenv()
 from flask import Flask, render_template_string, render_template, request, session, redirect, jsonify
 from groq import Groq
 import os, hashlib, json, requests, time, sqlite3
 from datetime import datetime, timedelta
 from functools import wraps
-
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "copyswift-secret-2024")
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-FREE_LIMIT = 3
 DB_PATH = "copyswift.db"
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")
 
 PAYSTACK_SECRET = os.environ.get("PAYSTACK_SECRET_KEY", "")
-PRO_PRICE_NGN = 5000
 CASHAPP_TAG = os.environ.get("CASHAPP_TAG", "$YourCashTag")
 CASHAPP_AMOUNT = 5
 
+# --- Pay-Per-Ad Credit Packages -------------------------------------------
+CREDIT_PACKAGES = {
+    "basic": {"label": "Basic",  "ads": 120, "usd": 18},
+    "elite": {"label": "Elite",  "ads": 180, "usd": 25},
+    "mini": {"label": "Mini", "ads": 10, "usd": 2},
+    "starter": {"label": "Starter", "ads": 50, "usd": 8},
+    "pro": {"label": "Pro", "ads": 100, "usd": 15},
+}
+FALLBACK_USD_NGN_RATE = 1600.0  # used only if live rate fetch fails
+
+def get_usd_ngn_rate():
+    """Fetch a live USD->NGN exchange rate. Falls back to a fixed rate on error."""
+    try:
+        r = requests.get("https://open.er-api.com/v6/latest/USD", timeout=6)
+        data = r.json()
+        rate = data.get("rates", {}).get("NGN")
+        if rate:
+            return float(rate)
+    except Exception:
+        pass
+    return FALLBACK_USD_NGN_RATE
+
+def usd_to_kobo(usd_amount):
+    rate = get_usd_ngn_rate()
+    ngn = usd_amount * rate
+    return int(round(ngn * 100)), round(ngn, 2), rate
+
 CRYPTO_WALLETS = {
-    "BNB":  {"address": os.environ.get("BNB_WALLET",  "YOUR_BNB_ADDRESS"),  "network": "BEP-20 (BSC)", "amount": "0.008 BNB", "icon": "🟡"},
-    "TRX":  {"address": os.environ.get("TRX_WALLET",  "YOUR_TRX_ADDRESS"),  "network": "TRON",         "amount": "15 TRX",    "icon": "🔴"},
-    "USDT": {"address": os.environ.get("USDT_WALLET", "YOUR_USDT_ADDRESS"), "network": "TRC-20",       "amount": "5 USDT",    "icon": "🟢"},
-    "MATIC":{"address": os.environ.get("MATIC_WALLET","YOUR_MATIC_ADDRESS"),"network": "Polygon",      "amount": "8 MATIC",   "icon": "🟣"},
-    "TON":  {"address": os.environ.get("TON_WALLET",  "YOUR_TON_ADDRESS"),  "network": "TON",          "amount": "2 TON",     "icon": "🔵"},
+    "BNB":  {"address": os.environ.get("BNB_WALLET",  "YOUR_BNB_ADDRESS"),  "network": "BEP-20 (BSC)", "rate": 0.0016, "icon": "🟡"},
+    "TRX":  {"address": os.environ.get("TRX_WALLET",  "YOUR_TRX_ADDRESS"),  "network": "TRON",         "rate": 3.0,    "icon": "🔴"},
+    "USDT": {"address": os.environ.get("USDT_WALLET", "YOUR_USDT_ADDRESS"), "network": "TRC-20",       "rate": 1.0,    "icon": "🟢"},
+    "MATIC":{"address": os.environ.get("MATIC_WALLET","YOUR_MATIC_ADDRESS"),"network": "Polygon",      "rate": 1.6,    "icon": "🟣"},
+    "TON":  {"address": os.environ.get("TON_WALLET",  "YOUR_TON_ADDRESS"),  "network": "TON",          "rate": 0.4,    "icon": "🔵"},
 }
 
 PROMO_CODES = {"GODSHELP": True, "COPYSWIFT": True, "PROLAUNCH": True}
@@ -56,8 +82,26 @@ def init_db():
             activated_at TEXT DEFAULT (datetime('now')),
             activated_by TEXT DEFAULT 'auto')""")
         db.execute("CREATE TABLE IF NOT EXISTS free_usage (id INTEGER PRIMARY KEY AUTOINCREMENT, fingerprint TEXT UNIQUE NOT NULL, count INTEGER DEFAULT 0, week_start TEXT)")
+        db.execute("CREATE TABLE IF NOT EXISTS credits (email TEXT PRIMARY KEY, balance INTEGER DEFAULT 0)")
+        db.execute("""CREATE TABLE IF NOT EXISTS credit_purchases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT NOT NULL, package TEXT NOT NULL,
+            ads INTEGER NOT NULL, amount_usd REAL NOT NULL,
+            amount_local TEXT, method TEXT NOT NULL,
+            tx_ref TEXT, status TEXT DEFAULT 'pending',
+            created_at TEXT DEFAULT (datetime('now')),
+            activated_at TEXT)""")
         db.execute("CREATE TABLE IF NOT EXISTS affiliates (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL, ref_code TEXT UNIQUE NOT NULL, wallet_coin TEXT DEFAULT 'USDT', wallet_address TEXT DEFAULT '', total_earned REAL DEFAULT 0, pending_payout REAL DEFAULT 0, created_at TEXT DEFAULT (datetime('now')))")
         db.execute("CREATE TABLE IF NOT EXISTS referrals (id INTEGER PRIMARY KEY AUTOINCREMENT, ref_code TEXT NOT NULL, subscriber_email TEXT NOT NULL, amount_earned REAL DEFAULT 2.0, status TEXT DEFAULT 'pending', created_at TEXT DEFAULT (datetime('now')), paid_at TEXT)")
+        db.execute("CREATE TABLE IF NOT EXISTS customer_referrals (email TEXT PRIMARY KEY, ref_code TEXT NOT NULL, created_at TEXT DEFAULT (datetime('now')))")
+        try:
+            db.execute("ALTER TABLE credit_purchases ADD COLUMN ref_code TEXT DEFAULT \'\'")
+        except Exception:
+            pass
+        try:
+            db.execute("ALTER TABLE referrals ADD COLUMN tx_ref TEXT DEFAULT \'\'")
+        except Exception:
+            pass
         db.commit()
 
 init_db()
@@ -79,6 +123,52 @@ def save_payment(email, method, amount="", tx_ref="", coin="", status="pending")
         db.execute("INSERT INTO payments (email,method,amount,tx_ref,coin,status) VALUES (?,?,?,?,?,?)",
                    (email, method, amount, tx_ref, coin, status))
         db.commit()
+
+# --- Credit balance helpers -------------------------------------------------
+def get_credit_balance(email):
+    if not email:
+        return 0
+    with get_db() as db:
+        row = db.execute("SELECT balance FROM credits WHERE email=?", (email,)).fetchone()
+    return row["balance"] if row else 0
+
+def add_credits(email, ads):
+    with get_db() as db:
+        db.execute("INSERT INTO credits (email, balance) VALUES (?, ?) "
+                   "ON CONFLICT(email) DO UPDATE SET balance = balance + ?",
+                   (email, ads, ads))
+        db.commit()
+
+def deduct_credit(email):
+    with get_db() as db:
+        row = db.execute("SELECT balance FROM credits WHERE email=?", (email,)).fetchone()
+        if not row or row["balance"] <= 0:
+            return False
+        db.execute("UPDATE credits SET balance = balance - 1 WHERE email=?", (email,))
+        db.commit()
+    return True
+
+def save_credit_purchase(email, package, ads, amount_usd, amount_local, method, tx_ref="", status="pending", ref_code=""):
+    with get_db() as db:
+        db.execute("INSERT INTO credit_purchases (email,package,ads,amount_usd,amount_local,method,tx_ref,status) "
+                   "VALUES (?,?,?,?,?,?,?,?)",
+                   (email, package, ads, amount_usd, amount_local, method, tx_ref, status))
+        db.execute("UPDATE credit_purchases SET ref_code=? WHERE id=last_insert_rowid()", (ref_code,))
+        db.commit()
+
+def activate_credit_purchase(tx_ref):
+    """Mark a pending credit_purchases row as activated and credit the user."""
+    with get_db() as db:
+        row = db.execute("SELECT * FROM credit_purchases WHERE tx_ref=? AND status='pending'", (tx_ref,)).fetchone()
+        if not row:
+            return None
+        add_credits(row["email"], row["ads"])
+        if row["ref_code"]:
+            commission = round(row["amount_usd"] * 0.4, 2)
+            record_referral(row["ref_code"], row["email"], commission, tx_ref)
+        db.execute("UPDATE credit_purchases SET status='activated', activated_at=datetime('now') WHERE id=?", (row["id"],))
+        db.commit()
+    return dict(row)
 
 
 def get_fingerprint():
@@ -118,12 +208,29 @@ def make_ref_code(name):
     suffix = hashlib.md5(str(time.time()).encode()).hexdigest()[:4].upper()
     return base + suffix
 
-def record_referral(ref_code, subscriber_email):
+def get_permanent_ref_code(email):
     with get_db() as db:
-        existing = db.execute("SELECT 1 FROM referrals WHERE subscriber_email=?", (subscriber_email,)).fetchone()
+        row = db.execute("SELECT ref_code FROM customer_referrals WHERE email=?", (email,)).fetchone()
+        return row["ref_code"] if row else None
+
+def resolve_ref_code(email):
+    permanent = get_permanent_ref_code(email)
+    if permanent:
+        return permanent
+    session_ref = session.get('ref_code', '')
+    if session_ref:
+        with get_db() as db:
+            db.execute("INSERT INTO customer_referrals (email, ref_code) VALUES (?,?) ON CONFLICT(email) DO NOTHING", (email, session_ref))
+            db.commit()
+        return session_ref
+    return ''
+
+def record_referral(ref_code, subscriber_email, amount, tx_ref):
+    with get_db() as db:
+        existing = db.execute("SELECT 1 FROM referrals WHERE tx_ref=?", (tx_ref,)).fetchone()
         if not existing and ref_code:
-            db.execute("INSERT INTO referrals (ref_code, subscriber_email) VALUES (?,?)", (ref_code, subscriber_email))
-            db.execute("UPDATE affiliates SET total_earned=total_earned+2.0, pending_payout=pending_payout+2.0 WHERE ref_code=?", (ref_code,))
+            db.execute("INSERT INTO referrals (ref_code, subscriber_email, amount_earned, tx_ref) VALUES (?,?,?,?)", (ref_code, subscriber_email, amount, tx_ref))
+            db.execute("UPDATE affiliates SET total_earned=total_earned+?, pending_payout=pending_payout+? WHERE ref_code=?", (amount, amount, ref_code))
             db.commit()
 
 def make_ref():
@@ -238,42 +345,54 @@ input[type=hidden]{display:none}
   <p class="subtitle">High-converting copy for your business in seconds.</p>
 </div>
 <div class="usage-bar">
-  <span class="usage-label">{% if is_pro %}✅ Pro — Unlimited{% else %}Free generations{% endif %}</span>
+  <span class="usage-label">{% if credits_balance > 0 %}✅ Credits available{% else %}No credits remaining{% endif %}</span>
   <div class="usage-dots">
-    {% if is_pro %}{% for i in range(5) %}<div class="dot pro"></div>{% endfor %}
-    {% else %}{% for i in range(free_limit) %}<div class="dot {% if i < used %}used{% endif %}"></div>{% endfor %}
-    <div class="dot pro"></div><div class="dot pro"></div>{% endif %}
+    <span style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:var(--accent)">{{ credits_balance }}</span>
+    <span style="color:var(--muted);font-size:12px;margin-left:4px">ad{{ 's' if credits_balance != 1 else '' }} left</span>
   </div>
-  {% if not is_pro %}<a href="#upgrade" class="upgrade-link">Go Pro →</a>
-  {% else %}<span style="font-size:12px;color:var(--success);font-weight:600">PRO ✨</span>{% endif %}
+  <a href="#upgrade" class="upgrade-link">Buy Credits →</a>
 </div>
-{% if is_pro %}
-<div class="success-banner"><span>🎉</span><p><strong>Pro access active!</strong> Unlimited AI copy. Welcome aboard.</p></div>
+{% if credits_balance > 0 %}
+<div class="success-banner"><span>🎉</span><p><strong>{{ credits_balance }} ad credit{{ 's' if credits_balance != 1 else '' }} available.</strong> Generate away!</p></div>
 {% endif %}
-{% if limit_reached and not is_pro %}
+{% if limit_reached %}
 <div class="paywall" id="upgrade">
   <div class="paywall-header">
     <div style="font-size:36px;margin-bottom:10px">🔒</div>
-    <h2>Upgrade to Pro</h2>
-    <p>You've used your {{ free_limit }} free generations.<br>Get <strong>unlimited AI copy</strong> for just <strong>$5/month</strong>.</p>
+    <h2>Buy Ad Credits</h2>
+    <p>Pay once, generate ads as you go — no subscription needed.</p>
   </div>
   <div class="pay-grid">
-    <a href="/pay-paystack" class="pay-method">
-      <div class="pay-icon">💳</div><div class="pay-title">Card / Bank</div>
-      <div class="pay-sub">Debit card, bank transfer</div>
-      <span class="pay-badge badge-green">Paystack · ₦5,000</span>
+    <a href="/pay-paystack?package=mini" class="pay-method">
+      <div class="pay-icon">🔹</div><div class="pay-title">{{ credit_packages.mini.label }} Package</div>
+      <div class="pay-sub">{{ credit_packages.mini.ads }} ad generations</div>
+      <span class="pay-badge badge-green">${{ credit_packages.mini.usd }} · Card / Bank / MoMo PSB</span>
+      <span class="pay-badge badge-gold" style="margin-top:6px;cursor:pointer" onclick="event.preventDefault();event.stopPropagation();openCryptoModal('mini')">💎 Or pay with crypto</span>
     </a>
-    <a href="{{ flw_url }}" target="_blank" class="pay-method">
-      <div class="pay-icon">🌍</div><div class="pay-title">Flutterwave</div>
-      <div class="pay-sub">Card, bank, mobile money</div>
-      <span class="pay-badge badge-green">Nigeria · Botswana · Global</span>
+    <a href="/pay-paystack?package=starter" class="pay-method">
+      <div class="pay-icon">⭐</div><div class="pay-title">{{ credit_packages.starter.label }} Package</div>
+      <div class="pay-sub">{{ credit_packages.starter.ads }} ad generations</div>
+      <span class="pay-badge badge-green">${{ credit_packages.starter.usd }} · Card / Bank / MoMo PSB</span>
+      <span class="pay-badge badge-gold" style="margin-top:6px;cursor:pointer" onclick="event.preventDefault();event.stopPropagation();openCryptoModal('starter')">💎 Or pay with crypto</span>
     </a>
-    <div class="pay-method crypto-method" onclick="openCryptoModal()">
-      <div class="pay-icon">🪙</div>
-      <div class="pay-title">Crypto — BNB · TRX · USDT · MATIC · TON</div>
-      <div class="pay-sub">Low-fee coins · ~$5 equivalent</div>
-      <span class="pay-badge badge-gold">No bank needed</span>
-    </div>
+    <a href="/pay-paystack?package=pro" class="pay-method">
+      <div class="pay-icon">💎</div><div class="pay-title">{{ credit_packages.pro.label }} Package</div>
+      <div class="pay-sub">{{ credit_packages.pro.ads }} ad generations</div>
+      <span class="pay-badge badge-green">${{ credit_packages.pro.usd }} · Card / Bank / MoMo PSB</span>
+      <span class="pay-badge badge-gold" style="margin-top:6px;cursor:pointer" onclick="event.preventDefault();event.stopPropagation();openCryptoModal('pro')">💎 Or pay with crypto</span>
+    </a>
+    <a href="/pay-paystack?package=basic" class="pay-method">
+      <div class="pay-icon">⚡</div><div class="pay-title">{{ credit_packages.basic.label }} Package</div>
+      <div class="pay-sub">{{ credit_packages.basic.ads }} ad generations</div>
+      <span class="pay-badge badge-green">${{ credit_packages.basic.usd }} · Card / Bank / MoMo PSB</span>
+      <span class="pay-badge badge-gold" style="margin-top:6px;cursor:pointer" onclick="event.preventDefault();event.stopPropagation();openCryptoModal('basic')">💎 Or pay with crypto</span>
+    </a>
+    <a href="/pay-paystack?package=elite" class="pay-method">
+      <div class="pay-icon">🚀</div><div class="pay-title">{{ credit_packages.elite.label }} Package</div>
+      <div class="pay-sub">{{ credit_packages.elite.ads }} ad generations</div>
+      <span class="pay-badge badge-green">${{ credit_packages.elite.usd }} · Card / Bank / MoMo PSB</span>
+      <span class="pay-badge badge-gold" style="margin-top:6px;cursor:pointer" onclick="event.preventDefault();event.stopPropagation();openCryptoModal('elite')">💎 Or pay with crypto</span>
+    </a>
   </div>
   <div class="card" style="margin-top:0">
     <label>Have a promo code?</label>
@@ -290,16 +409,16 @@ input[type=hidden]{display:none}
 <div class="modal-overlay" id="cryptoModal">
   <div class="modal">
     <button class="modal-close" onclick="closeCryptoModal()">✕</button>
-    <h3>🪙 Pay with Crypto</h3>
-    <p>Choose a coin, send the exact amount, then submit your TX hash below.</p>
+    <h3>💰 Pay with Crypto</h3>
+    <p id="cryptoPkgLabel">Choose a coin, send the exact amount, then submit your TX hash below.</p>
     <div class="coin-tabs">
       {% for coin, info in crypto_wallets.items() %}
       <div class="coin-tab {% if loop.first %}active{% endif %}" onclick="selectCoin('{{ coin }}')">{{ info.icon }} {{ coin }}</div>
       {% endfor %}
     </div>
     {% for coin, info in crypto_wallets.items() %}
-    <div class="coin-detail {% if loop.first %}active{% endif %}" id="coin-{{ coin }}">
-      <div class="wallet-amount">{{ info.amount }} ≈ $5</div>
+    <div class="coin-detail {% if loop.first %}active{% endif %}" id="coin-{{ coin }}" data-rate="{{ info.rate }}">
+      <div class="wallet-amount" id="amount-{{ coin }}">— {{ coin }}</div>
       <div class="wallet-box">
         <div class="wallet-label">{{ coin }} Wallet Address</div>
         <div class="wallet-addr" id="addr-{{ coin }}">{{ info.address }}</div>
@@ -314,8 +433,9 @@ input[type=hidden]{display:none}
       <input type="email" name="email" placeholder="you@email.com" required>
       <label>Transaction Hash</label>
       <input type="text" name="tx_hash" placeholder="0xabc123..." required>
-      <input type="hidden" name="coin" id="selected_coin_input" value="{{ list(crypto_wallets.keys())[0] }}">
-      <button type="submit" class="confirm-btn">✅ I've Sent Payment — Activate Pro</button>
+      <input type="hidden" name="coin" id="selected_coin_input" value="{{ crypto_wallets.keys()|list|first }}">
+      <input type="hidden" name="package" id="selected_package_input" value="mini">
+      <button type="submit" class="confirm-btn" id="cryptoConfirmBtn">✅ I've Sent Payment</button>
     </form>
   </div>
 </div>
@@ -334,7 +454,7 @@ input[type=hidden]{display:none}
       {% endfor %}
     </div>
     <input type="hidden" name="copy_type" id="copy_type_input" value="{{ selected_type or 'ad' }}">
-    <button type="submit" class="generate-btn" id="genBtn">⚡ Generate Copy{% if not is_pro %} ({{ free_limit - used }} left){% endif %}</button>
+    <button type="submit" class="generate-btn" id="genBtn">⚡ Generate Copy ({{ credits_balance }} left)</button>
   </form>
 </div>
 {% if result %}
@@ -352,11 +472,27 @@ input[type=hidden]{display:none}
   <div class="feature"><div class="feature-icon">⚡</div><div class="feature-title">Instant AI</div><div class="feature-desc">Results in 5 seconds</div></div>
   <div class="feature"><div class="feature-icon">🌍</div><div class="feature-title">Any Market</div><div class="feature-desc">African & global use</div></div>
 </div>
+<div style="text-align:center;font-size:13px;color:#888;margin:20px 0">Need help? Email <a href="mailto:supportcopyswiftai@gmail.com" style="color:#00d4ff">supportcopyswiftai@gmail.com</a></div>
 <script>
 function selectType(key,el){document.querySelectorAll('.copy-type-btn').forEach(b=>b.classList.remove('selected'));el.classList.add('selected');document.getElementById('copy_type_input').value=key}
 function copyResult(){const t=document.getElementById('resultText').innerText;navigator.clipboard.writeText(t).then(()=>{const b=document.querySelector('.copy-btn');b.textContent='✅ Copied!';setTimeout(()=>b.textContent='📋 Copy',2000)})}
 document.getElementById('copyForm')?.addEventListener('submit',function(){const b=document.getElementById('genBtn');b.disabled=true;b.textContent='⚡ Generating...'})
-function openCryptoModal(){document.getElementById('cryptoModal').classList.add('open')}
+const PACKAGES = {{ credit_packages|tojson }};
+function openCryptoModal(pkgId){
+  if(pkgId && PACKAGES[pkgId]) window.currentCryptoPackage = pkgId;
+  if(!window.currentCryptoPackage) window.currentCryptoPackage = 'mini';
+  const pkg = PACKAGES[window.currentCryptoPackage];
+  document.getElementById('selected_package_input').value = window.currentCryptoPackage;
+  document.getElementById('cryptoPkgLabel').textContent = 'Paying for ' + pkg.label + ' Package ($' + pkg.usd + ') — choose a coin, send the exact amount, then submit your TX hash below.';
+  document.getElementById('cryptoConfirmBtn').textContent = "✅ I've Sent Payment — Activate " + pkg.label;
+  document.querySelectorAll('.coin-detail').forEach(function(el){
+    const coin = el.id.replace('coin-','');
+    const rate = parseFloat(el.dataset.rate);
+    const amt = Math.round(rate * pkg.usd * 10000) / 10000;
+    document.getElementById('amount-'+coin).textContent = amt + ' ' + coin + ' ≈ $' + pkg.usd;
+  });
+  document.getElementById('cryptoModal').classList.add('open');
+}
 function closeCryptoModal(){document.getElementById('cryptoModal').classList.remove('open')}
 function selectCoin(coin){document.querySelectorAll('.coin-tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.coin-detail').forEach(d=>d.classList.remove('active'));event.target.classList.add('active');document.getElementById('coin-'+coin).classList.add('active');document.getElementById('selected_coin_input').value=coin}
 function copyAddr(coin){const addr=document.getElementById('addr-'+coin).innerText;navigator.clipboard.writeText(addr).then(()=>{const b=event.target;b.textContent='✅ Copied!';setTimeout(()=>b.textContent='📋 Copy '+coin+' Address',2000)})}
@@ -445,6 +581,9 @@ tr:last-child td{border-bottom:none}
     <span class="nav-section">Payments</span>
     <a class="nav-item" href="/admin#pending">⏳ Pending ({{ pending_count }})</a>
     <a class="nav-item" href="/admin#all">📋 All Payments</a>
+    <span class="nav-section">Credits</span>
+    <a class="nav-item" href="/admin#credit-purchases">🎟️ Credit Purchases ({{ stats.credit_pending }} pending)</a>
+    <a class="nav-item" href="/admin#credit-balances">💰 Active Balances</a>
     <span class="nav-section">Users</span>
     <a class="nav-item" href="/admin#pro-users">✨ Pro Users</a>
     <a class="nav-item" href="/admin#manual">➕ Activate Manually</a>
@@ -463,11 +602,47 @@ tr:last-child td{border-bottom:none}
       <div class="stat-card"><div class="stat-label">Activated</div><div class="stat-value" style="color:var(--success)">{{ stats.activated }}</div><div class="stat-sub">Pro users</div></div>
       <div class="stat-card"><div class="stat-label">Pro Users</div><div class="stat-value" style="color:#a78bfa">{{ stats.pro_count }}</div><div class="stat-sub">Total active</div></div>
     </div>
+    <a name="credit-purchases"></a>
+    <div class="section-title">🎟️ Credit Purchases</div>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Email</th><th>Package</th><th>Ads</th><th>Amount</th><th>Method</th><th>Status</th><th>Date</th></tr>
+        {% for c in credit_purchases %}
+        <tr>
+          <td>{{ c.email }}</td>
+          <td>{{ c.package|capitalize }}</td>
+          <td>{{ c.ads }}</td>
+          <td>${{ c.amount_usd }}</td>
+          <td>{{ c.method }}</td>
+          <td><span class="status {{ c.status }}">{{ c.status }}</span></td>
+          <td>{{ c.created_at }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" style="text-align:center;color:var(--muted)">No credit purchases yet</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+    <a name="credit-balances"></a>
+    <div class="section-title">💰 Active Credit Balances</div>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Email</th><th>Credits Remaining</th></tr>
+        {% for b in credit_balances %}
+        <tr><td>{{ b.email }}</td><td>{{ b.balance }}</td></tr>
+        {% else %}
+        <tr><td colspan="2" style="text-align:center;color:var(--muted)">No active balances</td></tr>
+        {% endfor %}
+      </table>
+    </div>
     <a name="manual"></a>
     <div class="manual-card">
       <h3>➕ Activate Pro Manually</h3>
       <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Enter customer email to grant Pro access instantly.</p>
       <form method="POST" action="/admin/activate-manual">
+        <select name="package" style="width:100%;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;margin-bottom:10px">
+          <option value="basic">Basic — 110 ads ($18)</option>
+          <option value="elite">Elite — 160 ads ($25)</option>
+        </select>
         <div class="input-row">
           <input type="email" name="email" placeholder="customer@email.com" required>
           <button type="submit" class="btn-primary">✅ Activate Pro</button>
@@ -550,13 +725,15 @@ input:focus{border-color:#00d4ff}
 </style></head><body>
 <div class="card">
   <div style="font-size:32px;margin-bottom:12px">💳</div>
-  <h2>Pay with Card / Bank</h2>
-  <p>₦5,000/month · ~$5 USD. Secure payment via Paystack.</p>
+  <h2>Buy {{ pkg.label }} Package</h2>
+  <p>{{ pkg.ads }} ad generations for <strong>${{ pkg.usd }}</strong> (≈ ₦{{ "{:,.0f}".format(amount_ngn) }}).<br>
+  Pay securely via Card, Bank Transfer, or <strong>MoMo PSB</strong> (Mobile Money) through Paystack.</p>
   {% if error %}<div class="err">{{ error }}</div>{% endif %}
   <form method="POST">
+    <input type="hidden" name="package" value="{{ package }}">
     <label>Your Email Address</label>
     <input type="email" name="email" placeholder="you@email.com" required value="{{ email or '' }}">
-    <button type="submit" class="pay-btn">🔒 Pay ₦5,000 Securely</button>
+    <button type="submit" class="pay-btn">🔒 Pay ${{ pkg.usd }} Securely</button>
   </form>
   <a href="/" class="back">← Back to CopySwift</a>
 </div></body></html>"""
@@ -577,60 +754,67 @@ p{color:#64748b;font-size:14px;line-height:1.7;margin-bottom:16px}
   <h2>Payment Submitted!</h2>
   <p>Your crypto payment has been received.<br><strong>{{ email }}</strong></p>
   <p>TX: <code style="color:#00d4ff;font-size:12px;word-break:break-all">{{ tx_hash }}</code></p>
-  <p>Pro access activates within <strong>30–60 minutes</strong>.</p>
+  <p>Your credits activate within <strong>30–60 minutes</strong>.</p>
+  <p style="font-size:13px;color:#888">Need help? Email <a href="mailto:supportcopyswiftai@gmail.com" style="color:#00d4ff">supportcopyswiftai@gmail.com</a></p>
   <a href="/" class="home-btn">Back to CopySwift</a>
 </div></body></html>"""
 
 @app.route('/', methods=['GET','POST'])
 def home():
-    is_pro = session.get('is_pro', False)
-    if not is_pro and session.get('user_email'):
-        is_pro = is_pro_email(session['user_email'])
-        if is_pro: session['is_pro'] = True
-    used = 0 if is_pro else get_free_usage()
-    limit_reached = (used >= FREE_LIMIT) and not is_pro
+    user_email = session.get('user_email', '')
+    credits_balance = get_credit_balance(user_email) if user_email else 0
+    limit_reached = (credits_balance <= 0)
     result = error = product = audience = None
     selected_type = 'ad'
     ref_code = request.args.get('ref', session.get('ref_code',''))
     if ref_code: session['ref_code'] = ref_code
     if request.method == 'POST' and not limit_reached:
-        product = request.form.get('product','').strip()
-        audience = request.form.get('audience','').strip() or 'customers'
-        selected_type = request.form.get('copy_type','ad')
-        if selected_type not in COPY_TYPES: selected_type = 'ad'
-        prompt = COPY_TYPES[selected_type]['prompt'].format(product=product, audience=audience)
-        try:
-            cc = client.chat.completions.create(messages=[{"role":"user","content":prompt}], model="llama-3.1-8b-instant")
-            result = cc.choices[0].message.content
-            if not is_pro:
-                increment_free_usage()
-                used = get_free_usage()
-                limit_reached = (used >= FREE_LIMIT)
-        except Exception as e:
-            error = str(e)
-    flw_url = f"https://flutterwave.com/pay/copyswift-pro"
+        if not user_email:
+            error = "Please enter your email and purchase a credit package to generate copy."
+        else:
+            product = request.form.get('product','').strip()
+            audience = request.form.get('audience','').strip() or 'customers'
+            selected_type = request.form.get('copy_type','ad')
+            if selected_type not in COPY_TYPES: selected_type = 'ad'
+            prompt = COPY_TYPES[selected_type]['prompt'].format(product=product, audience=audience)
+            try:
+                cc = client.chat.completions.create(messages=[{"role":"user","content":prompt}], model="llama-3.1-8b-instant")
+                result = cc.choices[0].message.content
+                deduct_credit(user_email)
+                credits_balance = get_credit_balance(user_email)
+                limit_reached = (credits_balance <= 0)
+            except Exception as e:
+                error = str(e)
     return render_template_string(HTML, result=result, error=error, product=product, audience=audience,
-        selected_type=selected_type, copy_types=COPY_TYPES, used=used, free_limit=FREE_LIMIT,
-        limit_reached=limit_reached, is_pro=is_pro,
+        selected_type=selected_type, copy_types=COPY_TYPES,
+        credits_balance=credits_balance, limit_reached=limit_reached,
+        user_email=user_email, credit_packages=CREDIT_PACKAGES,
         crypto_wallets=CRYPTO_WALLETS, promo_error=None)
 
 @app.route('/pay-paystack', methods=['GET','POST'])
 def pay_paystack():
     error = email = None
+    package = request.args.get('package') or request.form.get('package') or 'basic'
+    if package not in CREDIT_PACKAGES:
+        package = 'basic'
+    pkg = CREDIT_PACKAGES[package]
+    amount_kobo, amount_ngn, rate = usd_to_kobo(pkg['usd'])
     if request.method == 'POST':
         email = request.form.get('email','').strip()
         if not PAYSTACK_SECRET:
-            error = "Paystack not configured. Contact support."
+            error = "Paystack not configured. Contact support: supportcopyswiftai@gmail.com"
         else:
             ref = make_ref()
             session['pay_ref'] = ref
             session['pay_email'] = email
-            save_payment(email, "paystack", f"N{PRO_PRICE_NGN}", ref)
-            res = paystack_init(email, PRO_PRICE_NGN * 100, ref)
+            session['pay_package'] = package
+            save_credit_purchase(email, package, pkg['ads'], pkg['usd'], f"₦{amount_ngn:,.2f}", "paystack", ref, ref_code=resolve_ref_code(email))
+            res = paystack_init(email, amount_kobo, ref)
             if res.get('status'):
                 return redirect(res['data']['authorization_url'])
             error = res.get('message','Payment init failed.')
-    return render_template_string(PAYSTACK_HTML, error=error, email=email)
+    return render_template_string(PAYSTACK_HTML, error=error, email=email,
+        package=package, pkg=pkg, amount_ngn=amount_ngn)
 
 @app.route('/verify-paystack')
 def verify_paystack():
@@ -639,10 +823,8 @@ def verify_paystack():
         res = paystack_verify(ref)
         if res.get('data',{}).get('status') == 'success':
             email = session.get('pay_email','')
-            session['is_pro'] = True
-            session['used'] = 0
+            purchase = activate_credit_purchase(ref)
             if email:
-                activate_pro_email(email, by="paystack")
                 session['user_email'] = email
     return redirect('/')
 
@@ -651,23 +833,29 @@ def confirm_crypto():
     email = request.form.get('email','').strip()
     tx_hash = request.form.get('tx_hash','').strip()
     coin = request.form.get('coin','').strip()
-    save_payment(email, "crypto", f"~$5 {coin}", tx_hash, coin, "pending")
+    package = request.form.get('package','mini')
+    if package not in CREDIT_PACKAGES:
+        package = 'mini'
+    pkg = CREDIT_PACKAGES[package]
+    save_payment(email, "crypto", f"${pkg['usd']} {coin}", tx_hash, coin, "pending")
+    save_credit_purchase(email, package, pkg['ads'], pkg['usd'], f"{coin}", "crypto", tx_hash, "pending", ref_code=resolve_ref_code(email))
     session['user_email'] = email
     return render_template_string(PENDING_HTML, email=email, tx_hash=tx_hash)
 
 @app.route('/promo', methods=['POST'])
 def promo():
     code = request.form.get('code','').strip().upper()
-    if 'used' not in session: session['used'] = 0
-    if code in PROMO_CODES:
-        session['is_pro'] = True
-        session['used'] = 0
+    user_email = session.get('user_email', '')
+    if code in PROMO_CODES and user_email:
+        add_credits(user_email, CREDIT_PACKAGES['basic']['ads'])
         return redirect('/')
-    flw_url = f"https://flutterwave.com/pay/copyswift-pro"
+    credits_balance = get_credit_balance(user_email) if user_email else 0
     return render_template_string(HTML, result=None, error=None, product=None, audience=None,
-        selected_type='ad', copy_types=COPY_TYPES, used=session['used'], free_limit=FREE_LIMIT,
-        limit_reached=True, is_pro=False, flw_url=flw_url, crypto_wallets=CRYPTO_WALLETS,
-        promo_error="Invalid promo code. Try again.")
+        selected_type='ad', copy_types=COPY_TYPES,
+        credits_balance=credits_balance, limit_reached=(credits_balance <= 0),
+        user_email=user_email, credit_packages=CREDIT_PACKAGES,
+        crypto_wallets=CRYPTO_WALLETS,
+        promo_error="Invalid promo code, or please enter your email and generate at least once first.")
 
 @app.route('/reset')
 def reset():
@@ -696,16 +884,22 @@ def admin_dashboard():
         all_payments = [dict(r) for r in db.execute("SELECT * FROM payments ORDER BY created_at DESC LIMIT 100").fetchall()]
         pending_payments = [p for p in all_payments if p['status']=='pending' and p['method']=='crypto']
         pro_users = [dict(r) for r in db.execute("SELECT * FROM pro_users ORDER BY activated_at DESC").fetchall()]
+        credit_purchases = [dict(r) for r in db.execute("SELECT * FROM credit_purchases ORDER BY created_at DESC LIMIT 100").fetchall()]
+        credit_balances = [dict(r) for r in db.execute("SELECT * FROM credits WHERE balance > 0 ORDER BY balance DESC").fetchall()]
         stats = {
             "total": db.execute("SELECT COUNT(*) FROM payments").fetchone()[0],
             "pending": db.execute("SELECT COUNT(*) FROM payments WHERE status='pending'").fetchone()[0],
             "activated": db.execute("SELECT COUNT(*) FROM payments WHERE status='activated'").fetchone()[0],
             "pro_count": db.execute("SELECT COUNT(*) FROM pro_users").fetchone()[0],
+            "credit_sales": db.execute("SELECT COUNT(*) FROM credit_purchases WHERE status='activated'").fetchone()[0],
+            "credit_revenue": db.execute("SELECT COALESCE(SUM(amount_usd),0) FROM credit_purchases WHERE status='activated'").fetchone()[0],
+            "credit_pending": db.execute("SELECT COUNT(*) FROM credit_purchases WHERE status='pending'").fetchone()[0],
         }
     flash = session.pop('admin_flash', None)
     return render_template_string(ADMIN_HTML, stats=stats, all_payments=all_payments,
         pending_payments=pending_payments, pending_count=len(pending_payments),
-        pro_users=pro_users, flash=flash,
+        pro_users=pro_users, credit_purchases=credit_purchases, credit_balances=credit_balances,
+        flash=flash,
         now=datetime.now().strftime("%A, %d %B %Y - %H:%M"))
 
 @app.route('/admin/activate/<int:payment_id>', methods=['POST'])
@@ -714,8 +908,13 @@ def admin_activate(payment_id):
     with get_db() as db:
         row = db.execute("SELECT * FROM payments WHERE id=?", (payment_id,)).fetchone()
         if row:
-            activate_pro_email(row['email'], by="admin")
-            session['admin_flash'] = f"Pro activated for {row['email']}"
+            db.execute("UPDATE payments SET status='activated', activated_at=datetime('now') WHERE id=?", (payment_id,))
+            db.commit()
+            purchase = activate_credit_purchase(row['tx_ref'])
+            if purchase:
+                session['admin_flash'] = f"{purchase['ads']} credits activated for {row['email']}"
+            else:
+                session['admin_flash'] = f"Payment activated for {row['email']} (no matching credit purchase found)"
         else:
             session['admin_flash'] = "Payment not found."
     return redirect('/admin')
@@ -733,10 +932,16 @@ def admin_reject(payment_id):
 @admin_required
 def admin_activate_manual():
     email = request.form.get('email','').strip()
+    package = request.form.get('package','basic')
+    if package not in CREDIT_PACKAGES:
+        package = 'basic'
+    pkg = CREDIT_PACKAGES[package]
     if email:
-        save_payment(email, "manual", "$5", "manual-"+make_ref(), "", "activated")
-        activate_pro_email(email, by="admin-manual")
-        session['admin_flash'] = f"Pro manually activated for {email}"
+        ref = "manual-"+make_ref()
+        save_payment(email, "manual", f"${pkg['usd']}", ref, "", "activated")
+        save_credit_purchase(email, package, pkg['ads'], pkg['usd'], "manual", "manual", ref, "activated")
+        add_credits(email, pkg['ads'])
+        session['admin_flash'] = f"{pkg['ads']} credits manually added for {email}"
     return redirect('/admin')
 
 
