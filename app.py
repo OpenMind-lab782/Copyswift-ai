@@ -783,6 +783,7 @@ input:focus{border-color:#00d4ff}
   {% if error %}<div class="err">{{ error }}</div>{% endif %}
   <form method="POST">
     <input type="hidden" name="package" value="{{ package }}">
+    <input type="hidden" name="ref_code" value="{{ ref_code or '' }}">
     <label>Your Email Address</label>
     <input type="email" name="email" placeholder="you@email.com" required value="{{ email or '' }}">
     <button type="submit" class="pay-btn">🔒 Pay ${{ pkg.usd }} Securely</button>
@@ -851,6 +852,8 @@ def pay_paystack():
         package = 'basic'
     pkg = CREDIT_PACKAGES[package]
     amount_kobo, amount_ngn, rate = usd_to_kobo(pkg['usd'])
+    ref_code = request.args.get('ref_code', request.form.get('ref_code', session.get('ref_code','')))
+    if ref_code: session['ref_code'] = ref_code
     if request.method == 'POST':
         email = request.form.get('email','').strip()
         if not PAYSTACK_SECRET:
@@ -866,7 +869,7 @@ def pay_paystack():
                 return redirect(res['data']['authorization_url'])
             error = res.get('message','Payment init failed.')
     return render_template_string(PAYSTACK_HTML, error=error, email=email,
-        package=package, pkg=pkg, amount_ngn=amount_ngn)
+        package=package, pkg=pkg, amount_ngn=amount_ngn, ref_code=ref_code)
 
 @app.route('/verify-paystack')
 def verify_paystack():
