@@ -645,8 +645,8 @@ tr:last-child td{border-bottom:none}
       <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Enter customer email to grant Pro access instantly.</p>
       <form method="POST" action="/admin/activate-manual">
         <select name="package" style="width:100%;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;margin-bottom:10px">
-          <option value="basic">Basic — 110 ads ($18)</option>
-          <option value="elite">Elite — 160 ads ($25)</option>
+          <option value="basic">Basic — 120 ads ($18)</option>
+          <option value="elite">Elite — 180 ads ($25)</option>
         </select>
         <div class="input-row">
           <input type="email" name="email" placeholder="customer@email.com" required>
