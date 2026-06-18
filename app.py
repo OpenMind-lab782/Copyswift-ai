@@ -815,8 +815,9 @@ p{color:#64748b;font-size:14px;line-height:1.7;margin-bottom:16px}
 @app.route('/', methods=['GET','POST'])
 def home():
     user_email = session.get('user_email', '')
-    credits_balance = get_credit_balance(user_email) if user_email else 0
-    limit_reached = (credits_balance <= 0)
+    is_admin = session.get('admin_logged_in', False)
+    credits_balance = 9999 if is_admin else (get_credit_balance(user_email) if user_email else 0)
+    limit_reached = False if is_admin else (credits_balance <= 0)
     result = error = product = audience = None
     selected_type = 'ad'
     ref_code = request.args.get('ref', session.get('ref_code',''))
