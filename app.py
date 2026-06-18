@@ -558,6 +558,9 @@ tr:last-child td{border-bottom:none}
 .status.pending{background:rgba(245,158,11,.12);color:var(--gold);border:1px solid rgba(245,158,11,.3)}
 .status.activated{background:rgba(16,185,129,.12);color:var(--success);border:1px solid rgba(16,185,129,.3)}
 .status.rejected{background:rgba(239,68,68,.12);color:var(--danger);border:1px solid rgba(239,68,68,.3)}
+.status.paid{background:rgba(16,185,129,.12);color:var(--success);border:1px solid rgba(16,185,129,.3)}
+.btn-small{padding:6px 14px;font-size:12px;font-weight:600;background:var(--primary,#6366f1);color:#fff;border:none;border-radius:6px;cursor:pointer}
+.btn-small:hover{opacity:.85}
 .btn{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .2s}
 .btn-activate{background:rgba(16,185,129,.15);color:var(--success);border:1px solid rgba(16,185,129,.3)}
 .btn-reject{background:rgba(239,68,68,.1);color:var(--danger);border:1px solid rgba(239,68,68,.3)}
@@ -706,7 +709,7 @@ tr:last-child td{border-bottom:none}
     <a name="affiliates"></a>
     <div class="section-title">🤝 Affiliates</div>
     <div class="table-wrap"><table>
-      <tr><th>Name</th><th>Email</th><th>Ref Code</th><th>Total Earned</th><th>Pending Payout</th></tr>
+      <tr><th>Name</th><th>Email</th><th>Ref Code</th><th>Total Earned</th><th>Pending Payout</th><th>Action</th></tr>
       {% if affiliates %}{% for a in affiliates %}
       <tr>
         <td>{{ a['name'] }}</td>
@@ -714,9 +717,14 @@ tr:last-child td{border-bottom:none}
         <td><code>{{ a['ref_code'] }}</code></td>
         <td style="color:var(--success)">${{ "%.2f"|format(a['total_earned']) }}</td>
         <td style="color:var(--gold)">${{ "%.2f"|format(a['pending_payout']) }}</td>
+        <td>
+          {% if a['pending_payout'] > 0 %}
+          <button class="btn-small" onclick="markPaid({{ a['id'] }})">Mark Paid</button>
+          {% else %}<span style="color:var(--muted)">—</span>{% endif %}
+        </td>
       </tr>
       {% endfor %}{% else %}
-      <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">No affiliates yet</td></tr>
+      <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">No affiliates yet</td></tr>
       {% endif %}
     </table></div>
     <a name="referrals"></a>
@@ -739,6 +747,16 @@ tr:last-child td{border-bottom:none}
 </div>
 {% if flash %}<div class="toast show" id="toast">{{ flash }}</div>
 <script>setTimeout(()=>document.getElementById('toast').classList.remove('show'),3500)</script>{% endif %}
+<script>
+async function markPaid(affiliateId){
+  if(!confirm("Mark this payout as paid?"))return;
+  try{
+    const resp=await fetch("/admin/mark-payout-paid",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({affiliate_id:affiliateId})});
+    const data=await resp.json();
+    if(data.success){alert("Payout marked as paid!");location.reload();}else{alert("Error: "+(data.error||"unknown"));}
+  }catch(err){alert("Failed: "+err.message);}
+}
+</script>
 </body></html>"""
 
 PAYSTACK_HTML = """<!DOCTYPE html><html lang="en"><head>
@@ -938,6 +956,17 @@ def admin_dashboard():
         affiliates=affiliates, referrals=referrals,
         flash=flash,
         now=datetime.now().strftime("%A, %d %B %Y - %H:%M"))
+
+@app.route('/admin/mark-payout-paid', methods=['POST'])
+@admin_required
+def mark_payout_paid():
+    data = request.get_json(silent=True) or {}
+    affiliate_id = data.get('affiliate_id')
+    if not affiliate_id:
+        return jsonify({"success": False, "error": "Missing affiliate_id"}), 400
+    with get_db() as db:
+        db.execute("UPDATE affiliates SET pending_payout = 0 WHERE id = ?", (affiliate_id,))
+    return jsonify({"success": True})
 
 @app.route('/admin/activate/<int:payment_id>', methods=['POST'])
 @admin_required

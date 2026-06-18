@@ -47,15 +47,15 @@ h1{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;margin-
     <div class="stat-value" style="color:#00d4ff">{{ referrals|length }}</div>
   </div>
   <div class="stat-card">
-    <div class="stat-label">Monthly Income</div>
-    <div class="stat-value" style="color:#a78bfa">${{ '%.2f'|format(referrals|length * 2.0) }}</div>
+    <div class="stat-label">Avg Commission</div>
+    <div class="stat-value" style="color:#a78bfa">${{ '%.2f'|format((aff.total_earned / referrals|length) if referrals|length > 0 else 0) }}</div>
   </div>
 </div>
 <div class="card">
   <h3>Your Referral Link</h3>
   <div class="ref-box" id="refLink">{{ ref_link }}</div>
   <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('refLink').innerText).then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy My Referral Link',2000)})">Copy My Referral Link</button>
-  <p style="font-size:11px;color:#64748b">Share this link. You earn $2 for every person who subscribes through it.</p>
+  <p style="font-size:11px;color:#64748b">Share this link. When someone buys a credit package through it, you earn 40% — instantly, no subscription needed!</p>
 </div>
 <div class="notice">
   Payouts processed monthly in {{ aff.wallet_coin }} to your wallet. Minimum payout: $5.
