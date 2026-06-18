@@ -35,18 +35,18 @@ select option{background:#111827}
 </style></head><body>
 <div class="header">
   <div class="badge">💰 Affiliate Program</div>
-  <h1>Earn <span class="gold">40% Commission</span> Every Month</h1>
-  <p class="subtitle">Share CopySwift AI and earn $2 for every subscriber — recurring monthly.</p>
+  <h1>Earn <span class="gold">40% Commission</span> On Every Sale</h1>
+  <p class="subtitle">Share CopySwift AI and earn 40% commission on every credit package your referrals purchase.</p>
 </div>
 <div class="how-grid">
   <div class="how-card"><div class="how-num">1</div><div class="how-text">Get your unique referral link</div></div>
   <div class="how-card"><div class="how-num">2</div><div class="how-text">Share with businesses</div></div>
-  <div class="how-card"><div class="how-num">3</div><div class="how-text">Earn $2 every month</div></div>
+  <div class="how-card"><div class="how-num">3</div><div class="how-text">Earn 40% per sale</div></div>
 </div>
 <div class="earn-banner">
   <h2>Your Earning Potential</h2>
-  <div class="earn-amount">$2/month</div>
-  <p>per subscriber you refer<br><strong style="color:#f59e0b">10 subscribers = $20/month &bull; 50 = $100/month</strong><br>Paid in crypto (BNB, TRX or USDT)</p>
+  <div class="earn-amount">40% per sale</div>
+  <p>of every package price, paid once per referral<br><strong style="color:#f59e0b">Mini = $0.80 &bull; Pro = $6 &bull; Elite = $10</strong><br>Paid in crypto (BNB, TRX or USDT)</p>
 </div>
 {% if msg %}
 <div class="success-card">
@@ -55,7 +55,7 @@ select option{background:#111827}
   <p style="color:#94a3b8;font-size:13px;margin-bottom:6px">Your referral link:</p>
   <div class="ref-code-box" id="refLink">{{ ref_link }}</div>
   <button class="copy-ref-btn" onclick="navigator.clipboard.writeText('{{ ref_link }}').then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy Referral Link',2000)})">Copy Referral Link</button>
-  <p style="font-size:12px;color:#64748b;margin-bottom:10px">Share this link. When someone subscribes through it, you earn $2/month!</p>
+  <p style="font-size:12px;color:#64748b;margin-bottom:10px">Share this link. When someone buys a credit package through it, you earn 40% — instantly, no subscription needed!</p>
   <a href="/affiliate/dashboard" class="dash-btn">View My Dashboard</a>
 </div>
 {% else %}
