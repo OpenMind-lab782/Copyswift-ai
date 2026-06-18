@@ -834,9 +834,10 @@ def home():
             try:
                 cc = client.chat.completions.create(messages=[{"role":"user","content":prompt}], model="llama-3.1-8b-instant")
                 result = cc.choices[0].message.content
-                deduct_credit(user_email)
-                credits_balance = get_credit_balance(user_email)
-                limit_reached = (credits_balance <= 0)
+                if not is_admin:
+                    deduct_credit(user_email)
+                    credits_balance = get_credit_balance(user_email)
+                    limit_reached = (credits_balance <= 0)
             except Exception as e:
                 error = str(e)
     return render_template_string(HTML, result=result, error=error, product=product, audience=audience,
