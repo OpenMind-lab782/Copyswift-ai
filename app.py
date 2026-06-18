@@ -823,7 +823,7 @@ def home():
     ref_code = request.args.get('ref', session.get('ref_code',''))
     if ref_code: session['ref_code'] = ref_code
     if request.method == 'POST' and not limit_reached:
-        if not user_email:
+        if not user_email and not is_admin:
             error = "Please enter your email and purchase a credit package to generate copy."
         else:
             product = request.form.get('product','').strip()
