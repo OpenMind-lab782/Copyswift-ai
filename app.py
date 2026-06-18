@@ -587,6 +587,8 @@ tr:last-child td{border-bottom:none}
     <span class="nav-section">Users</span>
     <a class="nav-item" href="/admin#pro-users">✨ Pro Users</a>
     <a class="nav-item" href="/admin#manual">➕ Activate Manually</a>
+    <span class="nav-section">Affiliates</span>
+    <a class="nav-item" href="/admin#affiliates">🤝 Affiliates</a>
     <span class="nav-section">App</span>
     <a class="nav-item" href="/" target="_blank">🔗 View Live App</a>
     <a class="nav-item logout" href="/admin/logout">🚪 Logout</a>
@@ -699,6 +701,38 @@ tr:last-child td{border-bottom:none}
       </tr>
       {% endfor %}{% else %}
       <tr><td colspan="3" style="text-align:center;color:var(--muted);padding:24px">No pro users yet</td></tr>
+      {% endif %}
+    </table></div>
+    <a name="affiliates"></a>
+    <div class="section-title">🤝 Affiliates</div>
+    <div class="table-wrap"><table>
+      <tr><th>Name</th><th>Email</th><th>Ref Code</th><th>Total Earned</th><th>Pending Payout</th></tr>
+      {% if affiliates %}{% for a in affiliates %}
+      <tr>
+        <td>{{ a['name'] }}</td>
+        <td>{{ a['email'] }}</td>
+        <td><code>{{ a['ref_code'] }}</code></td>
+        <td style="color:var(--success)">${{ "%.2f"|format(a['total_earned']) }}</td>
+        <td style="color:var(--gold)">${{ "%.2f"|format(a['pending_payout']) }}</td>
+      </tr>
+      {% endfor %}{% else %}
+      <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">No affiliates yet</td></tr>
+      {% endif %}
+    </table></div>
+    <a name="referrals"></a>
+    <div class="section-title">💸 Referral Commissions</div>
+    <div class="table-wrap"><table>
+      <tr><th>Ref Code</th><th>Customer</th><th>Amount</th><th>Status</th><th>Date</th></tr>
+      {% if referrals %}{% for r in referrals %}
+      <tr>
+        <td><code>{{ r['ref_code'] }}</code></td>
+        <td>{{ r['subscriber_email'] }}</td>
+        <td style="color:var(--success)">${{ "%.2f"|format(r['amount_earned']) }}</td>
+        <td><span class="status {{ r['status'] }}">{{ r['status'] }}</span></td>
+        <td style="color:var(--muted)">{{ r['created_at'][:16] }}</td>
+      </tr>
+      {% endfor %}{% else %}
+      <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">No referral commissions yet</td></tr>
       {% endif %}
     </table></div>
   </div>
@@ -886,6 +920,8 @@ def admin_dashboard():
         pro_users = [dict(r) for r in db.execute("SELECT * FROM pro_users ORDER BY activated_at DESC").fetchall()]
         credit_purchases = [dict(r) for r in db.execute("SELECT * FROM credit_purchases ORDER BY created_at DESC LIMIT 100").fetchall()]
         credit_balances = [dict(r) for r in db.execute("SELECT * FROM credits WHERE balance > 0 ORDER BY balance DESC").fetchall()]
+        affiliates = [dict(r) for r in db.execute("SELECT * FROM affiliates ORDER BY total_earned DESC").fetchall()]
+        referrals = [dict(r) for r in db.execute("SELECT * FROM referrals ORDER BY created_at DESC LIMIT 100").fetchall()]
         stats = {
             "total": db.execute("SELECT COUNT(*) FROM payments").fetchone()[0],
             "pending": db.execute("SELECT COUNT(*) FROM payments WHERE status='pending'").fetchone()[0],
@@ -899,6 +935,7 @@ def admin_dashboard():
     return render_template_string(ADMIN_HTML, stats=stats, all_payments=all_payments,
         pending_payments=pending_payments, pending_count=len(pending_payments),
         pro_users=pro_users, credit_purchases=credit_purchases, credit_balances=credit_balances,
+        affiliates=affiliates, referrals=referrals,
         flash=flash,
         now=datetime.now().strftime("%A, %d %B %Y - %H:%M"))
 
@@ -938,9 +975,13 @@ def admin_activate_manual():
     pkg = CREDIT_PACKAGES[package]
     if email:
         ref = "manual-"+make_ref()
+        ref_code = get_permanent_ref_code(email) or ''
         save_payment(email, "manual", f"${pkg['usd']}", ref, "", "activated")
-        save_credit_purchase(email, package, pkg['ads'], pkg['usd'], "manual", "manual", ref, "activated")
+        save_credit_purchase(email, package, pkg['ads'], pkg['usd'], "manual", "manual", ref, "activated", ref_code=ref_code)
         add_credits(email, pkg['ads'])
+        if ref_code:
+            commission = round(pkg['usd'] * 0.4, 2)
+            record_referral(ref_code, email, commission, ref)
         session['admin_flash'] = f"{pkg['ads']} credits manually added for {email}"
     return redirect('/admin')
 
