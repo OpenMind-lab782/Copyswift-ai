@@ -2,8 +2,10 @@ from dotenv import load_dotenv
 load_dotenv()
 from flask import Flask, render_template_string, render_template, request, session, redirect, jsonify
 from groq import Groq
-import os, hashlib, json, requests, time, sqlite3
-from datetime import datetime, timedelta
+import os, hashlib, json, requests, time, sqlite3, base64
+import cloudinary
+import cloudinary.uploader
+from datetime import datetime, timedelta, timedelta
 from functools import wraps
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "copyswift-secret-2024")
@@ -25,6 +27,50 @@ CREDIT_PACKAGES = {
     "pro": {"label": "Pro", "ads": 100, "usd": 15},
 }
 FALLBACK_USD_NGN_RATE = 1600.0  # used only if live rate fetch fails
+
+# --- Together AI + Cloudinary Config ---------------------------------------
+TOGETHER_API_KEY = os.environ.get("TOGETHER_API_KEY", "")
+cloudinary.config(
+    cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME", ""),
+    api_key=os.environ.get("CLOUDINARY_API_KEY", ""),
+    api_secret=os.environ.get("CLOUDINARY_API_SECRET", "")
+)
+
+def generate_image_and_upload(prompt):
+    """Call Together AI FLUX.1-schnell, upload result to Cloudinary, return URL."""
+    try:
+        headers = {
+            "Authorization": f"Bearer {TOGETHER_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": "black-forest-labs/FLUX.1-schnell-Free",
+            "prompt": prompt,
+            "width": 1024,
+            "height": 1024,
+            "steps": 4,
+            "n": 1,
+            "response_format": "b64_json"
+        }
+        resp = requests.post(
+            "https://api.together.xyz/v1/images/generations",
+            headers=headers,
+            json=payload,
+            timeout=60
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        b64 = data["data"][0]["b64_json"]
+        image_bytes = base64.b64decode(b64)
+        upload_result = cloudinary.uploader.upload(
+            image_bytes,
+            folder="copyswift_ai",
+            resource_type="image"
+        )
+        return upload_result.get("secure_url", "")
+    except Exception as e:
+        print(f"Image generation error: {e}")
+        return ""
 
 def get_usd_ngn_rate():
     """Fetch a live USD->NGN exchange rate. Falls back to a fixed rate on error."""
@@ -102,6 +148,9 @@ def init_db():
             db.execute("ALTER TABLE referrals ADD COLUMN tx_ref TEXT DEFAULT \'\'")
         except Exception:
             pass
+        db.execute("CREATE TABLE IF NOT EXISTS free_usage (id INTEGER PRIMARY KEY AUTOINCREMENT, fingerprint TEXT UNIQUE NOT NULL, count INTEGER DEFAULT 0, week_start TEXT)")
+        db.execute("CREATE TABLE IF NOT EXISTS affiliates (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL, ref_code TEXT UNIQUE NOT NULL, wallet_coin TEXT DEFAULT 'USDT', wallet_address TEXT DEFAULT '', total_earned REAL DEFAULT 0, pending_payout REAL DEFAULT 0, created_at TEXT DEFAULT (datetime('now')))")
+        db.execute("CREATE TABLE IF NOT EXISTS referrals (id INTEGER PRIMARY KEY AUTOINCREMENT, ref_code TEXT NOT NULL, subscriber_email TEXT NOT NULL, amount_earned REAL DEFAULT 2.0, status TEXT DEFAULT 'pending', created_at TEXT DEFAULT (datetime('now')), paid_at TEXT)")
         db.commit()
 
 init_db()
@@ -1060,6 +1109,30 @@ def affiliate_dashboard():
     app_url = os.environ.get('APP_URL','https://copyswift-ai.onrender.com')
     ref_link = f"{app_url}/?ref={aff['ref_code']}"
     return render_template('affiliate_dash.html', aff=dict(aff), referrals=referrals, ref_link=ref_link)
+
+@app.route('/api/generate-image', methods=['POST'])
+def api_generate_image():
+    email = session.get('email', '')
+    if not email:
+        return jsonify({"error": "Not logged in"}), 401
+    data = request.get_json()
+    prompt = data.get('prompt', '').strip()
+    if not prompt:
+        return jsonify({"error": "Prompt is required"}), 400
+    with get_db() as db:
+        user = db.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        is_admin = email == os.environ.get("ADMIN_EMAIL", "")
+        if not is_admin and user['credits'] < 2:
+            return jsonify({"error": "Insufficient credits. Image generation costs 2 credits."}), 402
+        image_url = generate_image_and_upload(prompt)
+        if not image_url:
+            return jsonify({"error": "Image generation failed. Please try again."}), 500
+        if not is_admin:
+            db.execute("UPDATE users SET credits = credits - 2 WHERE email=?", (email,))
+            db.commit()
+        return jsonify({"image_url": image_url, "credits_used": 2})
 
 @app.route('/api/check-pro')
 def api_check_pro():
