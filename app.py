@@ -50,7 +50,7 @@ def generate_image_and_upload(prompt):
             "height": 1024,
             "steps": 4,
             "n": 1,
-            "response_format": "b64_json"
+            "response_format": "url"
         }
         resp = requests.post(
             "https://api.together.xyz/v1/images/generations",
@@ -60,10 +60,9 @@ def generate_image_and_upload(prompt):
         )
         resp.raise_for_status()
         data = resp.json()
-        b64 = data["data"][0]["b64_json"]
-        image_bytes = base64.b64decode(b64)
+        image_url = data["data"][0]["url"]
         upload_result = cloudinary.uploader.upload(
-            image_bytes,
+            image_url,
             folder="copyswift_ai",
             resource_type="image"
         )
