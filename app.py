@@ -514,6 +514,18 @@ input[type=hidden]{display:none}
   </div>
   <div class="result-text" id="resultText">{{ result }}</div>
 </div>
+<div class="image-gen-card" style="background:#1a1a2e;border:1px solid #00d4ff33;border-radius:16px;padding:20px;margin:20px 0">
+  <div style="font-size:15px;font-weight:700;color:#00d4ff;margin-bottom:8px">🎨 Generate Ad Image (2 credits)</div>
+  <div style="font-size:12px;color:#888;margin-bottom:12px">Powered by FLUX.1 AI — describe your ideal ad image</div>
+  <textarea id="imgPrompt" placeholder="e.g. A modern Nigerian woman using a smartphone app, vibrant colors, professional ad style" style="width:100%;padding:12px;background:#0d0d1a;border:1px solid #333;border-radius:10px;color:#fff;font-size:13px;resize:vertical;min-height:80px;box-sizing:border-box"></textarea>
+  <button onclick="generateImage()" id="imgBtn" style="width:100%;margin-top:10px;padding:13px;background:linear-gradient(135deg,#7c3aed,#00d4ff);color:#fff;font-weight:700;font-size:15px;border:none;border-radius:10px;cursor:pointer">🖼️ Generate Image</button>
+  <div id="imgStatus" style="text-align:center;color:#888;font-size:13px;margin-top:10px;display:none">⏳ Generating image, please wait 15-30 seconds...</div>
+  <div id="imgResult" style="margin-top:15px;display:none">
+    <img id="generatedImg" src="" style="width:100%;border-radius:12px;border:1px solid #00d4ff44" />
+    <a id="imgDownload" href="" download="copyswift-ad.png" target="_blank" style="display:block;text-align:center;margin-top:10px;color:#00d4ff;font-size:13px">⬇️ Download Image</a>
+  </div>
+  <div id="imgError" style="color:#ff4444;font-size:13px;margin-top:10px;display:none"></div>
+</div>
 {% endif %}
 {% endif %}
 <div class="features">
@@ -525,6 +537,33 @@ input[type=hidden]{display:none}
 <script>
 function selectType(key,el){document.querySelectorAll('.copy-type-btn').forEach(b=>b.classList.remove('selected'));el.classList.add('selected');document.getElementById('copy_type_input').value=key}
 function copyResult(){const t=document.getElementById('resultText').innerText;navigator.clipboard.writeText(t).then(()=>{const b=document.querySelector('.copy-btn');b.textContent='✅ Copied!';setTimeout(()=>b.textContent='📋 Copy',2000)})}
+async function generateImage(){
+  const prompt=document.getElementById('imgPrompt').value.trim();
+  if(!prompt){alert('Please enter an image description first.');return;}
+  const btn=document.getElementById('imgBtn');
+  const status=document.getElementById('imgStatus');
+  const result=document.getElementById('imgResult');
+  const errDiv=document.getElementById('imgError');
+  btn.disabled=true;btn.textContent='⏳ Generating...';
+  status.style.display='block';result.style.display='none';errDiv.style.display='none';
+  try{
+    const resp=await fetch('/api/generate-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:prompt})});
+    const data=await resp.json();
+    if(data.image_url){
+      document.getElementById('generatedImg').src=data.image_url;
+      document.getElementById('imgDownload').href=data.image_url;
+      result.style.display='block';
+      status.style.display='none';
+    }else{
+      errDiv.textContent=data.error||'Image generation failed.';
+      errDiv.style.display='block';status.style.display='none';
+    }
+  }catch(e){
+    errDiv.textContent='Network error. Please try again.';
+    errDiv.style.display='block';status.style.display='none';
+  }
+  btn.disabled=false;btn.textContent='🖼️ Generate Image';
+}
 document.getElementById('copyForm')?.addEventListener('submit',function(){const b=document.getElementById('genBtn');b.disabled=true;b.textContent='⚡ Generating...'})
 const PACKAGES = {{ credit_packages|tojson }};
 function openCryptoModal(pkgId){
