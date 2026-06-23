@@ -911,6 +911,10 @@ def home():
     ref_code = request.args.get('ref', session.get('ref_code',''))
     if ref_code: session['ref_code'] = ref_code
     if request.method == 'POST' and not limit_reached:
+        form_email = request.form.get('email','').strip()
+        if form_email and not user_email:
+            user_email = form_email
+            session['user_email'] = form_email
         if not user_email and not is_admin:
             error = "Please enter your email and purchase a credit package to generate copy."
         else:
