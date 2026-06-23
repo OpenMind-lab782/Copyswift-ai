@@ -1151,7 +1151,7 @@ def affiliate_dashboard():
 
 @app.route('/api/generate-image', methods=['POST'])
 def api_generate_image():
-    email = session.get('email', '')
+    email = session.get('user_email', '')
     if not email:
         return jsonify({"error": "Not logged in"}), 401
     data = request.get_json()
