@@ -492,6 +492,8 @@ input[type=hidden]{display:none}
 <div class="card">
   {% if error %}<div class="error">⚠️ {{ error }}</div>{% endif %}
   <form method="POST" id="copyForm">
+    <label>Your email</label>
+    <input type="email" name="email" placeholder="you@email.com" required value="{{ user_email or '' }}">
     <label>What are you selling?</label>
     <input type="text" name="product" placeholder="e.g. Skin glow cream, Online course..." required value="{{ product or '' }}">
     <label>Who is your buyer?</label>
