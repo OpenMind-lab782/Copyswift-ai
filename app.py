@@ -548,7 +548,7 @@ async function generateImage(){
   btn.disabled=true;btn.textContent='⏳ Generating...';
   status.style.display='block';result.style.display='none';errDiv.style.display='none';
   try{
-    const resp=await fetch('/api/generate-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:prompt})});
+    const resp=await fetch('/api/generate-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:prompt,email:document.querySelector('input[name=email]')?.value||''})});
     const data=await resp.json();
     if(data.image_url){
       document.getElementById('generatedImg').src=data.image_url;
@@ -1156,7 +1156,7 @@ def affiliate_dashboard():
 
 @app.route('/api/generate-image', methods=['POST'])
 def api_generate_image():
-    email = session.get('user_email', '')
+    email = session.get('user_email', '') or request.json.get('email', '')
     if not email:
         return jsonify({"error": "Not logged in"}), 401
     data = request.get_json()
