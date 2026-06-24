@@ -1156,10 +1156,10 @@ def affiliate_dashboard():
 
 @app.route('/api/generate-image', methods=['POST'])
 def api_generate_image():
-    email = session.get('user_email', '') or request.json.get('email', '')
+    data = request.get_json() or {}
+    email = session.get('user_email', '') or data.get('email', '')
     if not email:
         return jsonify({"error": "Not logged in"}), 401
-    data = request.get_json()
     prompt = data.get('prompt', '').strip()
     if not prompt:
         return jsonify({"error": "Prompt is required"}), 400
