@@ -516,7 +516,7 @@ input[type=hidden]{display:none}
   <div class="result-text" id="resultText">{{ result }}</div>
 </div>
 <div class="image-gen-card" style="background:#1a1a2e;border:1px solid #00d4ff33;border-radius:16px;padding:20px;margin:20px 0">
-  <div style="font-size:15px;font-weight:700;color:#00d4ff;margin-bottom:8px">🎨 Generate Ad Image (2 credits)</div>
+  <div style="font-size:15px;font-weight:700;color:#00d4ff;margin-bottom:8px">🎨 Generate Ad Image (5 credits)</div>
   <div style="font-size:12px;color:#888;margin-bottom:12px">Powered by FLUX.1 AI — describe your ideal ad image</div>
   <textarea id="imgPrompt" placeholder="e.g. A modern Nigerian woman using a smartphone app, vibrant colors, professional ad style" style="width:100%;padding:12px;background:#0d0d1a;border:1px solid #333;border-radius:10px;color:#fff;font-size:13px;resize:vertical;min-height:80px;box-sizing:border-box"></textarea>
   <button onclick="generateImage()" id="imgBtn" style="width:100%;margin-top:10px;padding:13px;background:linear-gradient(135deg,#7c3aed,#00d4ff);color:#fff;font-weight:700;font-size:15px;border:none;border-radius:10px;cursor:pointer">🖼️ Generate Image</button>
@@ -1166,15 +1166,15 @@ def api_generate_image():
     is_admin = email == os.environ.get("ADMIN_EMAIL", "")
     with get_db() as db:
         balance = get_credit_balance(email)
-        if not is_admin and balance < 2:
-            return jsonify({"error": "Insufficient credits. Image generation costs 2 credits."}), 402
+        if not is_admin and balance < 5:
+            return jsonify({"error": "Insufficient credits. Image generation costs 5 credits."}), 402
         image_url = generate_image_and_upload(prompt)
         if not image_url:
             return jsonify({"error": "Image generation failed. Please try again."}), 500
         if not is_admin:
-            db.execute("UPDATE credits SET balance = balance - 2 WHERE email=?", (email,))
+            db.execute("UPDATE credits SET balance = balance - 5 WHERE email=?", (email,))
             db.commit()
-        return jsonify({"image_url": image_url, "credits_used": 2})
+        return jsonify({"image_url": image_url, "credits_used": 5})
 
 @app.route('/api/check-pro')
 def api_check_pro():
