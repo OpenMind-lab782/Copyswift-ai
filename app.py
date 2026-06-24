@@ -560,7 +560,7 @@ async function generateImage(){
       errDiv.style.display='block';status.style.display='none';
     }
   }catch(e){
-    errDiv.textContent='Network error. Please try again.';
+    errDiv.textContent='Error: '+e.message+' | '+e.toString();
     errDiv.style.display='block';status.style.display='none';
   }
   btn.disabled=false;btn.textContent='🖼️ Generate Image';
