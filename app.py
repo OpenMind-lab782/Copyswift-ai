@@ -1163,18 +1163,16 @@ def api_generate_image():
     prompt = data.get('prompt', '').strip()
     if not prompt:
         return jsonify({"error": "Prompt is required"}), 400
+    is_admin = email == os.environ.get("ADMIN_EMAIL", "")
     with get_db() as db:
-        user = db.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
-        if not user:
-            return jsonify({"error": "User not found"}), 404
-        is_admin = email == os.environ.get("ADMIN_EMAIL", "")
-        if not is_admin and user['credits'] < 2:
+        balance = get_credit_balance(email)
+        if not is_admin and balance < 2:
             return jsonify({"error": "Insufficient credits. Image generation costs 2 credits."}), 402
         image_url = generate_image_and_upload(prompt)
         if not image_url:
             return jsonify({"error": "Image generation failed. Please try again."}), 500
         if not is_admin:
-            db.execute("UPDATE users SET credits = credits - 2 WHERE email=?", (email,))
+            db.execute("UPDATE credits SET balance = balance - 2 WHERE email=?", (email,))
             db.commit()
         return jsonify({"image_url": image_url, "credits_used": 2})
 
