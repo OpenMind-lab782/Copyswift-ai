@@ -68,8 +68,10 @@ def generate_image_and_upload(prompt):
         )
         return upload_result.get("secure_url", "")
     except Exception as e:
+        import traceback
         print(f"Image generation error: {e}")
-        return ""
+        print(traceback.format_exc())
+        return str(e)
 
 def get_usd_ngn_rate():
     """Fetch a live USD->NGN exchange rate. Falls back to a fixed rate on error."""
@@ -1170,7 +1172,7 @@ def api_generate_image():
             return jsonify({"error": "Insufficient credits. Image generation costs 5 credits."}), 402
         image_url = generate_image_and_upload(prompt)
         if not image_url:
-            return jsonify({"error": "Image generation failed. Please try again."}), 500
+            return jsonify({"error": image_url or "Image generation failed. Please try again."}), 500
         if not is_admin:
             db.execute("UPDATE credits SET balance = balance - 5 WHERE email=?", (email,))
             db.commit()
