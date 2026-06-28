@@ -73,6 +73,96 @@ def generate_image_and_upload(prompt):
         print(traceback.format_exc())
         return str(e)
 
+
+def enhance_uploaded_image(image_bytes, ad_copy_context=""):
+    """Upload user image to Cloudinary, then use Together AI to generate
+    an enhanced ad version inspired by it, return both URLs."""
+    try:
+        original_upload = cloudinary.uploader.upload(
+            image_bytes,
+            folder="copyswift_ai/originals",
+            resource_type="image"
+        )
+        original_url = original_upload.get("secure_url", "")
+        context_hint = ""
+        if ad_copy_context:
+            context_hint = f" The ad is promoting: {ad_copy_context[:200]}."
+        prompt = (
+            f"A professional, high-quality advertising image for a product or service.{context_hint} "
+            "Studio lighting, vibrant colors, clean background, commercial photography style, "
+            "eye-catching, suitable for Facebook and Instagram ads."
+        )
+        headers = {
+            "Authorization": f"Bearer {TOGETHER_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": "black-forest-labs/FLUX.1-schnell",
+            "prompt": prompt,
+            "width": 1024,
+            "height": 1024,
+            "steps": 4,
+            "n": 1,
+            "response_format": "url"
+        }
+        resp = requests.post(
+            "https://api.together.xyz/v1/images/generations",
+            headers=headers,
+            json=payload,
+            timeout=60
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        enhanced_url_raw = data["data"][0]["url"]
+        enhanced_upload = cloudinary.uploader.upload(
+            enhanced_url_raw,
+            folder="copyswift_ai/enhanced",
+            resource_type="image"
+        )
+        enhanced_url = enhanced_upload.get("secure_url", "")
+        return {"original_url": original_url, "enhanced_url": enhanced_url}
+    except Exception as e:
+        import traceback
+        print(f"Image enhancement error: {e}")
+        print(traceback.format_exc())
+        return None
+
+def generate_image_and_upload(prompt):
+    """Call Together AI FLUX.1-schnell, upload result to Cloudinary, return URL."""
+    try:
+        headers = {
+            "Authorization": f"Bearer {TOGETHER_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": "black-forest-labs/FLUX.1-schnell-Free",
+            "prompt": prompt,
+            "width": 1024,
+            "height": 1024,
+            "steps": 4,
+            "n": 1,
+            "response_format": "b64_json"
+        }
+        resp = requests.post(
+            "https://api.together.xyz/v1/images/generations",
+            headers=headers,
+            json=payload,
+            timeout=60
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        b64 = data["data"][0]["b64_json"]
+        image_bytes = base64.b64decode(b64)
+        upload_result = cloudinary.uploader.upload(
+            image_bytes,
+            folder="copyswift_ai",
+            resource_type="image"
+        )
+        return upload_result.get("secure_url", "")
+    except Exception as e:
+        print(f"Image generation error: {e}")
+        return ""
+
 def get_usd_ngn_rate():
     """Fetch a live USD->NGN exchange rate. Falls back to a fixed rate on error."""
     try:
@@ -529,6 +619,78 @@ input[type=hidden]{display:none}
   </div>
   <div id="imgError" style="color:#ff4444;font-size:13px;margin-top:10px;display:none"></div>
 </div>
+
+<div class="image-gen-card" style="background:#1a1a2e;border:1px solid #a855f733;border-radius:16px;padding:20px;margin:20px 0">
+  <div style="font-size:15px;font-weight:700;color:#a855f7;margin-bottom:8px">&#128228; Upload &amp; Enhance Your Image (6 credits)</div>
+  <div style="font-size:12px;color:#888;margin-bottom:14px">Upload your product photo - AI generates a professional ad version</div>
+  <div onclick="document.getElementById('uploadInput').click()" style="border:2px dashed #a855f744;border-radius:12px;padding:24px;text-align:center;cursor:pointer;background:#0d0d1a">
+    <div style="font-size:32px;margin-bottom:8px">&#128247;</div>
+    <div style="color:#aaa;font-size:13px">Tap to choose your product image</div>
+    <div style="color:#666;font-size:11px;margin-top:4px">PNG, JPG, WEBP supported</div>
+  </div>
+  <input type="file" id="uploadInput" accept="image/*" style="display:none" onchange="previewUpload(this)">
+  <div id="uploadPreview" style="display:none;margin-top:14px">
+    <img id="previewImg" src="" style="width:100%;border-radius:10px;border:1px solid #a855f744;max-height:200px;object-fit:cover"/>
+    <div id="uploadFileName" style="color:#888;font-size:12px;margin-top:6px;text-align:center"></div>
+  </div>
+  <textarea id="enhanceContext" placeholder="Optional: paste your ad copy here so AI can tailor the image" style="width:100%;margin-top:12px;padding:12px;background:#0d0d1a;border:1px solid #333;border-radius:10px;color:#fff;font-size:13px;resize:vertical;min-height:70px;box-sizing:border-box"></textarea>
+  <button onclick="enhanceImage()" id="enhanceBtn" style="width:100%;margin-top:10px;padding:13px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;font-weight:700;font-size:15px;border:none;border-radius:10px;cursor:pointer">&#10024; Enhance My Image (6 credits)</button>
+  <div id="enhanceStatus" style="text-align:center;color:#888;font-size:13px;margin-top:10px;display:none">&#9203; Enhancing your image, please wait 20-40 seconds...</div>
+  <div id="enhanceResult" style="margin-top:15px;display:none">
+    <div style="font-size:13px;font-weight:700;color:#a855f7;margin-bottom:8px">&#9989; Your Enhanced Ad Image:</div>
+    <img id="enhancedImg" src="" style="width:100%;border-radius:12px;border:1px solid #a855f744"/>
+    <a id="enhancedDownload" href="" download="copyswift-enhanced.png" target="_blank" style="display:block;text-align:center;margin-top:10px;color:#a855f7;font-size:13px">&#11015; Download Enhanced Image</a>
+    <div style="margin-top:12px;font-size:12px;color:#666;text-align:center">Original saved too - <a id="originalLink" href="" target="_blank" style="color:#666">view original</a></div>
+  </div>
+  <div id="enhanceError" style="color:#ff4444;font-size:13px;margin-top:10px;display:none"></div>
+</div>
+<script>
+function previewUpload(input){
+  if(input.files&&input.files[0]){
+    const reader=new FileReader();
+    reader.onload=function(e){
+      document.getElementById('previewImg').src=e.target.result;
+      document.getElementById('uploadFileName').textContent=input.files[0].name;
+      document.getElementById('uploadPreview').style.display='block';
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+async function enhanceImage(){
+  const fileInput=document.getElementById('uploadInput');
+  if(!fileInput.files||!fileInput.files[0]){alert('Please select an image first.');return;}
+  const btn=document.getElementById('enhanceBtn');
+  const status=document.getElementById('enhanceStatus');
+  const result=document.getElementById('enhanceResult');
+  const errDiv=document.getElementById('enhanceError');
+  btn.disabled=true;btn.textContent='Enhancing...';
+  status.style.display='block';result.style.display='none';errDiv.style.display='none';
+  try{
+    const formData=new FormData();
+    formData.append('image',fileInput.files[0]);
+    formData.append('ad_copy',document.getElementById('enhanceContext').value||'');
+    formData.append('email',document.querySelector('input[name=email]')?.value||'');
+    const resp=await fetch('/api/enhance-image',{method:'POST',body:formData});
+    const data=await resp.json();
+    if(data.enhanced_url){
+      document.getElementById('enhancedImg').src=data.enhanced_url;
+      document.getElementById('enhancedDownload').href=data.enhanced_url;
+      document.getElementById('originalLink').href=data.original_url||'#';
+      result.style.display='block';status.style.display='none';
+    }else{
+      errDiv.textContent=data.error||'Enhancement failed.';
+      errDiv.style.display='block';status.style.display='none';
+    }
+  }catch(e){
+    errDiv.textContent='Error: '+e.message;
+    errDiv.style.display='block';status.style.display='none';
+  }finally{
+    btn.disabled=false;btn.textContent='Enhance My Image (6 credits)';
+    status.style.display='none';
+  }
+}
+</script>
+
 {% endif %}
 {% endif %}
 <div class="features">
@@ -1177,6 +1339,36 @@ def api_generate_image():
             db.execute("UPDATE credits SET balance = balance - 5 WHERE email=?", (email,))
             db.commit()
         return jsonify({"image_url": image_url, "credits_used": 5})
+
+
+@app.route('/api/enhance-image', methods=['POST'])
+def api_enhance_image():
+    email = session.get('user_email', '') or request.form.get('email', '')
+    if not email:
+        return jsonify({'error': 'Not logged in'}), 401
+    if 'image' not in request.files:
+        return jsonify({'error': 'No image file provided'}), 400
+    file = request.files['image']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    allowed = {'png','jpg','jpeg','webp','gif'}
+    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+    if ext not in allowed:
+        return jsonify({'error': 'Please upload PNG, JPG, WEBP or GIF'}), 400
+    ad_copy_context = request.form.get('ad_copy', '').strip()
+    is_admin = email == os.environ.get('ADMIN_EMAIL', '')
+    with get_db() as db:
+        balance = get_credit_balance(email)
+        if not is_admin and balance < 6:
+            return jsonify({'error': 'Insufficient credits. Costs 6 credits.'}), 402
+        image_bytes = file.read()
+        result = enhance_uploaded_image(image_bytes, ad_copy_context)
+        if not result:
+            return jsonify({'error': 'Enhancement failed. Please try again.'}), 500
+        if not is_admin:
+            db.execute('UPDATE credits SET balance = balance - 6 WHERE email=?', (email,))
+            db.commit()
+        return jsonify({'original_url': result['original_url'], 'enhanced_url': result['enhanced_url'], 'credits_used': 6})
 
 @app.route('/api/check-pro')
 def api_check_pro():
