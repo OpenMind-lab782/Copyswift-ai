@@ -108,41 +108,7 @@ def enhance_uploaded_image(image_bytes, ad_copy_context=""):
         print(traceback.format_exc())
         return None
 
-def generate_image_and_upload(prompt):
-    """Call Together AI FLUX.1-schnell, upload result to Cloudinary, return URL."""
-    try:
-        headers = {
-            "Authorization": f"Bearer {TOGETHER_API_KEY}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "model": "black-forest-labs/FLUX.1-schnell-Free",
-            "prompt": prompt,
-            "width": 1024,
-            "height": 1024,
-            "steps": 4,
-            "n": 1,
-            "response_format": "b64_json"
-        }
-        resp = requests.post(
-            "https://api.together.xyz/v1/images/generations",
-            headers=headers,
-            json=payload,
-            timeout=60
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        b64 = data["data"][0]["b64_json"]
-        image_bytes = base64.b64decode(b64)
-        upload_result = cloudinary.uploader.upload(
-            image_bytes,
-            folder="copyswift_ai",
-            resource_type="image"
-        )
-        return upload_result.get("secure_url", "")
-    except Exception as e:
-        print(f"Image generation error: {e}")
-        return ""
+
 
 def get_usd_ngn_rate():
     """Fetch a live USD->NGN exchange rate. Falls back to a fixed rate on error."""
