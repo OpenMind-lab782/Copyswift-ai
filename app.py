@@ -557,7 +557,7 @@ input[type=hidden]{display:none}
 <div class="image-gen-card" style="background:#1a1a2e;border:1px solid #00d4ff33;border-radius:16px;padding:20px;margin:20px 0">
   <div style="font-size:15px;font-weight:700;color:#00d4ff;margin-bottom:8px">🎨 Generate Ad Image (5 credits)</div>
   <div style="font-size:12px;color:#888;margin-bottom:12px">Powered by FLUX.1 AI — describe your ideal ad image</div>
-  <textarea id="imgPrompt" placeholder="e.g. A modern Nigerian woman using a smartphone app, vibrant colors, professional ad style" style="width:100%;padding:12px;background:#0d0d1a;border:1px solid #333;border-radius:10px;color:#fff;font-size:13px;resize:vertical;min-height:80px;box-sizing:border-box"></textarea>
+  <textarea id="imgPrompt" placeholder="Describe a VISUAL SCENE only e.g. A professional shop with products on display, bright lighting, vibrant colors. DO NOT paste your ad copy here." style="width:100%;padding:12px;background:#0d0d1a;border:1px solid #333;border-radius:10px;color:#fff;font-size:13px;resize:vertical;min-height:80px;box-sizing:border-box"></textarea>
   <button onclick="generateImage()" id="imgBtn" style="width:100%;margin-top:10px;padding:13px;background:linear-gradient(135deg,#7c3aed,#00d4ff);color:#fff;font-weight:700;font-size:15px;border:none;border-radius:10px;cursor:pointer">🖼️ Generate Image</button>
   <div id="imgStatus" style="text-align:center;color:#888;font-size:13px;margin-top:10px;display:none">⏳ Generating image, please wait 15-30 seconds...</div>
   <div id="imgResult" style="margin-top:15px;display:none">
