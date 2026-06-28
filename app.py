@@ -39,13 +39,14 @@ cloudinary.config(
 def generate_image_and_upload(prompt):
     """Call Together AI FLUX.1-schnell, upload result to Cloudinary, return URL."""
     try:
+        safe_prompt = prompt + " No text, no words, no letters, no writing, no watermarks. English only visual style."
         headers = {
             "Authorization": f"Bearer {TOGETHER_API_KEY}",
             "Content-Type": "application/json"
         }
         payload = {
             "model": "black-forest-labs/FLUX.1-schnell",
-            "prompt": prompt,
+            "prompt": safe_prompt,
             "width": 1024,
             "height": 1024,
             "steps": 4,
@@ -71,12 +72,12 @@ def generate_image_and_upload(prompt):
         import traceback
         print(f"Image generation error: {e}")
         print(traceback.format_exc())
-        return str(e)
+        return ""
 
 
 def enhance_uploaded_image(image_bytes, ad_copy_context=""):
-    """Upload user image to Cloudinary, then use Together AI to generate
-    an enhanced ad version inspired by it, return both URLs."""
+    """Upload user image to Cloudinary and apply professional
+    ad enhancement transformations. No AI generation — stays true to original."""
     try:
         original_upload = cloudinary.uploader.upload(
             image_bytes,
@@ -84,42 +85,22 @@ def enhance_uploaded_image(image_bytes, ad_copy_context=""):
             resource_type="image"
         )
         original_url = original_upload.get("secure_url", "")
-        context_hint = ""
-        if ad_copy_context:
-            context_hint = f" The ad is promoting: {ad_copy_context[:200]}."
-        prompt = (
-            f"A professional, high-quality advertising image for a product or service.{context_hint} "
-            "Studio lighting, vibrant colors, clean background, commercial photography style, "
-            "eye-catching, suitable for Facebook and Instagram ads."
-        )
-        headers = {
-            "Authorization": f"Bearer {TOGETHER_API_KEY}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "model": "black-forest-labs/FLUX.1-schnell",
-            "prompt": prompt,
-            "width": 1024,
-            "height": 1024,
-            "steps": 4,
-            "n": 1,
-            "response_format": "url"
-        }
-        resp = requests.post(
-            "https://api.together.xyz/v1/images/generations",
-            headers=headers,
-            json=payload,
-            timeout=60
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        enhanced_url_raw = data["data"][0]["url"]
+        # Apply professional enhancement via Cloudinary transformations
+        # Stays true to the original image — no AI hallucination
         enhanced_upload = cloudinary.uploader.upload(
-            enhanced_url_raw,
+            image_bytes,
             folder="copyswift_ai/enhanced",
-            resource_type="image"
+            resource_type="image",
+            transformation=[
+                {"effect": "auto_brightness"},
+                {"effect": "auto_contrast"},
+                {"effect": "vibrance:40"},
+                {"effect": "saturation:20"},
+                {"effect": "sharpen:80"},
+                {"quality": "auto:best"}
+            ]
         )
-        enhanced_url = enhanced_upload.get("secure_url", "")
+        enhanced_url = enhanced_upload.get("secure_url", "") or original_url
         return {"original_url": original_url, "enhanced_url": enhanced_url}
     except Exception as e:
         import traceback
