@@ -112,8 +112,8 @@ def enhance_uploaded_image(image_bytes, ad_copy_context=""):
 
 
 
-def generate_talking_video(script_text, presenter_id='noelle'):
-    """Call D-ID API to generate a talking avatar video from text, upload to Cloudinary, return URL."""
+def start_talking_video(script_text, presenter_id='noelle'):
+    """Start a D-ID video generation job. Returns talk_id immediately (non-blocking)."""
     try:
         headers = {
             'Authorization': f'Basic {DID_API_KEY}',
@@ -127,40 +127,45 @@ def generate_talking_video(script_text, presenter_id='noelle'):
             },
             'source_url': 'https://create-images-results.d-id.com/api_docs/assets/noelle.jpeg'
         }
-        resp = requests.post('https://api.d-id.com/talks', headers=headers, json=payload, timeout=30)
+        resp = requests.post('https://api.d-id.com/talks', headers=headers, json=payload, timeout=20)
         if resp.status_code >= 400:
             print('D-ID error response body:', resp.text)
         resp.raise_for_status()
-        talk_id = resp.json().get('id')
-        if not talk_id:
-            return None
-        import time
-        video_url = None
-        for _ in range(30):
-            time.sleep(4)
-            check = requests.get(f'https://api.d-id.com/talks/{talk_id}', headers=headers, timeout=20)
-            check.raise_for_status()
-            data = check.json()
-            status = data.get('status')
-            if status == 'done':
-                video_url = data.get('result_url')
-                break
-            elif status == 'error':
-                print('D-ID generation error:', data)
-                return None
-        if not video_url:
-            return None
-        upload_result = cloudinary.uploader.upload(
-            video_url,
-            folder='copyswift_ai/videos',
-            resource_type='video'
-        )
-        return upload_result.get('secure_url', '')
+        return resp.json().get('id')
     except Exception as e:
         import traceback
-        print(f'Video generation error: {e}')
+        print(f'Video start error: {e}')
         print(traceback.format_exc())
         return None
+
+def check_talking_video(talk_id):
+    """Check status of a D-ID video job. Returns dict with status and url if ready."""
+    try:
+        headers = {
+            'Authorization': f'Basic {DID_API_KEY}',
+            'Content-Type': 'application/json'
+        }
+        check = requests.get(f'https://api.d-id.com/talks/{talk_id}', headers=headers, timeout=15)
+        check.raise_for_status()
+        data = check.json()
+        status = data.get('status')
+        if status == 'done':
+            raw_url = data.get('result_url')
+            upload_result = cloudinary.uploader.upload(
+                raw_url,
+                folder='copyswift_ai/videos',
+                resource_type='video'
+            )
+            return {'status': 'done', 'video_url': upload_result.get('secure_url', '')}
+        elif status == 'error':
+            return {'status': 'error'}
+        else:
+            return {'status': 'pending'}
+    except Exception as e:
+        import traceback
+        print(f'Video check error: {e}')
+        print(traceback.format_exc())
+        return {'status': 'error'}
 
 def get_usd_ngn_rate():
     """Fetch a live USD->NGN exchange rate. Falls back to a fixed rate on error."""
@@ -663,25 +668,56 @@ async function generateVideo(){
   const status=document.getElementById('videoStatus');
   const result=document.getElementById('videoResult');
   const errDiv=document.getElementById('videoError');
-  btn.disabled=true;btn.textContent='Rendering...';
+  btn.disabled=true;btn.textContent='Starting...';
   status.style.display='block';result.style.display='none';errDiv.style.display='none';
+  status.textContent='Starting video generation...';
   try{
     const resp=await fetch('/api/generate-video',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({script:script,email:document.querySelector('input[name=email]')?.value||''})});
     const data=await resp.json();
-    if(data.video_url){
-      document.getElementById('generatedVideo').src=data.video_url;
-      document.getElementById('videoDownload').href=data.video_url;
-      result.style.display='block';status.style.display='none';
-    }else{
-      errDiv.textContent=data.error||'Video generation failed.';
+    if(!data.talk_id){
+      errDiv.textContent=data.error||'Video generation failed to start.';
       errDiv.style.display='block';status.style.display='none';
+      btn.disabled=false;btn.textContent='Generate Talking Video (15 credits)';
+      return;
     }
+    btn.textContent='Rendering...';
+    status.textContent='Rendering your video, please wait 30-90 seconds...';
+    let attempts=0;
+    const poll=setInterval(async ()=>{
+      attempts++;
+      if(attempts>30){
+        clearInterval(poll);
+        errDiv.textContent='Video is taking longer than expected. Please try again.';
+        errDiv.style.display='block';status.style.display='none';
+        btn.disabled=false;btn.textContent='Generate Talking Video (15 credits)';
+        return;
+      }
+      try{
+        const checkResp=await fetch('/api/check-video/'+data.talk_id);
+        const checkData=await checkResp.json();
+        if(checkData.status==='done'){
+          clearInterval(poll);
+          document.getElementById('generatedVideo').src=checkData.video_url;
+          document.getElementById('videoDownload').href=checkData.video_url;
+          result.style.display='block';status.style.display='none';
+          btn.disabled=false;btn.textContent='Generate Talking Video (15 credits)';
+        }else if(checkData.status==='error'){
+          clearInterval(poll);
+          errDiv.textContent='Video generation failed. Please try again.';
+          errDiv.style.display='block';status.style.display='none';
+          btn.disabled=false;btn.textContent='Generate Talking Video (15 credits)';
+        }
+      }catch(e){
+        clearInterval(poll);
+        errDiv.textContent='Error checking video status: '+e.message;
+        errDiv.style.display='block';status.style.display='none';
+        btn.disabled=false;btn.textContent='Generate Talking Video (15 credits)';
+      }
+    },4000);
   }catch(e){
     errDiv.textContent='Error: '+e.message;
     errDiv.style.display='block';status.style.display='none';
-  }finally{
     btn.disabled=false;btn.textContent='Generate Talking Video (15 credits)';
-    status.style.display='none';
   }
 }
 </script>
@@ -1426,13 +1462,18 @@ def api_generate_video():
         balance = get_credit_balance(email)
         if not is_admin and balance < 15:
             return jsonify({'error': 'Insufficient credits. Video generation costs 15 credits.'}), 402
-        video_url = generate_talking_video(script_text)
-        if not video_url:
-            return jsonify({'error': 'Video generation failed. Please try again.'}), 500
+        talk_id = start_talking_video(script_text)
+        if not talk_id:
+            return jsonify({'error': 'Video generation failed to start. Please try again.'}), 500
         if not is_admin:
             db.execute('UPDATE credits SET balance = balance - 15 WHERE email=?', (email,))
             db.commit()
-        return jsonify({'video_url': video_url, 'credits_used': 15})
+        return jsonify({'talk_id': talk_id})
+
+@app.route('/api/check-video/<talk_id>')
+def api_check_video(talk_id):
+    result = check_talking_video(talk_id)
+    return jsonify(result)
 
 @app.route('/api/check-pro')
 def api_check_pro():
