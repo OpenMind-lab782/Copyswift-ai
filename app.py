@@ -112,7 +112,7 @@ def enhance_uploaded_image(image_bytes, ad_copy_context=""):
 
 
 
-def generate_talking_video(script_text, presenter_id='amy-jcwCkr1grs'):
+def generate_talking_video(script_text, presenter_id='noelle'):
     """Call D-ID API to generate a talking avatar video from text, upload to Cloudinary, return URL."""
     try:
         headers = {
@@ -125,7 +125,7 @@ def generate_talking_video(script_text, presenter_id='amy-jcwCkr1grs'):
                 'input': script_text[:500],
                 'provider': {'type': 'microsoft', 'voice_id': 'en-US-JennyNeural'}
             },
-            'source_url': f'https://create-images-results.d-id.com/DefaultPresenters/{presenter_id}/image.jpeg'
+            'source_url': 'https://create-images-results.d-id.com/api_docs/assets/noelle.jpeg'
         }
         resp = requests.post('https://api.d-id.com/talks', headers=headers, json=payload, timeout=30)
         if resp.status_code >= 400:
