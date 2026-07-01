@@ -128,6 +128,8 @@ def generate_talking_video(script_text, presenter_id='amy-jcwCkr1grs'):
             'source_url': f'https://create-images-results.d-id.com/DefaultPresenters/{presenter_id}/image.jpeg'
         }
         resp = requests.post('https://api.d-id.com/talks', headers=headers, json=payload, timeout=30)
+        if resp.status_code >= 400:
+            print('D-ID error response body:', resp.text)
         resp.raise_for_status()
         talk_id = resp.json().get('id')
         if not talk_id:
