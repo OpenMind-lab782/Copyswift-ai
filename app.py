@@ -30,6 +30,7 @@ FALLBACK_USD_NGN_RATE = 1600.0  # used only if live rate fetch fails
 
 # --- Together AI + Cloudinary Config ---------------------------------------
 TOGETHER_API_KEY = os.environ.get("TOGETHER_API_KEY", "")
+DID_API_KEY = os.environ.get("DID_API_KEY", "")
 cloudinary.config(
     cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME", ""),
     api_key=os.environ.get("CLOUDINARY_API_KEY", ""),
@@ -109,6 +110,55 @@ def enhance_uploaded_image(image_bytes, ad_copy_context=""):
         return None
 
 
+
+
+def generate_talking_video(script_text, presenter_id='amy-jcwCkr1grs'):
+    """Call D-ID API to generate a talking avatar video from text, upload to Cloudinary, return URL."""
+    try:
+        headers = {
+            'Authorization': f'Basic {DID_API_KEY}',
+            'Content-Type': 'application/json'
+        }
+        payload = {
+            'script': {
+                'type': 'text',
+                'input': script_text[:500],
+                'provider': {'type': 'microsoft', 'voice_id': 'en-US-JennyNeural'}
+            },
+            'source_url': f'https://create-images-results.d-id.com/DefaultPresenters/{presenter_id}/image.jpeg'
+        }
+        resp = requests.post('https://api.d-id.com/talks', headers=headers, json=payload, timeout=30)
+        resp.raise_for_status()
+        talk_id = resp.json().get('id')
+        if not talk_id:
+            return None
+        import time
+        video_url = None
+        for _ in range(30):
+            time.sleep(4)
+            check = requests.get(f'https://api.d-id.com/talks/{talk_id}', headers=headers, timeout=20)
+            check.raise_for_status()
+            data = check.json()
+            status = data.get('status')
+            if status == 'done':
+                video_url = data.get('result_url')
+                break
+            elif status == 'error':
+                print('D-ID generation error:', data)
+                return None
+        if not video_url:
+            return None
+        upload_result = cloudinary.uploader.upload(
+            video_url,
+            folder='copyswift_ai/videos',
+            resource_type='video'
+        )
+        return upload_result.get('secure_url', '')
+    except Exception as e:
+        import traceback
+        print(f'Video generation error: {e}')
+        print(traceback.format_exc())
+        return None
 
 def get_usd_ngn_rate():
     """Fetch a live USD->NGN exchange rate. Falls back to a fixed rate on error."""
@@ -591,6 +641,48 @@ input[type=hidden]{display:none}
   </div>
   <div id="enhanceError" style="color:#ff4444;font-size:13px;margin-top:10px;display:none"></div>
 </div>
+<div class="image-gen-card" style="background:#1a1a2e;border:1px solid #ff6b3533;border-radius:16px;padding:20px;margin:20px 0">
+  <div style="font-size:15px;font-weight:700;color:#ff6b35;margin-bottom:8px">Turn Your Ad Into a Talking Video (15 credits)</div>
+  <div style="font-size:12px;color:#888;margin-bottom:14px">AI presenter reads your ad copy out loud</div>
+  <textarea id="videoScript" placeholder="Paste or type the script you want the AI presenter to say (max 500 characters)" style="width:100%;padding:12px;background:#0d0d1a;border:1px solid #333;border-radius:10px;color:#fff;font-size:13px;resize:vertical;min-height:90px;box-sizing:border-box" maxlength="500"></textarea>
+  <button onclick="generateVideo()" id="videoBtn" style="width:100%;margin-top:10px;padding:13px;background:linear-gradient(135deg,#ff6b35,#f7931e);color:#fff;font-weight:700;font-size:15px;border:none;border-radius:10px;cursor:pointer">Generate Talking Video (15 credits)</button>
+  <div id="videoStatus" style="text-align:center;color:#888;font-size:13px;margin-top:10px;display:none">Rendering your video, please wait 30-90 seconds...</div>
+  <div id="videoResult" style="margin-top:15px;display:none">
+    <video id="generatedVideo" controls style="width:100%;border-radius:12px;border:1px solid #ff6b3544"></video>
+    <a id="videoDownload" href="" download="copyswift-video.mp4" target="_blank" style="display:block;text-align:center;margin-top:10px;color:#ff6b35;font-size:13px">Download Video</a>
+  </div>
+  <div id="videoError" style="color:#ff4444;font-size:13px;margin-top:10px;display:none"></div>
+</div>
+<script>
+async function generateVideo(){
+  const script=document.getElementById('videoScript').value.trim();
+  if(!script){alert('Please enter a script for the video first.');return;}
+  const btn=document.getElementById('videoBtn');
+  const status=document.getElementById('videoStatus');
+  const result=document.getElementById('videoResult');
+  const errDiv=document.getElementById('videoError');
+  btn.disabled=true;btn.textContent='Rendering...';
+  status.style.display='block';result.style.display='none';errDiv.style.display='none';
+  try{
+    const resp=await fetch('/api/generate-video',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({script:script,email:document.querySelector('input[name=email]')?.value||''})});
+    const data=await resp.json();
+    if(data.video_url){
+      document.getElementById('generatedVideo').src=data.video_url;
+      document.getElementById('videoDownload').href=data.video_url;
+      result.style.display='block';status.style.display='none';
+    }else{
+      errDiv.textContent=data.error||'Video generation failed.';
+      errDiv.style.display='block';status.style.display='none';
+    }
+  }catch(e){
+    errDiv.textContent='Error: '+e.message;
+    errDiv.style.display='block';status.style.display='none';
+  }finally{
+    btn.disabled=false;btn.textContent='Generate Talking Video (15 credits)';
+    status.style.display='none';
+  }
+}
+</script>
 <script>
 function previewUpload(input){
   if(input.files&&input.files[0]){
@@ -1316,6 +1408,29 @@ def api_enhance_image():
             db.execute('UPDATE credits SET balance = balance - 6 WHERE email=?', (email,))
             db.commit()
         return jsonify({'original_url': result['original_url'], 'enhanced_url': result['enhanced_url'], 'credits_used': 6})
+
+
+@app.route('/api/generate-video', methods=['POST'])
+def api_generate_video():
+    data = request.get_json() or {}
+    email = session.get('user_email', '') or data.get('email', '')
+    if not email:
+        return jsonify({'error': 'Not logged in'}), 401
+    script_text = data.get('script', '').strip()
+    if not script_text:
+        return jsonify({'error': 'Script text is required'}), 400
+    is_admin = email == os.environ.get('ADMIN_EMAIL', '')
+    with get_db() as db:
+        balance = get_credit_balance(email)
+        if not is_admin and balance < 15:
+            return jsonify({'error': 'Insufficient credits. Video generation costs 15 credits.'}), 402
+        video_url = generate_talking_video(script_text)
+        if not video_url:
+            return jsonify({'error': 'Video generation failed. Please try again.'}), 500
+        if not is_admin:
+            db.execute('UPDATE credits SET balance = balance - 15 WHERE email=?', (email,))
+            db.commit()
+        return jsonify({'video_url': video_url, 'credits_used': 15})
 
 @app.route('/api/check-pro')
 def api_check_pro():
