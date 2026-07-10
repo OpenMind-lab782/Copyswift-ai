@@ -235,6 +235,16 @@ def init_db():
         db.execute("CREATE TABLE IF NOT EXISTS affiliates (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL, ref_code TEXT UNIQUE NOT NULL, wallet_coin TEXT DEFAULT 'USDT', wallet_address TEXT DEFAULT '', total_earned REAL DEFAULT 0, pending_payout REAL DEFAULT 0, created_at TEXT DEFAULT (datetime('now')))")
         db.execute("CREATE TABLE IF NOT EXISTS referrals (id INTEGER PRIMARY KEY AUTOINCREMENT, ref_code TEXT NOT NULL, subscriber_email TEXT NOT NULL, amount_earned REAL DEFAULT 2.0, status TEXT DEFAULT 'pending', created_at TEXT DEFAULT (datetime('now')), paid_at TEXT)")
         db.execute("CREATE TABLE IF NOT EXISTS customer_referrals (email TEXT PRIMARY KEY, ref_code TEXT NOT NULL, created_at TEXT DEFAULT (datetime('now')))")
+        db.execute("""CREATE TABLE IF NOT EXISTS business_profiles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT NOT NULL,
+            business_name TEXT NOT NULL,
+            product TEXT NOT NULL,
+            audience TEXT NOT NULL,
+            tone TEXT DEFAULT 'Professional',
+            is_active INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now'))
+        )""")
         try:
             db.execute("ALTER TABLE credit_purchases ADD COLUMN ref_code TEXT DEFAULT \'\'")
         except Exception:
@@ -282,6 +292,43 @@ def add_credits(email, ads):
                    "ON CONFLICT(email) DO UPDATE SET balance = balance + ?",
                    (email, ads, ads))
         db.commit()
+
+def get_business_profiles(email):
+    with get_db() as db:
+        rows = db.execute("SELECT * FROM business_profiles WHERE email=? ORDER BY created_at ASC", (email,)).fetchall()
+        return [dict(r) for r in rows]
+
+def get_active_business_profile(email):
+    with get_db() as db:
+        row = db.execute("SELECT * FROM business_profiles WHERE email=? AND is_active=1", (email,)).fetchone()
+        return dict(row) if row else None
+
+def create_business_profile(email, business_name, product, audience, tone):
+    with get_db() as db:
+        existing = db.execute("SELECT COUNT(*) as c FROM business_profiles WHERE email=?", (email,)).fetchone()
+        is_first = existing['c'] == 0
+        db.execute(
+            "INSERT INTO business_profiles (email, business_name, product, audience, tone, is_active) VALUES (?,?,?,?,?,?)",
+            (email, business_name, product, audience, tone, 1 if is_first else 0)
+        )
+        db.commit()
+        new_id = db.execute("SELECT last_insert_rowid() as id").fetchone()['id']
+        return new_id
+
+def set_active_business_profile(email, profile_id):
+    with get_db() as db:
+        db.execute("UPDATE business_profiles SET is_active=0 WHERE email=?", (email,))
+        db.execute("UPDATE business_profiles SET is_active=1 WHERE id=? AND email=?", (profile_id, email))
+        db.commit()
+
+def update_business_profile(email, profile_id, business_name, product, audience, tone):
+    with get_db() as db:
+        db.execute(
+            "UPDATE business_profiles SET business_name=?, product=?, audience=?, tone=? WHERE id=? AND email=?",
+            (business_name, product, audience, tone, profile_id, email)
+        )
+        db.commit()
+
 
 def deduct_credit(email):
     with get_db() as db:
@@ -1474,6 +1521,58 @@ def api_generate_video():
 def api_check_video(talk_id):
     result = check_talking_video(talk_id)
     return jsonify(result)
+
+@app.route('/api/business-profiles', methods=['GET'])
+def api_get_business_profiles():
+    email = session.get('user_email', '') or request.args.get('email', '')
+    if not email:
+        return jsonify({"error": "Not logged in"}), 401
+    profiles = get_business_profiles(email)
+    return jsonify({"profiles": profiles})
+
+@app.route('/api/business-profiles', methods=['POST'])
+def api_create_business_profile():
+    data = request.get_json() or {}
+    email = session.get('user_email', '') or data.get('email', '')
+    if not email:
+        return jsonify({"error": "Not logged in"}), 401
+    business_name = data.get('business_name', '').strip()
+    product = data.get('product', '').strip()
+    audience = data.get('audience', '').strip()
+    tone = data.get('tone', 'Professional').strip()
+    if not business_name or not product:
+        return jsonify({"error": "Business name and product are required"}), 400
+    new_id = create_business_profile(email, business_name, product, audience, tone)
+    set_active_business_profile(email, new_id)
+    return jsonify({"success": True, "profile_id": new_id})
+
+@app.route('/api/business-profiles/activate', methods=['POST'])
+def api_activate_business_profile():
+    data = request.get_json() or {}
+    email = session.get('user_email', '') or data.get('email', '')
+    if not email:
+        return jsonify({"error": "Not logged in"}), 401
+    profile_id = data.get('profile_id')
+    if not profile_id:
+        return jsonify({"error": "profile_id is required"}), 400
+    set_active_business_profile(email, profile_id)
+    return jsonify({"success": True})
+
+@app.route('/api/business-profiles/update', methods=['POST'])
+def api_update_business_profile():
+    data = request.get_json() or {}
+    email = session.get('user_email', '') or data.get('email', '')
+    if not email:
+        return jsonify({"error": "Not logged in"}), 401
+    profile_id = data.get('profile_id')
+    business_name = data.get('business_name', '').strip()
+    product = data.get('product', '').strip()
+    audience = data.get('audience', '').strip()
+    tone = data.get('tone', 'Professional').strip()
+    if not profile_id or not business_name or not product:
+        return jsonify({"error": "profile_id, business_name and product are required"}), 400
+    update_business_profile(email, profile_id, business_name, product, audience, tone)
+    return jsonify({"success": True})
 
 @app.route('/api/check-pro')
 def api_check_pro():
