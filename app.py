@@ -636,6 +636,34 @@ input[type=hidden]{display:none}
   <form method="POST" id="copyForm">
     <label>Your email</label>
     <input type="email" name="email" placeholder="you@email.com" required value="{{ user_email or '' }}">
+
+    <div id="bizProfileSection" style="margin-bottom:16px">
+      <label>Business Profile</label>
+      <select id="bizProfileSelect" onchange="onProfileChange()" style="width:100%;padding:12px 15px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;margin-bottom:8px">
+        <option value="">+ Create New Business Profile</option>
+      </select>
+      <div id="newProfileForm" style="display:none;background:#1a1a2e;border:1px solid #00d4ff33;border-radius:12px;padding:16px;margin-bottom:8px">
+        <label style="font-size:13px">Business Name</label>
+        <input type="text" id="bizName" placeholder="e.g. Skin Glow Cosmetics" style="width:100%;padding:10px;background:#0d0d1a;border:1px solid #333;border-radius:8px;color:#fff;font-size:14px;margin-bottom:10px;box-sizing:border-box">
+        <label style="font-size:13px">Tone / Language Style</label>
+        <select id="bizTone" style="width:100%;padding:10px;background:#0d0d1a;border:1px solid #333;border-radius:8px;color:#fff;font-size:14px;margin-bottom:10px">
+          <option>Professional</option>
+          <option>Casual</option>
+          <option>Funny/Playful</option>
+          <option>Nigerian Pidgin English</option>
+          <option>Yoruba</option>
+          <option>Igbo</option>
+          <option>Hausa</option>
+          <option>Urhobo</option>
+          <option>Isoko</option>
+          <option>Ijaw</option>
+          <option>Setswana</option>
+          <option>Zulu</option>
+        </select>
+        <button type="button" onclick="saveBizProfile()" style="width:100%;padding:12px;background:linear-gradient(135deg,#7c3aed,#00d4ff);color:#fff;font-weight:700;border:none;border-radius:8px;cursor:pointer">💾 Save Business Profile</button>
+      </div>
+    </div>
+
     <label>What are you selling?</label>
     <input type="text" name="product" placeholder="e.g. Skin glow cream, Online course..." required value="{{ product or '' }}">
     <label>Who is your buyer?</label>
@@ -825,6 +853,77 @@ async function enhanceImage(){
 <div style="text-align:center;font-size:13px;color:#888;margin:20px 0">Need help? Email <a href="mailto:supportcopyswiftai@gmail.com" style="color:#00d4ff">supportcopyswiftai@gmail.com</a></div>
 <script>
 function selectType(key,el){document.querySelectorAll('.copy-type-btn').forEach(b=>b.classList.remove('selected'));el.classList.add('selected');document.getElementById('copy_type_input').value=key}
+let bizProfiles = [];
+async function loadBizProfiles(){
+  const email = document.querySelector('input[name=email]').value.trim();
+  if(!email) return;
+  try{
+    const resp = await fetch('/api/business-profiles?email=' + encodeURIComponent(email));
+    const data = await resp.json();
+    bizProfiles = data.profiles || [];
+    const sel = document.getElementById('bizProfileSelect');
+    sel.innerHTML = '<option value="">+ Create New Business Profile</option>';
+    let activeId = null;
+    bizProfiles.forEach(p=>{
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = p.business_name;
+      if(p.is_active){ opt.selected = true; activeId = p.id; }
+      sel.appendChild(opt);
+    });
+    if(activeId){
+      const active = bizProfiles.find(p=>p.id===activeId);
+      applyProfileToForm(active);
+      document.getElementById('newProfileForm').style.display = 'none';
+    } else if(bizProfiles.length===0){
+      document.getElementById('newProfileForm').style.display = 'block';
+    }
+  }catch(e){ console.log('Could not load business profiles', e); }
+}
+function applyProfileToForm(p){
+  if(!p) return;
+  document.querySelector('input[name=product]').value = p.product || '';
+  document.querySelector('input[name=audience]').value = p.audience || '';
+}
+async function onProfileChange(){
+  const sel = document.getElementById('bizProfileSelect');
+  const val = sel.value;
+  const newForm = document.getElementById('newProfileForm');
+  if(!val){
+    newForm.style.display = 'block';
+    return;
+  }
+  newForm.style.display = 'none';
+  const email = document.querySelector('input[name=email]').value.trim();
+  await fetch('/api/business-profiles/activate', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email: email, profile_id: parseInt(val)})});
+  const p = bizProfiles.find(x=>x.id===parseInt(val));
+  applyProfileToForm(p);
+}
+async function saveBizProfile(){
+  const email = document.querySelector('input[name=email]').value.trim();
+  const bizName = document.getElementById('bizName').value.trim();
+  const product = document.querySelector('input[name=product]').value.trim();
+  const audience = document.querySelector('input[name=audience]').value.trim();
+  const tone = document.getElementById('bizTone').value;
+  if(!email){ alert('Please enter your email first.'); return; }
+  if(!bizName || !product){ alert('Please enter a business name and what you are selling.'); return; }
+  const resp = await fetch('/api/business-profiles', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email, business_name: bizName, product, audience, tone})});
+  const data = await resp.json();
+  if(data.success){
+    document.getElementById('bizName').value='';
+    await loadBizProfiles();
+  }else{
+    alert(data.error || 'Could not save business profile.');
+  }
+}
+document.addEventListener('DOMContentLoaded', function(){
+  const emailInput = document.querySelector('input[name=email]');
+  if(emailInput){
+    if(emailInput.value.trim()) loadBizProfiles();
+    emailInput.addEventListener('blur', loadBizProfiles);
+  }
+});
+
 function copyResult(){const t=document.getElementById('resultText').innerText;navigator.clipboard.writeText(t).then(()=>{const b=document.querySelector('.copy-btn');b.textContent='✅ Copied!';setTimeout(()=>b.textContent='📋 Copy',2000)})}
 async function generateImage(){
   const prompt=document.getElementById('imgPrompt').value.trim();
