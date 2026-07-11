@@ -677,7 +677,33 @@ input[type=hidden]{display:none}
     </div>
     <input type="hidden" name="copy_type" id="copy_type_input" value="{{ selected_type or 'ad' }}">
     <button type="submit" class="generate-btn" id="genBtn">⚡ Generate Copy ({{ credits_balance }} left)</button>
+    <button type="button" onclick="generateBundle()" id="bundleBtn" style="width:100%;margin-top:10px;padding:15px;background:linear-gradient(135deg,#ff6b6b,#feca57);color:#fff;font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;border:none;border-radius:12px;cursor:pointer">🎯 Generate Full Campaign (3 credits)</button>
+    <div id="bundleStatus" style="text-align:center;color:#888;font-size:13px;margin-top:10px;display:none">⏳ Generating your full campaign, please wait...</div>
+    <div id="bundleError" style="color:#ff4444;font-size:13px;margin-top:10px;display:none"></div>
   </form>
+</div>
+<div id="bundleResults" style="display:none;max-width:540px;margin:0 auto 20px">
+  <div class="result-card" style="margin-bottom:12px">
+    <div class="result-header">
+      <span class="result-label">📣 Facebook / Instagram Ad</span>
+      <button class="copy-btn" onclick="copyBundleItem('ad')">📋 Copy</button>
+    </div>
+    <div class="result-text" id="bundleAdText"></div>
+  </div>
+  <div class="result-card" style="margin-bottom:12px">
+    <div class="result-header">
+      <span class="result-label">💬 WhatsApp Sales Message</span>
+      <button class="copy-btn" onclick="copyBundleItem('whatsapp')">📋 Copy</button>
+    </div>
+    <div class="result-text" id="bundleWhatsappText"></div>
+  </div>
+  <div class="result-card">
+    <div class="result-header">
+      <span class="result-label">📧 Email Campaign</span>
+      <button class="copy-btn" onclick="copyBundleItem('email')">📋 Copy</button>
+    </div>
+    <div class="result-text" id="bundleEmailText"></div>
+  </div>
 </div>
 {% if result %}
 <div class="result-card">
@@ -854,6 +880,52 @@ async function enhanceImage(){
 <div style="text-align:center;font-size:13px;color:#888;margin:20px 0">Need help? Email <a href="mailto:supportcopyswiftai@gmail.com" style="color:#00d4ff">supportcopyswiftai@gmail.com</a></div>
 <script>
 function selectType(key,el){document.querySelectorAll('.copy-type-btn').forEach(b=>b.classList.remove('selected'));el.classList.add('selected');document.getElementById('copy_type_input').value=key}
+let bundleData = {};
+async function generateBundle(){
+  const email = document.querySelector('input[name=email]').value.trim();
+  const product = document.querySelector('input[name=product]').value.trim();
+  const audience = document.querySelector('input[name=audience]').value.trim();
+  if(!email){ alert('Please enter your email first.'); return; }
+  if(!product){ alert('Please enter what you are selling first.'); return; }
+  const btn = document.getElementById('bundleBtn');
+  const status = document.getElementById('bundleStatus');
+  const errDiv = document.getElementById('bundleError');
+  const resultsDiv = document.getElementById('bundleResults');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating...';
+  status.style.display = 'block';
+  errDiv.style.display = 'none';
+  resultsDiv.style.display = 'none';
+  try{
+    const resp = await fetch('/api/generate-bundle', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email, product, audience})});
+    const data = await resp.json();
+    if(data.success){
+      bundleData = data.results;
+      document.getElementById('bundleAdText').textContent = data.results.ad;
+      document.getElementById('bundleWhatsappText').textContent = data.results.whatsapp;
+      document.getElementById('bundleEmailText').textContent = data.results.email;
+      resultsDiv.style.display = 'block';
+      status.style.display = 'none';
+    }else{
+      errDiv.textContent = data.error || 'Campaign generation failed.';
+      errDiv.style.display = 'block';
+      status.style.display = 'none';
+    }
+  }catch(e){
+    errDiv.textContent = 'Network error. Please try again.';
+    errDiv.style.display = 'block';
+    status.style.display = 'none';
+  }
+  btn.disabled = false;
+  btn.textContent = '🎯 Generate Full Campaign (3 credits)';
+}
+function copyBundleItem(key){
+  const text = bundleData[key] || '';
+  navigator.clipboard.writeText(text).then(()=>{
+    alert('Copied to clipboard!');
+  });
+}
+
 let bizProfiles = [];
 async function loadBizProfiles(){
   const email = document.querySelector('input[name=email]').value.trim();
