@@ -1310,7 +1310,13 @@ def home():
             audience = request.form.get('audience','').strip() or 'customers'
             selected_type = request.form.get('copy_type','ad')
             if selected_type not in COPY_TYPES: selected_type = 'ad'
-            prompt = COPY_TYPES[selected_type]['prompt'].format(product=product, audience=audience)
+            base_prompt = COPY_TYPES[selected_type]['prompt'].format(product=product, audience=audience)
+            active_profile = get_active_business_profile(user_email) if user_email else None
+            tone = active_profile['tone'] if active_profile else 'Professional'
+            if tone and tone != 'Professional':
+                prompt = f"{base_prompt}\n\nIMPORTANT: Write this in a {tone} tone/style. If {tone} refers to a language (e.g. Yoruba, Igbo, Hausa, Zulu, Setswana), write the entire copy in that language. If it refers to a style (e.g. Casual, Funny/Playful, Nigerian Pidgin English), write in English using that style throughout."
+            else:
+                prompt = base_prompt
             try:
                 cc = client.chat.completions.create(messages=[{"role":"user","content":prompt}], model="llama-3.1-8b-instant")
                 result = cc.choices[0].message.content
