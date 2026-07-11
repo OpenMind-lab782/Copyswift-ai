@@ -651,12 +651,12 @@ input[type=hidden]{display:none}
           <option>Casual</option>
           <option>Funny/Playful</option>
           <option>Nigerian Pidgin English</option>
-          <option>Yoruba</option>
-          <option>Igbo</option>
+          <option>Yoruba (Beta)</option>
+          <option>Igbo (Beta)</option>
           <option>Hausa</option>
-          <option>Urhobo</option>
-          <option>Isoko</option>
-          <option>Ijaw</option>
+          <option>Urhobo (Beta)</option>
+          <option>Isoko (Beta)</option>
+          <option>Ijaw (Beta)</option>
           <option>Setswana</option>
           <option>Zulu</option>
         </select>
@@ -1313,6 +1313,7 @@ def home():
             base_prompt = COPY_TYPES[selected_type]['prompt'].format(product=product, audience=audience)
             active_profile = get_active_business_profile(user_email) if user_email else None
             tone = active_profile['tone'] if active_profile else 'Professional'
+            tone = tone.replace(' (Beta)', '').strip()
             if tone and tone != 'Professional':
                 prompt = f"{base_prompt}\n\nIMPORTANT: Write this in a {tone} tone/style. If {tone} refers to a language (e.g. Yoruba, Igbo, Hausa, Zulu, Setswana), write the entire copy in that language. If it refers to a style (e.g. Casual, Funny/Playful, Nigerian Pidgin English), write in English using that style throughout."
             else:
