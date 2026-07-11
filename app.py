@@ -201,6 +201,7 @@ COPY_TYPES = {
     "product_desc": {"label": "🛒 Product Description",      "prompt": "Write a compelling product description for {product} targeting {audience}. Highlight benefits, features, end with buy CTA."},
     "social_bio":   {"label": "✨ Social Media Bio",         "prompt": "Write a punchy social media bio for a business selling {product} to {audience}. Max 150 chars. Use emojis."},
     "sms":          {"label": "📱 SMS / Short Promo",        "prompt": "Write a short SMS promo for {product} targeting {audience}. Max 160 chars. Include offer and CTA."},
+    "tiktok":       {"label": "🎵 TikTok Script",            "prompt": "Write a TikTok video script for {product} targeting {audience}. Include: a 3-second hook line, 3-4 short talking points to say on camera, a call-to-action closing line, a suggested caption, and 5 relevant trending hashtags. Format clearly with labels."},
 }
 
 def get_db():
@@ -1547,6 +1548,55 @@ def affiliate_dashboard():
     app_url = os.environ.get('APP_URL','https://copyswift-ai.onrender.com')
     ref_link = f"{app_url}/?ref={aff['ref_code']}"
     return render_template('affiliate_dash.html', aff=dict(aff), referrals=referrals, ref_link=ref_link)
+
+@app.route('/api/generate-bundle', methods=['POST'])
+def api_generate_bundle():
+    data = request.get_json() or {}
+    email = session.get('user_email', '') or data.get('email', '')
+    if not email:
+        return jsonify({"error": "Not logged in"}), 401
+    product = data.get('product', '').strip()
+    audience = data.get('audience', '').strip() or 'customers'
+    if not product:
+        return jsonify({"error": "Product is required"}), 400
+
+    is_admin = email == os.environ.get('ADMIN_EMAIL', '')
+    with get_db() as db:
+        balance = get_credit_balance(email)
+        if not is_admin and balance < 3:
+            return jsonify({"error": "Insufficient credits. Campaign bundle costs 3 credits."}), 402
+
+        active_profile = get_active_business_profile(email)
+        tone = active_profile['tone'] if active_profile else 'Professional'
+        tone = tone.replace(' (Beta)', '').strip()
+
+        bundle_keys = ['ad', 'whatsapp', 'email']
+        results = {}
+        try:
+            for key in bundle_keys:
+                base_prompt = COPY_TYPES[key]['prompt'].format(product=product, audience=audience)
+                if tone and tone != 'Professional':
+                    prompt = f"{base_prompt}\n\nIMPORTANT: Write this in a {tone} tone/style. If {tone} refers to a language, write the entire copy in that language. If it refers to a style, write in English using that style throughout."
+                else:
+                    prompt = base_prompt
+                cc = client.chat.completions.create(messages=[{"role":"user","content":prompt}], model="llama-3.1-8b-instant")
+                results[key] = cc.choices[0].message.content
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+        if not is_admin:
+            db.execute('UPDATE credits SET balance = balance - 3 WHERE email=?', (email,))
+            db.commit()
+
+        return jsonify({
+            "success": True,
+            "credits_used": 3,
+            "results": {
+                "ad": results.get('ad', ''),
+                "whatsapp": results.get('whatsapp', ''),
+                "email": results.get('email', '')
+            }
+        })
 
 @app.route('/api/generate-image', methods=['POST'])
 def api_generate_image():
