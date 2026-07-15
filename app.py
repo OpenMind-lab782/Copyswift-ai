@@ -1249,6 +1249,22 @@ tr:last-child td{border-bottom:none}
       </table>
     </div>
     <a name="credit-balances"></a>
+    <div class="section-title">🎁 Gift Bonus Credits</div>
+    <form method="POST" action="/admin/gift-credits" style="background:#111;padding:16px;border-radius:10px;margin-bottom:24px;display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+      <div>
+        <label style="display:block;font-size:12px;color:#888;margin-bottom:4px">User Email</label>
+        <input type="email" name="email" required placeholder="user@example.com" style="padding:8px;border-radius:6px;border:1px solid #333;background:#000;color:#fff">
+      </div>
+      <div>
+        <label style="display:block;font-size:12px;color:#888;margin-bottom:4px">Credits Amount</label>
+        <input type="number" name="amount" required min="1" placeholder="50" style="padding:8px;border-radius:6px;border:1px solid #333;background:#000;color:#fff;width:100px">
+      </div>
+      <div>
+        <label style="display:block;font-size:12px;color:#888;margin-bottom:4px">Reason (optional)</label>
+        <input type="text" name="reason" placeholder="Loyalty bonus" style="padding:8px;border-radius:6px;border:1px solid #333;background:#000;color:#fff">
+      </div>
+      <button type="submit" style="padding:9px 20px;background:linear-gradient(135deg,#00d4ff,#7c3aed);color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer">Gift Credits</button>
+    </form>
     <div class="section-title">💰 Active Credit Balances</div>
     <div class="table-wrap">
       <table>
@@ -1659,6 +1675,27 @@ def admin_activate_manual():
             commission = round(pkg['usd'] * 0.4, 2)
             record_referral(ref_code, email, commission, ref)
         session['admin_flash'] = f"{pkg['ads']} credits manually added for {email}"
+    return redirect('/admin')
+
+
+@app.route('/admin/gift-credits', methods=['POST'])
+@admin_required
+def admin_gift_credits():
+    email = request.form.get('email','').strip()
+    amount = request.form.get('amount','').strip()
+    reason = request.form.get('reason','Loyalty bonus').strip()
+    if email and amount:
+        try:
+            amount = int(amount)
+            if amount > 0:
+                add_credits(email, amount)
+                session['admin_flash'] = f"Gifted {amount} bonus credits to {email} ({reason})"
+            else:
+                session['admin_flash'] = "Amount must be a positive number"
+        except ValueError:
+            session['admin_flash'] = "Invalid amount entered"
+    else:
+        session['admin_flash'] = "Email and amount are required"
     return redirect('/admin')
 
 
