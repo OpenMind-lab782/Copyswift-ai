@@ -246,6 +246,16 @@ def init_db():
             is_active INTEGER DEFAULT 0,
             created_at TEXT DEFAULT (datetime('now'))
         )""")
+        db.execute("""CREATE TABLE IF NOT EXISTS user_streaks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_email TEXT NOT NULL UNIQUE,
+            current_streak INTEGER DEFAULT 0,
+            longest_streak INTEGER DEFAULT 0,
+            last_activity_date TEXT,
+            streak_freezes_available INTEGER DEFAULT 1,
+            last_milestone_awarded INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now'))
+        )""")
         try:
             db.execute("ALTER TABLE credit_purchases ADD COLUMN ref_code TEXT DEFAULT \'\'")
         except Exception:
@@ -331,6 +341,59 @@ def update_business_profile(email, profile_id, business_name, product, audience,
         db.commit()
 
 
+def update_streak(email):
+    from datetime import date, timedelta
+    today = date.today()
+    milestone_hit = None
+    bonus_credits = 0
+
+    with get_db() as db:
+        row = db.execute("SELECT * FROM user_streaks WHERE user_email=?", (email,)).fetchone()
+
+        if not row:
+            db.execute(
+                "INSERT INTO user_streaks (user_email, current_streak, longest_streak, last_activity_date, streak_freezes_available) VALUES (?,1,1,?,1)",
+                (email, today.isoformat())
+            )
+            db.commit()
+            return {"current_streak": 1, "longest_streak": 1, "milestone_hit": None, "bonus_credits": 0}
+
+        last_date_str = row["last_activity_date"]
+        current_streak = row["current_streak"]
+        longest_streak = row["longest_streak"]
+        freezes = row["streak_freezes_available"]
+        last_milestone = row["last_milestone_awarded"]
+
+        last_date = date.fromisoformat(last_date_str) if last_date_str else None
+
+        if last_date == today:
+            return {"current_streak": current_streak, "longest_streak": longest_streak, "milestone_hit": None, "bonus_credits": 0}
+        elif last_date == today - timedelta(days=1):
+            current_streak += 1
+        elif last_date is not None and last_date == today - timedelta(days=2) and freezes > 0:
+            freezes -= 1
+            current_streak += 1
+        else:
+            current_streak = 1
+
+        longest_streak = max(longest_streak, current_streak)
+
+        milestones = {7: 10, 30: 50, 100: 180}
+        if current_streak in milestones and last_milestone < current_streak:
+            milestone_hit = current_streak
+            bonus_credits = milestones[current_streak]
+            db.execute("UPDATE credits SET balance = balance + ? WHERE email=?", (bonus_credits, email))
+            last_milestone = current_streak
+
+        db.execute(
+            "UPDATE user_streaks SET current_streak=?, longest_streak=?, last_activity_date=?, streak_freezes_available=?, last_milestone_awarded=? WHERE user_email=?",
+            (current_streak, longest_streak, today.isoformat(), freezes, last_milestone, email)
+        )
+        db.commit()
+
+    return {"current_streak": current_streak, "longest_streak": longest_streak, "milestone_hit": milestone_hit, "bonus_credits": bonus_credits}
+
+
 def deduct_credit(email):
     with get_db() as db:
         row = db.execute("SELECT balance FROM credits WHERE email=?", (email,)).fetchone()
@@ -338,6 +401,7 @@ def deduct_credit(email):
             return False
         db.execute("UPDATE credits SET balance = balance - 1 WHERE email=?", (email,))
         db.commit()
+    update_streak(email)
     return True
 
 def save_credit_purchase(email, package, ads, amount_usd, amount_local, method, tx_ref="", status="pending", ref_code=""):
@@ -544,6 +608,14 @@ input[type=hidden]{display:none}
   </div>
   <a href="#upgrade" class="upgrade-link">Buy Credits →</a>
 </div>
+{% if streak_current and streak_current > 0 %}
+<div class="usage-bar" style="background:linear-gradient(135deg,rgba(255,107,53,0.15),rgba(247,147,30,0.1));border:1px solid rgba(255,107,53,0.3);margin-top:10px">
+  <span class="usage-label">🔥 {{ streak_current }}-day streak</span>
+  <div class="usage-dots">
+    <span style="color:var(--muted);font-size:12px">Best: {{ streak_longest }} days</span>
+  </div>
+</div>
+{% endif %}
 {% if credits_balance > 0 %}
 <div class="success-banner"><span>🎉</span><p><strong>{{ credits_balance }} ad credit{{ 's' if credits_balance != 1 else '' }} available.</strong> Generate away!</p></div>
 {% endif %}
@@ -1367,6 +1439,14 @@ def home():
     is_admin = session.get('admin_logged_in', False)
     credits_balance = 9999 if is_admin else (get_credit_balance(user_email) if user_email else 0)
     limit_reached = False if is_admin else (credits_balance <= 0)
+    streak_current = 0
+    streak_longest = 0
+    if user_email:
+        with get_db() as _db:
+            _srow = _db.execute("SELECT current_streak, longest_streak FROM user_streaks WHERE user_email=?", (user_email,)).fetchone()
+            if _srow:
+                streak_current = _srow["current_streak"]
+                streak_longest = _srow["longest_streak"]
     result = error = product = audience = None
     selected_type = 'ad'
     ref_code = request.args.get('ref', session.get('ref_code',''))
@@ -1404,7 +1484,8 @@ def home():
         selected_type=selected_type, copy_types=COPY_TYPES,
         credits_balance=credits_balance, limit_reached=limit_reached,
         user_email=user_email, credit_packages=CREDIT_PACKAGES,
-        crypto_wallets=CRYPTO_WALLETS, promo_error=None)
+        crypto_wallets=CRYPTO_WALLETS, promo_error=None,
+        streak_current=streak_current, streak_longest=streak_longest)
 
 @app.route('/pay-paystack', methods=['GET','POST'])
 def pay_paystack():
@@ -1472,7 +1553,8 @@ def promo():
         credits_balance=credits_balance, limit_reached=(credits_balance <= 0),
         user_email=user_email, credit_packages=CREDIT_PACKAGES,
         crypto_wallets=CRYPTO_WALLETS,
-        promo_error="Invalid promo code, or please enter your email and generate at least once first.")
+        promo_error="Invalid promo code, or please enter your email and generate at least once first.",
+        streak_current=streak_current, streak_longest=streak_longest)
 
 @app.route('/reset')
 def reset():
@@ -1749,6 +1831,22 @@ def api_generate_video():
 def api_check_video(talk_id):
     result = check_talking_video(talk_id)
     return jsonify(result)
+
+@app.route('/api/streak', methods=['GET'])
+def api_get_streak():
+    email = session.get('user_email', '') or request.args.get('email', '')
+    if not email:
+        return jsonify({"error": "Not logged in"}), 401
+    with get_db() as db:
+        row = db.execute("SELECT * FROM user_streaks WHERE user_email=?", (email,)).fetchone()
+    if not row:
+        return jsonify({"current_streak": 0, "longest_streak": 0, "streak_freezes_available": 1})
+    return jsonify({
+        "current_streak": row["current_streak"],
+        "longest_streak": row["longest_streak"],
+        "streak_freezes_available": row["streak_freezes_available"],
+        "last_activity_date": row["last_activity_date"]
+    })
 
 @app.route('/api/business-profiles', methods=['GET'])
 def api_get_business_profiles():
