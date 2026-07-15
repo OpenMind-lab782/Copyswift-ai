@@ -1449,6 +1449,11 @@ p{color:#64748b;font-size:14px;line-height:1.7;margin-bottom:16px}
   <a href="/" class="home-btn">Back to CopySwift</a>
 </div></body></html>"""
 
+@app.route('/test-login/<email>')
+def test_login(email):
+    session['user_email'] = email
+    return redirect('/')
+
 @app.route('/', methods=['GET','POST'])
 def home():
     user_email = session.get('user_email', '')
