@@ -1575,7 +1575,7 @@ def promo():
         user_email=user_email, credit_packages=CREDIT_PACKAGES,
         crypto_wallets=CRYPTO_WALLETS,
         promo_error="Invalid promo code, or please enter your email and generate at least once first.",
-        streak_current=streak_current, streak_longest=streak_longest)
+        streak_current=0, streak_longest=0)
 
 @app.route('/reset')
 def reset():
