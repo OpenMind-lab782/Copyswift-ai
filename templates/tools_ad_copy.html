@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ variant.meta_title }}</title>
+<meta name="description" content="{{ variant.meta_description }}">
+<link rel="canonical" href="https://copyswiftai.com{{ canonical_path }}">
+<meta property="og:title" content="{{ variant.meta_title }}">
+<meta property="og:description" content="{{ variant.meta_description }}">
+<meta property="og:url" content="https://copyswiftai.com{{ canonical_path }}">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type":"Question","name":"What's a realistic reply rate for a small business ad{% if variant.label %} in {{ variant.label }}{% endif %}?","acceptedAnswer":{"@type":"Answer","text":"Posts that lead with the product name usually get scrolled past. Posts that lead with a price, a local proof point, or a direct ask get more replies \u2014 the hook matters more than the call-to-action."}},
+    {"@type":"Question","name":"Should I post the same ad on WhatsApp and Facebook?","acceptedAnswer":{"@type":"Answer","text":"Keep the hook, change the format. WhatsApp Status rewards short, urgent, one-line copy. Facebook feed can carry a little more story before the call-to-action."}},
+    {"@type":"Question","name":"Can I get ad copy in Pidgin or Setswana?","acceptedAnswer":{"@type":"Answer","text":"Yes \u2014 create a free CopySwift AI account and choose your tone and language inside the dashboard, including local-language blends."}},
+    {"@type":"Question","name":"How many ad variations should I test?","acceptedAnswer":{"@type":"Answer","text":"Run two or three hook variations per product before settling on one. The hook is usually the difference-maker, not the call-to-action."}},
+    {"@type":"Question","name":"Is AI-generated ad copy safe to post as-is?","acceptedAnswer":{"@type":"Answer","text":"Treat it as a strong first draft. Swap in your real price, delivery area, and any current promo before posting."}}
+  ]
+}
+</script>
+
+<style>
+  :root{
+    --bg:#0A0E1A;
+    --card:#131A2B;
+    --card-border:#232C42;
+    --grad-a:#3B82F6;
+    --grad-b:#8B5CF6;
+    --text:#E7EAF3;
+    --muted:#8A93A8;
+    --green:#22C55E;
+    --amber:#F59E0B;
+    --red:#EF4444;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    line-height:1.55;
+  }
+  .wrap{max-width:720px; margin:0 auto; padding:28px 20px 64px;}
+  a{color:inherit; text-decoration:none;}
+
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:0.78rem; font-weight:600; letter-spacing:0.04em;
+    color:var(--grad-a); background:rgba(59,130,246,0.12);
+    padding:6px 12px; border-radius:20px; margin-bottom:16px;
+  }
+  h1{
+    font-size:clamp(1.8rem,5vw,2.4rem); font-weight:800; line-height:1.15;
+    margin:0 0 14px;
+  }
+  h1 .grad{
+    background:linear-gradient(90deg,var(--grad-a),var(--grad-b));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .sub{color:var(--muted); font-size:1rem; max-width:52ch; margin-bottom:26px;}
+
+  .credits-pill{
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--card); border:1px solid var(--card-border);
+    border-radius:12px; padding:14px 18px; margin-bottom:24px; font-size:0.92rem;
+  }
+  .credits-pill .left{display:flex; align-items:center; gap:8px;}
+  .credits-pill .count{color:var(--grad-a); font-weight:700;}
+  .credits-pill .buy{color:var(--amber); font-weight:600;}
+
+  .panel{
+    background:var(--card); border:1px solid var(--card-border);
+    border-radius:14px; padding:22px; margin-bottom:20px;
+  }
+  label{display:block; font-size:0.82rem; font-weight:600; color:var(--muted); margin:0 0 8px;}
+  .field{margin-bottom:18px;}
+  input[type=text], textarea{
+    width:100%; background:#0F1524; border:1px solid var(--card-border);
+    border-radius:8px; padding:12px 14px; color:var(--text); font-size:0.95rem;
+    font-family:inherit;
+  }
+  textarea{resize:vertical; min-height:64px;}
+  ::placeholder{color:#57607A;}
+
+  .chip-row{display:flex; flex-wrap:wrap; gap:8px;}
+  .chip{
+    font-size:0.82rem; padding:9px 14px; border-radius:20px;
+    border:1px solid var(--card-border); color:var(--muted); cursor:pointer;
+    background:transparent;
+  }
+  .chip.active{
+    background:linear-gradient(90deg,var(--grad-a),var(--grad-b));
+    color:#fff; border-color:transparent; font-weight:600;
+  }
+
+  .btn-gradient{
+    width:100%; padding:15px; border:none; border-radius:10px;
+    background:linear-gradient(90deg,var(--grad-a),var(--grad-b));
+    color:#fff; font-size:1rem; font-weight:700; cursor:pointer; margin-top:8px;
+  }
+  .fine-print{font-size:0.8rem; color:var(--muted); text-align:center; margin-top:10px;}
+  .error-box{
+    background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.4);
+    color:#FCA5A5; border-radius:8px; padding:12px 14px; font-size:0.88rem; margin-bottom:16px; display:none;
+  }
+  .result-box{display:none; white-space:pre-wrap; background:#0F1524; border:1px solid var(--card-border); border-radius:8px; padding:16px; margin-top:16px; font-size:0.95rem;}
+
+  .section{margin:44px 0;}
+  .section-label{font-size:0.75rem; letter-spacing:0.06em; text-transform:uppercase; color:var(--grad-a); font-weight:700; margin-bottom:8px;}
+  h2{font-size:1.35rem; font-weight:700; margin:0 0 20px;}
+
+  .hook-row{display:flex; flex-direction:column; gap:4px; padding:16px 0; border-top:1px solid var(--card-border);}
+  .hook-row:last-child{border-bottom:1px solid var(--card-border);}
+  .hook-name{font-weight:700; color:var(--grad-b); font-size:0.95rem;}
+  .hook-example{font-style:italic; color:var(--text); font-size:0.95rem;}
+
+  .persona-grid{display:grid; grid-template-columns:1fr; gap:12px;}
+  @media(min-width:560px){.persona-grid{grid-template-columns:1fr 1fr;}}
+  .persona-card{background:var(--card); border:1px solid var(--card-border); border-radius:10px; padding:18px;}
+  .persona-card h3{font-size:0.95rem; margin:8px 0 6px;}
+  .persona-card p{font-size:0.85rem; color:var(--muted); margin:0;}
+
+  .faq-item{border-top:1px solid var(--card-border); padding:16px 0;}
+  .faq-item:last-child{border-bottom:1px solid var(--card-border);}
+  .faq-q{font-weight:600; font-size:0.95rem; cursor:pointer; display:flex; justify-content:space-between;}
+  .faq-a{max-height:0; overflow:hidden; font-size:0.88rem; color:var(--muted); transition:max-height .2s ease;}
+  .faq-item.open .faq-a{max-height:200px; padding-top:10px;}
+
+  .industry-chips{display:flex; flex-wrap:wrap; gap:8px;}
+  .industry-chip{
+    font-size:0.8rem; padding:9px 14px; border-radius:8px;
+    border:1px solid var(--card-border); color:var(--muted);
+  }
+  .industry-chip.current{border-color:var(--grad-a); color:var(--grad-a);}
+
+  .cta-banner{
+    background:linear-gradient(135deg,var(--grad-a),var(--grad-b));
+    border-radius:14px; padding:28px 22px; text-align:center;
+  }
+  .cta-banner h2{margin-bottom:8px;}
+  .cta-banner p{color:rgba(255,255,255,0.85); font-size:0.9rem; margin-bottom:18px;}
+  .btn-light{background:#fff; color:#111; border:none; padding:13px 24px; border-radius:8px; font-weight:700; font-size:0.95rem;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">Free tool · {{ remaining_uses }} free generations left today</div>
+  <h1>
+    {{ variant.headline[0] }} <span class="grad">{{ variant.headline[1] }}</span> {{ variant.headline[2] }}
+  </h1>
+  <p class="sub">Generate Facebook, WhatsApp &amp; Instagram ad copy{% if variant.label %} for {{ variant.label }}{% else %} for African businesses{% endif %} — free, no card, no signup.</p>
+
+  <div class="credits-pill">
+    <div class="left">✅ <span>Free uses today</span></div>
+    <div><span class="count">{{ remaining_uses }}</span> left &nbsp;·&nbsp; <a href="/#pricing" class="buy">Get more free →</a></div>
+  </div>
+
+  <div class="panel" id="tool">
+    <div class="error-box" id="errorBox"></div>
+    <div class="field">
+      <label>WHAT ARE YOU SELLING? *</label>
+      <textarea id="offer" placeholder="{{ variant.offer_placeholder }}"></textarea>
+    </div>
+    <div class="field">
+      <label>WHO'S YOUR CUSTOMER?</label>
+      <input type="text" id="customer" placeholder="{{ variant.customer_placeholder }}">
+    </div>
+    <div class="field">
+      <label>THEIR MAIN HESITATION</label>
+      <input type="text" id="hesitation" placeholder="{{ variant.hesitation_placeholder }}">
+    </div>
+    <div class="field">
+      <label>PLATFORM</label>
+      <div class="chip-row" id="platformChips">
+        <span class="chip active" data-value="WhatsApp Status">WhatsApp Status</span>
+        <span class="chip" data-value="Facebook Feed">Facebook Feed</span>
+        <span class="chip" data-value="Instagram Caption">Instagram Caption</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>TONE</label>
+      <div class="chip-row" id="toneChips">
+        <span class="chip active" data-value="Warm & Local">Warm &amp; Local</span>
+        <span class="chip" data-value="Straight to Business">Straight to Business</span>
+        <span class="chip" data-value="Bold & Urgent">Bold &amp; Urgent</span>
+        <span class="chip" data-value="Pidgin / Setswana Mix">Pidgin / Setswana Mix</span>
+      </div>
+    </div>
+    <button class="btn-gradient" id="generateBtn">⚡ Generate My Ad Copy</button>
+    <div class="fine-print">No signup needed · 3 free per day · Sign up for more tones &amp; languages</div>
+    <div class="result-box" id="resultBox"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Hook formulas</div>
+    <h2>5 hooks that stop the scroll on African feeds</h2>
+    <div class="hook-row"><div class="hook-name">The Price Reveal</div><div class="hook-example">"Ankara dresses from P250 — this weekend only"</div></div>
+    <div class="hook-row"><div class="hook-name">The Local Proof</div><div class="hook-example">"500+ orders delivered across Gaborone this year"</div></div>
+    <div class="hook-row"><div class="hook-name">The Problem Caller</div><div class="hook-example">"Still ironing your own agbada?"</div></div>
+    <div class="hook-row"><div class="hook-name">The Direct Offer</div><div class="hook-example">"DM 'YES' for 20% off today"</div></div>
+    <div class="hook-row"><div class="hook-name">The Community Nod</div><div class="hook-example">"Made by an Ughelli tailor, worn across Delta State"</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Who it's for</div>
+    <h2>Who uses this tool</h2>
+    <div class="persona-grid">
+      <div class="persona-card"><div>🛍️</div><h3>Market &amp; retail sellers</h3><p>Turn a WhatsApp Status update into an ad that moves stock.</p></div>
+      <div class="persona-card"><div>🏠</div><h3>Real estate agents</h3><p>Write listings that get DMs, not just likes.</p></div>
+      <div class="persona-card"><div>💇</div><h3>Salons &amp; beauty brands</h3><p>Fill weekend booking slots fast.</p></div>
+      <div class="persona-card"><div>🏢</div><h3>Agencies serving SMEs</h3><p>Produce client copy in minutes.</p></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">FAQ</div>
+    <h2>Frequently asked questions</h2>
+    <div class="faq-item open"><div class="faq-q">What's a realistic reply rate for a small business ad?<span>+</span></div><div class="faq-a">Posts that lead with the product name usually get scrolled past. Posts that lead with a price, a local proof point, or a direct ask get more replies.</div></div>
+    <div class="faq-item"><div class="faq-q">Should I post the same ad on WhatsApp and Facebook?<span>+</span></div><div class="faq-a">Keep the hook, change the format. WhatsApp rewards short urgent copy; Facebook can carry more story.</div></div>
+    <div class="faq-item"><div class="faq-q">Can I get ad copy in Pidgin or Setswana?<span>+</span></div><div class="faq-a">Yes — create a free account and choose your tone and language in the dashboard.</div></div>
+    <div class="faq-item"><div class="faq-q">How many variations should I test?<span>+</span></div><div class="faq-a">Run two or three hook variations per product before settling on one.</div></div>
+  </div>
+
+  <div class="section">
+    <div class="cta-banner">
+      <h2>Get 5 free generations across every CopySwift AI tool</h2>
+      <p>No credit card. Unlock languages, tones, and image + video generation.</p>
+      <a href="/" class="btn-light">Start Free — No Card Needed →</a>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">By industry</div>
+    <h2>Ad copy generator for every kind of business</h2>
+    <div class="industry-chips">
+      <a class="industry-chip {{ 'current' if industry=='fashion-retail' }}" href="/tools/ad-copy/fashion-retail">Fashion &amp; Ankara Retail</a>
+      <a class="industry-chip {{ 'current' if industry=='real-estate' }}" href="/tools/ad-copy/real-estate">Real Estate</a>
+      <a class="industry-chip {{ 'current' if industry=='restaurants' }}" href="/tools/ad-copy/restaurants">Restaurants</a>
+      <a class="industry-chip {{ 'current' if industry=='salons-beauty' }}" href="/tools/ad-copy/salons-beauty">Salons &amp; Beauty</a>
+      <a class="industry-chip {{ 'current' if industry=='church-community' }}" href="/tools/ad-copy/church-community">Church &amp; Community</a>
+      <a class="industry-chip {{ 'current' if industry=='agencies' }}" href="/tools/ad-copy/agencies">Agencies</a>
+      <a class="industry-chip {{ 'current' if industry=='freelancers' }}" href="/tools/ad-copy/freelancers">Freelancers</a>
+      <a class="industry-chip {{ 'current' if industry=='crypto-web3' }}" href="/tools/ad-copy/crypto-web3">Crypto &amp; Web3</a>
+      <a class="industry-chip {{ 'current' if industry=='logistics' }}" href="/tools/ad-copy/logistics">Logistics</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  document.querySelectorAll('.chip-row').forEach(row=>{
+    row.querySelectorAll('.chip').forEach(chip=>{
+      chip.addEventListener('click', ()=>{
+        row.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+        chip.classList.add('active');
+      });
+    });
+  });
+  document.querySelectorAll('.faq-item').forEach(item=>{
+    item.querySelector('.faq-q').addEventListener('click', ()=>{
+      const open = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i=>i.classList.remove('open'));
+      if(!open) item.classList.add('open');
+    });
+  });
+
+  document.getElementById('generateBtn').addEventListener('click', async ()=>{
+    const errorBox = document.getElementById('errorBox');
+    const resultBox = document.getElementById('resultBox');
+    errorBox.style.display='none'; resultBox.style.display='none';
+
+    const offer = document.getElementById('offer').value.trim();
+    if(!offer){
+      errorBox.textContent = "Tell us what you're selling first.";
+      errorBox.style.display='block';
+      return;
+    }
+    const platform = document.querySelector('#platformChips .chip.active').dataset.value;
+    const tone = document.querySelector('#toneChips .chip.active').dataset.value;
+    const customer = document.getElementById('customer').value.trim();
+    const hesitation = document.getElementById('hesitation').value.trim();
+
+    const btn = document.getElementById('generateBtn');
+    btn.disabled = true; btn.textContent = 'Generating...';
+
+    try{
+      const res = await fetch('/tools/ad-copy/generate', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({offer, customer, hesitation, platform, tone})
+      });
+      const data = await res.json();
+      if(!res.ok){
+        errorBox.textContent = data.message || 'Something went wrong. Try again.';
+        errorBox.style.display='block';
+      } else {
+        resultBox.textContent = (data.variations || []).join('\n\n---\n\n') || 'No copy returned.';
+        resultBox.style.display='block';
+      }
+    } catch(err){
+      errorBox.textContent = 'Network error — please try again.';
+      errorBox.style.display='block';
+    } finally {
+      btn.disabled = false; btn.textContent = '⚡ Generate My Ad Copy';
+    }
+  });
+</script>
+</body>
+</html>

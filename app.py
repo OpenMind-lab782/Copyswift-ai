@@ -1944,3 +1944,187 @@ def api_check_pro():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
+# === APPEND THIS BLOCK TO THE END OF app.py (before any if __name__ == '__main__') ===
+# Reuses your existing `client` (Groq) and session-based patterns already in app.py.
+# Does NOT touch your credits table — free tool uses its own daily session counter.
+
+from datetime import date as _date
+
+INDUSTRY_VARIANTS = {
+    "fashion-retail": {
+        "label": "Fashion & Ankara Retail",
+        "meta_title": "Free AI Ad Copy Generator for Fashion & Ankara Retail | CopySwift AI",
+        "meta_description": "Generate Facebook, WhatsApp & Instagram ad copy for fashion and Ankara retail brands. Free, no signup.",
+        "headline": ["Ad copy that", "sells the outfit", "not just the fabric"],
+        "offer_placeholder": "e.g. Ankara dresses, made-to-order, delivery across Gaborone",
+        "customer_placeholder": "e.g. Women 25-40 shopping for weekend events",
+        "hesitation_placeholder": "e.g. Not sure it'll arrive in time",
+    },
+    "real-estate": {
+        "label": "Real Estate",
+        "meta_title": "Free AI Ad Copy Generator for Real Estate Agents | CopySwift AI",
+        "meta_description": "Write listing ad copy for Facebook and WhatsApp groups that gets DMs, not just likes. Free, no signup.",
+        "headline": ["Listings that get", "DMs", "not just likes"],
+        "offer_placeholder": "e.g. 2-bedroom flat, Phakalane, move-in ready",
+        "customer_placeholder": "e.g. Young professionals relocating to Gaborone",
+        "hesitation_placeholder": "e.g. Worried about hidden fees",
+    },
+    "restaurants": {
+        "label": "Restaurants & Food Vendors",
+        "meta_title": "Free AI Ad Copy Generator for Restaurants & Food Vendors | CopySwift AI",
+        "meta_description": "Generate ad copy for daily specials, delivery menus, and weekend promos. Free, no signup.",
+        "headline": ["Ad copy that", "fills tables", "not just feeds"],
+        "offer_placeholder": "e.g. Jollof rice combo, delivery within 30 minutes",
+        "customer_placeholder": "e.g. Office workers ordering lunch",
+        "hesitation_placeholder": "e.g. Unsure delivery will arrive hot",
+    },
+    "salons-beauty": {
+        "label": "Salons & Beauty",
+        "meta_title": "Free AI Ad Copy Generator for Salons & Beauty Brands | CopySwift AI",
+        "meta_description": "Fill weekend booking slots with ad copy built for last-minute decisions. Free, no signup.",
+        "headline": ["Ad copy that", "fills your chair", "this weekend"],
+        "offer_placeholder": "e.g. Braids and weave install, walk-ins welcome",
+        "customer_placeholder": "e.g. Women booking for a weekend event",
+        "hesitation_placeholder": "e.g. Not sure there's a slot open",
+    },
+    "church-community": {
+        "label": "Church & Community Orgs",
+        "meta_title": "Free AI Ad Copy Generator for Churches & Community Orgs | CopySwift AI",
+        "meta_description": "Write event and fundraiser copy that reads like it's from your community. Free, no signup.",
+        "headline": ["Ad copy that", "sounds like", "your community"],
+        "offer_placeholder": "e.g. Sunday youth fundraiser, building fund",
+        "customer_placeholder": "e.g. Church members and local families",
+        "hesitation_placeholder": "e.g. Unsure where the funds go",
+    },
+    "agencies": {
+        "label": "Agencies",
+        "meta_title": "Free AI Ad Copy Generator for Agencies | CopySwift AI",
+        "meta_description": "Pitch and produce client ad copy in minutes, not a content calendar meeting. Free, no signup.",
+        "headline": ["Client-ready copy", "in minutes", "not meetings"],
+        "offer_placeholder": "e.g. Client's product launch, three ad variations needed",
+        "customer_placeholder": "e.g. Client's target ICP",
+        "hesitation_placeholder": "e.g. Budget-conscious client",
+    },
+    "freelancers": {
+        "label": "Freelancers & Consultants",
+        "meta_title": "Free AI Ad Copy Generator for Freelancers & Consultants | CopySwift AI",
+        "meta_description": "Sound like a full marketing team without hiring one. Free, no signup.",
+        "headline": ["Sound like", "a full team", "of one"],
+        "offer_placeholder": "e.g. Freelance web design package",
+        "customer_placeholder": "e.g. Small business owners without a website",
+        "hesitation_placeholder": "e.g. Worried it's too expensive",
+    },
+    "crypto-web3": {
+        "label": "Crypto & Web3",
+        "meta_title": "Free AI Ad Copy Generator for Crypto & Web3 | CopySwift AI",
+        "meta_description": "Write ad copy for crypto and Web3 products that builds trust fast. Free, no signup.",
+        "headline": ["Ad copy that", "builds trust", "fast"],
+        "offer_placeholder": "e.g. BWP/USDT swap service, same-day settlement",
+        "customer_placeholder": "e.g. First-time crypto users in Botswana",
+        "hesitation_placeholder": "e.g. Worried it's a scam",
+    },
+    "logistics": {
+        "label": "Logistics & Delivery",
+        "meta_title": "Free AI Ad Copy Generator for Logistics & Delivery | CopySwift AI",
+        "meta_description": "Write ad copy that proves speed and reliability. Free, no signup.",
+        "headline": ["Ad copy that", "proves you're", "reliable"],
+        "offer_placeholder": "e.g. Same-day parcel delivery, Gaborone metro",
+        "customer_placeholder": "e.g. Small online sellers needing delivery",
+        "hesitation_placeholder": "e.g. Past bad experience with couriers",
+    },
+}
+
+DAILY_FREE_LIMIT = 3
+_DEFAULT_VARIANT = {
+    "label": None,
+    "meta_title": "Free AI Ad Copy Generator for African Businesses | CopySwift AI",
+    "meta_description": "Generate Facebook, WhatsApp & Instagram ad copy for African businesses. Free, no signup.",
+    "headline": ["Ad copy that", "sells here", "not just anywhere"],
+    "offer_placeholder": "e.g. Ankara dresses, made-to-order, delivery across Gaborone",
+    "customer_placeholder": "e.g. Women 25-40 shopping for weekend events",
+    "hesitation_placeholder": "e.g. Not sure it'll arrive in time",
+}
+
+def _ad_copy_usage_key():
+    return f"ad_copy_free_uses:{_date.today().isoformat()}"
+
+def _ad_copy_remaining_uses():
+    used = session.get(_ad_copy_usage_key(), 0)
+    return max(0, DAILY_FREE_LIMIT - used)
+
+def _ad_copy_increment_uses():
+    key = _ad_copy_usage_key()
+    session[key] = session.get(key, 0) + 1
+
+
+@app.route('/tools/ad-copy')
+def ad_copy_default():
+    return render_template(
+        "tools_ad_copy.html",
+        industry=None,
+        variant=_DEFAULT_VARIANT,
+        remaining_uses=_ad_copy_remaining_uses(),
+        canonical_path="/tools/ad-copy",
+    )
+
+
+@app.route('/tools/ad-copy/<industry>')
+def ad_copy_variant(industry):
+    variant = INDUSTRY_VARIANTS.get(industry)
+    if variant is None:
+        return ad_copy_default()
+    return render_template(
+        "tools_ad_copy.html",
+        industry=industry,
+        variant=variant,
+        remaining_uses=_ad_copy_remaining_uses(),
+        canonical_path=f"/tools/ad-copy/{industry}",
+    )
+
+
+@app.route('/tools/ad-copy/generate', methods=['POST'])
+def ad_copy_generate():
+    remaining = _ad_copy_remaining_uses()
+    if remaining <= 0:
+        return jsonify({
+            "error": "daily_limit_reached",
+            "message": "You've used today's 3 free generations. Sign up free for 5 more across every CopySwift AI tool.",
+        }), 429
+
+    data = request.get_json(force=True) or {}
+    offer = (data.get("offer") or "").strip()
+    customer = (data.get("customer") or "").strip()
+    hesitation = (data.get("hesitation") or "").strip()
+    platform = data.get("platform", "WhatsApp Status")
+    tone = data.get("tone", "Warm & Local")
+
+    if not offer:
+        return jsonify({"error": "missing_offer", "message": "Tell us what you're selling first."}), 400
+
+    prompt = (
+        f"Write 3 short ad copy variations for {platform}, in a {tone} tone.\n"
+        f"What's being sold: {offer}\n"
+        f"Target customer: {customer or 'general African small business customers'}\n"
+        f"Their main hesitation to address: {hesitation or 'none specified'}\n"
+        f"Each variation must be under 60 words, include a hook, the pitch, and a clear call-to-action. "
+        f"Separate the 3 variations with '---'."
+    )
+
+    try:
+        cc = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model="openai/gpt-oss-20b",
+            reasoning_effort="low",
+        )
+        result = cc.choices[0].message.content
+        variations = [v.strip() for v in result.split('---') if v.strip()]
+    except Exception as e:
+        return jsonify({"error": "generation_failed", "message": str(e)}), 500
+
+    _ad_copy_increment_uses()
+    return jsonify({
+        "variations": variations,
+        "remaining_uses": _ad_copy_remaining_uses(),
+    })
+
+# === END BLOCK ===
