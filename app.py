@@ -1488,7 +1488,7 @@ def home():
             else:
                 prompt = base_prompt
             try:
-                cc = client.chat.completions.create(messages=[{"role":"user","content":prompt}], model="openai/gpt-oss-20b", reasoning_effort="low")
+                cc = client.chat.completions.create(messages=[{"role":"user","content":prompt + "\n\nIMPORTANT: Output plain text only. Do not use Markdown formatting such as **, ##, or bullet dashes. Write it exactly as it should appear to the end reader."}], model="openai/gpt-oss-20b", reasoning_effort="low")
                 result = cc.choices[0].message.content
                 if not is_admin:
                     deduct_credit(user_email)
@@ -1770,7 +1770,7 @@ def api_generate_bundle():
                     prompt = f"{base_prompt}\n\nIMPORTANT: Write this in a {tone} tone/style. If {tone} refers to a language, write the entire copy in that language. If it refers to a style, write in English using that style throughout."
                 else:
                     prompt = base_prompt
-                cc = client.chat.completions.create(messages=[{"role":"user","content":prompt}], model="openai/gpt-oss-20b", reasoning_effort="low")
+                cc = client.chat.completions.create(messages=[{"role":"user","content":prompt + "\n\nIMPORTANT: Output plain text only. Do not use Markdown formatting such as **, ##, or bullet dashes. Write it exactly as it should appear to the end reader."}], model="openai/gpt-oss-20b", reasoning_effort="low")
                 results[key] = cc.choices[0].message.content
         except Exception as e:
             return jsonify({"error": str(e)}), 500
@@ -2107,7 +2107,7 @@ def ad_copy_generate():
         f"Target customer: {customer or 'general African small business customers'}\n"
         f"Their main hesitation to address: {hesitation or 'none specified'}\n"
         f"Each variation must be under 60 words, include a hook, the pitch, and a clear call-to-action. "
-        f"Separate the 3 variations with '---'."
+        f"Separate the 3 variations with '---'. Write in plain text only — no Markdown, no **, no ## headers, no bullet symbols."
     )
 
     try:
