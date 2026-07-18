@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timedelta
 from functools import wraps
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "copyswift-secret-2024")
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 DB_PATH = "copyswift.db"
@@ -2050,6 +2051,7 @@ def _ad_copy_usage_key():
     return f"ad_copy_free_uses:{_date.today().isoformat()}"
 
 def _ad_copy_remaining_uses():
+    session.permanent = True
     used = session.get(_ad_copy_usage_key(), 0)
     return max(0, DAILY_FREE_LIMIT - used)
 
