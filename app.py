@@ -1488,7 +1488,7 @@ def home():
             else:
                 prompt = base_prompt
             try:
-                cc = client.chat.completions.create(messages=[{"role":"user","content":prompt}], model="llama-3.1-8b-instant")
+                cc = client.chat.completions.create(messages=[{"role":"user","content":prompt}], model="openai/gpt-oss-20b", reasoning_effort="low")
                 result = cc.choices[0].message.content
                 if not is_admin:
                     deduct_credit(user_email)
@@ -1770,7 +1770,7 @@ def api_generate_bundle():
                     prompt = f"{base_prompt}\n\nIMPORTANT: Write this in a {tone} tone/style. If {tone} refers to a language, write the entire copy in that language. If it refers to a style, write in English using that style throughout."
                 else:
                     prompt = base_prompt
-                cc = client.chat.completions.create(messages=[{"role":"user","content":prompt}], model="llama-3.1-8b-instant")
+                cc = client.chat.completions.create(messages=[{"role":"user","content":prompt}], model="openai/gpt-oss-20b", reasoning_effort="low")
                 results[key] = cc.choices[0].message.content
         except Exception as e:
             return jsonify({"error": str(e)}), 500
