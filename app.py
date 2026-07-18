@@ -599,6 +599,7 @@ input[type=hidden]{display:none}
   <div class="badge">⚡ AI Copywriter</div>
   <h1>Write Ads That<br><span>Actually Sell</span></h1>
   <p class="subtitle">High-converting copy for your business in seconds.</p>
+  <a href="/tools/ad-copy" style="display:inline-block;margin-top:14px;font-size:13px;font-weight:600;color:var(--accent);text-decoration:none;border:1px solid rgba(0,212,255,.3);padding:8px 16px;border-radius:100px;background:rgba(0,212,255,.06)">🆓 Try the free Ad Copy Tool →</a>
 </div>
 <div class="usage-bar">
   <span class="usage-label">{% if credits_balance > 0 %}✅ Credits available{% else %}No credits remaining{% endif %}</span>
