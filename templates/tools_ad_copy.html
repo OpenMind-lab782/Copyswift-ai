@@ -162,6 +162,14 @@
   <div class="panel" id="tool">
     <div class="error-box" id="errorBox"></div>
     <div class="field">
+      <label>GOT A PRODUCT LINK? (OPTIONAL)</label>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="productUrl" placeholder="Paste a product page URL" style="flex:1;">
+        <button type="button" id="fetchUrlBtn" style="background:var(--card-border); color:var(--text); border:none; border-radius:8px; padding:0 16px; font-size:0.85rem; font-weight:600; cursor:pointer; white-space:nowrap;">Fetch</button>
+      </div>
+      <div id="urlFetchStatus" style="font-size:0.8rem; color:var(--muted); margin-top:6px;"></div>
+    </div>
+    <div class="field">
       <label>WHAT ARE YOU SELLING? *</label>
       <textarea id="offer" placeholder="{{ variant.offer_placeholder }}"></textarea>
     </div>
@@ -306,6 +314,42 @@
       errorBox.style.display='block';
     } finally {
       btn.disabled = false; btn.textContent = '⚡ Generate My Ad Copy';
+    }
+  });
+</script>
+<script>
+  document.getElementById('fetchUrlBtn').addEventListener('click', async ()=>{
+    const status = document.getElementById('urlFetchStatus');
+    const url = document.getElementById('productUrl').value.trim();
+    if(!url){
+      status.textContent = 'Paste a product URL first.';
+      status.style.color = '#EF4444';
+      return;
+    }
+    const btn = document.getElementById('fetchUrlBtn');
+    btn.disabled = true; btn.textContent = 'Fetching...';
+    status.textContent = ''; status.style.color = 'var(--muted)';
+
+    try{
+      const res = await fetch('/tools/ad-copy/scrape-url', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({url})
+      });
+      const data = await res.json();
+      if(!res.ok){
+        status.textContent = data.message || 'Could not fetch that page.';
+        status.style.color = '#EF4444';
+      } else {
+        document.getElementById('offer').value = data.suggested_offer || '';
+        status.textContent = '✓ Filled in from product page — edit as needed.';
+        status.style.color = '#22C55E';
+      }
+    } catch(err){
+      status.textContent = 'Network error — please try again.';
+      status.style.color = '#EF4444';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Fetch';
     }
   });
 </script>
