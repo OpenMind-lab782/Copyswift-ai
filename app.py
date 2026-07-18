@@ -2129,3 +2129,80 @@ def ad_copy_generate():
     })
 
 # === END BLOCK ===
+# === APPEND THIS BLOCK TO THE END OF app.py ===
+import re as _re
+from bs4 import BeautifulSoup as _BeautifulSoup
+
+def _extract_price(soup):
+    # Try common price patterns: itemprop, class names, then a regex fallback
+    price_tag = soup.find(attrs={"itemprop": "price"})
+    if price_tag:
+        val = price_tag.get("content") or price_tag.get_text(strip=True)
+        if val:
+            return val.strip()
+    for cls_kw in ["price", "product-price", "current-price"]:
+        tag = soup.find(class_=_re.compile(cls_kw, _re.I))
+        if tag:
+            text = tag.get_text(strip=True)
+            if text and len(text) < 30:
+                return text
+    # Regex fallback: currency symbol followed by digits
+    text = soup.get_text(" ", strip=True)
+    match = _re.search(r'(P|R|\$|₦|N|BWP|NGN|USD)\s?[\d,]+(\.\d{2})?', text)
+    return match.group(0) if match else None
+
+
+@app.route('/tools/ad-copy/scrape-url', methods=['POST'])
+def ad_copy_scrape_url():
+    data = request.get_json(force=True) or {}
+    url = (data.get("url") or "").strip()
+
+    if not url or not url.startswith(("http://", "https://")):
+        return jsonify({"error": "invalid_url", "message": "Please enter a valid product URL starting with http:// or https://"}), 400
+
+    try:
+        resp = requests.get(
+            url,
+            headers={"User-Agent": "Mozilla/5.0 (compatible; CopySwiftAI/1.0)"},
+            timeout=8,
+        )
+        resp.raise_for_status()
+    except Exception as e:
+        return jsonify({"error": "fetch_failed", "message": f"Couldn't load that page: {str(e)}"}), 400
+
+    soup = _BeautifulSoup(resp.text, "html.parser")
+
+    og_title = soup.find("meta", property="og:title")
+    og_desc = soup.find("meta", property="og:description")
+    meta_desc = soup.find("meta", attrs={"name": "description"})
+    title_tag = soup.find("title")
+
+    title = (og_title.get("content") if og_title else None) or \
+             (title_tag.get_text(strip=True) if title_tag else "") or ""
+    description = (og_desc.get("content") if og_desc else None) or \
+                  (meta_desc.get("content") if meta_desc else "") or ""
+    price = _extract_price(soup)
+
+    title = title.strip()[:150]
+    description = description.strip()[:300]
+
+    if not title and not description:
+        return jsonify({
+            "error": "no_content",
+            "message": "Couldn't find product details on that page. Try typing your offer manually instead.",
+        }), 400
+
+    suggested_offer = title
+    if description:
+        suggested_offer += f" — {description}"
+    if price:
+        suggested_offer += f" (Price: {price})"
+
+    return jsonify({
+        "title": title,
+        "description": description,
+        "price": price,
+        "suggested_offer": suggested_offer[:400],
+    })
+
+# === END BLOCK ===
