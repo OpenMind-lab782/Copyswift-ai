@@ -168,6 +168,62 @@ def check_talking_video(talk_id):
         print(traceback.format_exc())
         return {'status': 'error'}
 
+FAL_KEY = os.environ.get('FAL_KEY', '')
+
+def start_image_to_video(image_url, prompt='Subtle camera movement, product highlighted, professional advertising motion'):
+    """Start a fal.ai image-to-video job. Returns request_id immediately (non-blocking)."""
+    try:
+        headers = {
+            'Authorization': f'Key {FAL_KEY}',
+            'Content-Type': 'application/json'
+        }
+        payload = {
+            'image_url': image_url,
+            'prompt': prompt[:500]
+        }
+        resp = requests.post('https://queue.fal.run/fal-ai/wan-i2v', headers=headers, json=payload, timeout=20)
+        if resp.status_code >= 400:
+            print('fal.ai error response body:', resp.text)
+        resp.raise_for_status()
+        data = resp.json()
+        return {'request_id': data.get('request_id'), 'status_url': data.get('status_url'), 'response_url': data.get('response_url')}
+    except Exception as e:
+        import traceback
+        print(f'Image-to-video start error: {e}')
+        print(traceback.format_exc())
+        return None
+
+def check_image_to_video(status_url, response_url):
+    """Check status of a fal.ai image-to-video job. Returns dict with status and url if ready."""
+    try:
+        headers = {'Authorization': f'Key {FAL_KEY}'}
+        check = requests.get(status_url, headers=headers, timeout=15)
+        check.raise_for_status()
+        data = check.json()
+        status = data.get('status')
+        if status == 'COMPLETED':
+            result = requests.get(response_url, headers=headers, timeout=15)
+            result.raise_for_status()
+            result_data = result.json()
+            raw_url = result_data.get('video', {}).get('url')
+            if not raw_url:
+                return {'status': 'error'}
+            upload_result = cloudinary.uploader.upload(
+                raw_url,
+                folder='copyswift_ai/image_to_video',
+                resource_type='video'
+            )
+            return {'status': 'done', 'video_url': upload_result.get('secure_url', '')}
+        elif status in ('IN_QUEUE', 'IN_PROGRESS'):
+            return {'status': 'pending'}
+        else:
+            return {'status': 'error'}
+    except Exception as e:
+        import traceback
+        print(f'Image-to-video check error: {e}')
+        print(traceback.format_exc())
+        return {'status': 'error'}
+
 def get_usd_ngn_rate():
     """Fetch a live USD->NGN exchange rate. Falls back to a fixed rate on error."""
     try:
@@ -1869,6 +1925,43 @@ def api_generate_video():
 @app.route('/api/check-video/<talk_id>')
 def api_check_video(talk_id):
     result = check_talking_video(talk_id)
+    return jsonify(result)
+
+@app.route('/api/generate-image-video', methods=['POST'])
+def api_generate_image_video():
+    data = request.get_json() or {}
+    email = session.get('user_email', '') or data.get('email', '')
+    if not email:
+        return jsonify({'error': 'Not logged in'}), 401
+    image_url = data.get('image_url', '').strip()
+    prompt = data.get('prompt', '').strip()
+    if not image_url:
+        return jsonify({'error': 'An image URL is required'}), 400
+    is_admin = email == os.environ.get('ADMIN_EMAIL', '')
+    with get_db() as db:
+        balance = get_credit_balance(email)
+        if not is_admin and balance < 20:
+            return jsonify({'error': 'Insufficient credits. Image-to-video costs 20 credits.'}), 402
+        job = start_image_to_video(image_url, prompt) if prompt else start_image_to_video(image_url)
+        if not job or not job.get('request_id'):
+            return jsonify({'error': 'Image-to-video generation failed to start. Please try again.'}), 500
+        if not is_admin:
+            db.execute('UPDATE credits SET balance = balance - 20 WHERE email=?', (email,))
+            db.commit()
+        return jsonify({
+            'request_id': job['request_id'],
+            'status_url': job['status_url'],
+            'response_url': job['response_url'],
+        })
+
+@app.route('/api/check-image-video', methods=['POST'])
+def api_check_image_video():
+    data = request.get_json() or {}
+    status_url = data.get('status_url', '')
+    response_url = data.get('response_url', '')
+    if not status_url or not response_url:
+        return jsonify({'error': 'Missing status_url or response_url'}), 400
+    result = check_image_to_video(status_url, response_url)
     return jsonify(result)
 
 @app.route('/api/streak', methods=['GET'])
