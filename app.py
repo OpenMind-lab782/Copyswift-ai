@@ -170,7 +170,7 @@ def check_talking_video(talk_id):
 
 FAL_KEY = os.environ.get('FAL_KEY', '')
 
-def start_image_to_video(image_url, prompt='Subtle camera movement, product highlighted, professional advertising motion', aspect_ratio='1:1'):
+def start_image_to_video(image_url, prompt='Gentle slow zoom in, product stays still and clearly visible, soft studio lighting, professional advertising style', aspect_ratio='1:1'):
     """Start a fal.ai image-to-video job. Returns request_id immediately (non-blocking)."""
     try:
         headers = {
