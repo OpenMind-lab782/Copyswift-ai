@@ -209,12 +209,12 @@ def check_image_to_video(status_url, response_url):
             result = requests.get(response_url, headers=headers, timeout=15)
             if result.status_code >= 400:
                 print(f'fal.ai result fetch error body: {result.text}')
-                return {'status': 'error', 'debug_status_payload': data, 'debug_result_error': result.text}
+                return {'status': 'error', 'message': 'Video generation failed. Please try a different image.'}
             result.raise_for_status()
             result_data = result.json()
             raw_url = result_data.get('video', {}).get('url')
             if not raw_url:
-                return {'status': 'error', 'debug_result_payload': result_data}
+                return {'status': 'error', 'message': 'Video generation failed. Please try a different image.'}
             upload_result = cloudinary.uploader.upload(
                 raw_url,
                 folder='copyswift_ai/image_to_video',
@@ -224,12 +224,13 @@ def check_image_to_video(status_url, response_url):
         elif status in ('IN_QUEUE', 'IN_PROGRESS'):
             return {'status': 'pending'}
         else:
-            return {'status': 'error', 'debug_status_payload': data}
+            print(f'fal.ai unexpected status payload: {data}')
+            return {'status': 'error', 'message': 'Video generation failed. Please try again.'}
     except Exception as e:
         import traceback
         print(f'Image-to-video check error: {e}')
         print(traceback.format_exc())
-        return {'status': 'error', 'debug_exception': str(e)}
+        return {'status': 'error', 'message': 'Video generation failed. Please try again.'}
 
 def get_usd_ngn_rate():
     """Fetch a live USD->NGN exchange rate. Falls back to a fixed rate on error."""
