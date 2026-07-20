@@ -206,11 +206,12 @@ def check_image_to_video(status_url, response_url):
             result = requests.get(response_url, headers=headers, timeout=15)
             if result.status_code >= 400:
                 print(f'fal.ai result fetch error body: {result.text}')
+                return {'status': 'error', 'debug_status_payload': data, 'debug_result_error': result.text}
             result.raise_for_status()
             result_data = result.json()
             raw_url = result_data.get('video', {}).get('url')
             if not raw_url:
-                return {'status': 'error'}
+                return {'status': 'error', 'debug_result_payload': result_data}
             upload_result = cloudinary.uploader.upload(
                 raw_url,
                 folder='copyswift_ai/image_to_video',
@@ -220,12 +221,12 @@ def check_image_to_video(status_url, response_url):
         elif status in ('IN_QUEUE', 'IN_PROGRESS'):
             return {'status': 'pending'}
         else:
-            return {'status': 'error'}
+            return {'status': 'error', 'debug_status_payload': data}
     except Exception as e:
         import traceback
         print(f'Image-to-video check error: {e}')
         print(traceback.format_exc())
-        return {'status': 'error'}
+        return {'status': 'error', 'debug_exception': str(e)}
 
 def get_usd_ngn_rate():
     """Fetch a live USD->NGN exchange rate. Falls back to a fixed rate on error."""
