@@ -170,16 +170,19 @@ def check_talking_video(talk_id):
 
 FAL_KEY = os.environ.get('FAL_KEY', '')
 
-def start_image_to_video(image_url, prompt='Subtle camera movement, product highlighted, professional advertising motion'):
+def start_image_to_video(image_url, prompt='Subtle camera movement, product highlighted, professional advertising motion', aspect_ratio='1:1'):
     """Start a fal.ai image-to-video job. Returns request_id immediately (non-blocking)."""
     try:
         headers = {
             'Authorization': f'Key {FAL_KEY}',
             'Content-Type': 'application/json'
         }
+        if aspect_ratio not in ('16:9', '9:16', '1:1'):
+            aspect_ratio = '1:1'
         payload = {
             'image_url': image_url,
-            'prompt': prompt[:500]
+            'prompt': prompt[:500],
+            'aspect_ratio': aspect_ratio
         }
         resp = requests.post('https://queue.fal.run/fal-ai/wan-i2v', headers=headers, json=payload, timeout=20)
         if resp.status_code >= 400:
