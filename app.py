@@ -201,8 +201,11 @@ def check_image_to_video(status_url, response_url):
         check.raise_for_status()
         data = check.json()
         status = data.get('status')
+        print(f'fal.ai status check response: {data}')
         if status == 'COMPLETED':
             result = requests.get(response_url, headers=headers, timeout=15)
+            if result.status_code >= 400:
+                print(f'fal.ai result fetch error body: {result.text}')
             result.raise_for_status()
             result_data = result.json()
             raw_url = result_data.get('video', {}).get('url')
