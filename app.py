@@ -860,6 +860,10 @@ input[type=hidden]{display:none}
   <div id="imgResult" style="margin-top:15px;display:none">
     <img id="generatedImg" src="" style="width:100%;border-radius:12px;border:1px solid #00d4ff44" />
     <a id="imgDownload" href="" download="copyswift-ad.png" target="_blank" style="display:block;text-align:center;margin-top:10px;color:#00d4ff;font-size:13px">⬇️ Download Image</a>
+    <button id="animateBtn" onclick="animateImage()" style="width:100%;margin-top:12px;padding:13px;background:linear-gradient(135deg,#7c3aed,#00d4ff);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer">🎬 Animate This Image (20 credits)</button>
+    <div id="animateStatus" style="display:none;text-align:center;color:#94a3b8;font-size:13px;margin-top:8px">⏳ Animating your image — this can take up to a minute...</div>
+    <div id="animateError" style="display:none;color:#ef4444;font-size:13px;margin-top:8px;text-align:center"></div>
+    <video id="animatedVideo" controls style="display:none;width:100%;border-radius:12px;margin-top:10px;border:1px solid #00d4ff44"></video>
   </div>
   <div id="imgError" style="color:#ff4444;font-size:13px;margin-top:10px;display:none"></div>
 </div>
@@ -1163,6 +1167,57 @@ async function generateImage(){
   }
   btn.disabled=false;btn.textContent='🖼️ Generate Image';
 }
+
+async function animateImage(){
+  const imageUrl = document.getElementById('generatedImg').src;
+  const email = document.querySelector('input[name=email]')?.value || '';
+  if(!imageUrl){alert('Generate an image first.');return;}
+  const btn = document.getElementById('animateBtn');
+  const status = document.getElementById('animateStatus');
+  const errDiv = document.getElementById('animateError');
+  const video = document.getElementById('animatedVideo');
+  btn.disabled = true; btn.textContent = '⏳ Starting...';
+  status.style.display = 'block'; errDiv.style.display = 'none'; video.style.display = 'none';
+  try{
+    const resp = await fetch('/api/generate-image-video', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({image_url: imageUrl, email: email})});
+    const data = await resp.json();
+    if(!data.request_id){
+      errDiv.textContent = data.error || 'Failed to start animation.';
+      errDiv.style.display = 'block'; status.style.display = 'none';
+      btn.disabled = false; btn.textContent = '🎬 Animate This Image (20 credits)';
+      return;
+    }
+    pollAnimation(data.status_url, data.response_url, btn, status, errDiv, video);
+  }catch(e){
+    errDiv.textContent = 'Error: ' + e.message;
+    errDiv.style.display = 'block'; status.style.display = 'none';
+    btn.disabled = false; btn.textContent = '🎬 Animate This Image (20 credits)';
+  }
+}
+
+async function pollAnimation(statusUrl, responseUrl, btn, status, errDiv, video){
+  try{
+    const resp = await fetch('/api/check-image-video', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status_url: statusUrl, response_url: responseUrl})});
+    const data = await resp.json();
+    if(data.status === 'done'){
+      video.src = data.video_url;
+      video.style.display = 'block';
+      status.style.display = 'none';
+      btn.disabled = false; btn.textContent = '🎬 Animate This Image (20 credits)';
+    } else if(data.status === 'pending'){
+      setTimeout(()=>pollAnimation(statusUrl, responseUrl, btn, status, errDiv, video), 4000);
+    } else {
+      errDiv.textContent = data.message || 'Animation failed. Please try again.';
+      errDiv.style.display = 'block'; status.style.display = 'none';
+      btn.disabled = false; btn.textContent = '🎬 Animate This Image (20 credits)';
+    }
+  }catch(e){
+    errDiv.textContent = 'Error checking status: ' + e.message;
+    errDiv.style.display = 'block'; status.style.display = 'none';
+    btn.disabled = false; btn.textContent = '🎬 Animate This Image (20 credits)';
+  }
+}
+
 document.getElementById('copyForm')?.addEventListener('submit',function(){const b=document.getElementById('genBtn');b.disabled=true;b.textContent='⚡ Generating...'})
 const PACKAGES = {{ credit_packages|tojson }};
 function openCryptoModal(pkgId){
