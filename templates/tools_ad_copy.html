@@ -156,7 +156,7 @@
 
   <div class="credits-pill">
     <div class="left">✅ <span>Free uses today</span></div>
-    <div><span class="count">{{ remaining_uses }}</span> left &nbsp;·&nbsp; <a href="/#pricing" class="buy">Get more free →</a></div>
+    <div><span class="count" id="usesCount">{{ remaining_uses }}</span> left &nbsp;·&nbsp; <a href="/#pricing" class="buy">Get more free →</a></div>
   </div>
 
   <div class="panel" id="tool">
@@ -201,6 +201,15 @@
     <button class="btn-gradient" id="generateBtn">⚡ Generate My Ad Copy</button>
     <div class="fine-print">No signup needed · 3 free per day · Sign up for more tones &amp; languages</div>
     <div class="result-box" id="resultBox"></div>
+    <div id="bonusPrompt" style="display:none; background:linear-gradient(135deg,rgba(59,130,246,0.1),rgba(139,92,246,0.1)); border:1px solid rgba(139,92,246,0.3); border-radius:10px; padding:16px; margin-top:14px;">
+      <div style="font-weight:700; font-size:0.95rem; margin-bottom:4px;">🎁 Get 2 bonus generations today</div>
+      <div style="color:var(--muted); font-size:0.85rem; margin-bottom:12px;">Drop your email — no account needed, just more free ads today.</div>
+      <div style="display:flex; gap:8px;">
+        <input type="email" id="bonusEmail" placeholder="you@email.com" style="flex:1; background:#0F1524; border:1px solid var(--card-border); border-radius:8px; padding:10px 12px; color:var(--text); font-size:0.9rem;">
+        <button id="bonusUnlockBtn" onclick="unlockBonus()" style="background:linear-gradient(90deg,var(--grad-a),var(--grad-b)); color:#fff; border:none; border-radius:8px; padding:0 18px; font-size:0.85rem; font-weight:700; cursor:pointer; white-space:nowrap;">Unlock</button>
+      </div>
+      <div id="bonusStatus" style="font-size:0.8rem; margin-top:8px;"></div>
+    </div>
   </div>
 
   <div class="section">
@@ -348,6 +357,12 @@
       } else {
         resultBox.textContent = (data.variations || []).join('\n\n---\n\n') || 'No copy returned.';
         resultBox.style.display='block';
+        const usesCountEl = document.getElementById('usesCount');
+        if(usesCountEl) usesCountEl.textContent = data.remaining_uses;
+        const bonusPrompt = document.getElementById('bonusPrompt');
+        if(data.remaining_uses === 1 && bonusPrompt){
+          bonusPrompt.style.display = 'block';
+        }
       }
     } catch(err){
       errorBox.textContent = 'Network error — please try again.';
@@ -392,6 +407,41 @@
       btn.disabled = false; btn.textContent = 'Fetch';
     }
   });
+
+  async function unlockBonus(){
+    const email = document.getElementById('bonusEmail').value.trim();
+    const status = document.getElementById('bonusStatus');
+    const btn = document.getElementById('bonusUnlockBtn');
+    if(!email || !email.includes('@')){
+      status.textContent = 'Please enter a valid email.';
+      status.style.color = '#EF4444';
+      return;
+    }
+    btn.disabled = true; btn.textContent = '...';
+    try{
+      const res = await fetch('/tools/ad-copy/unlock-bonus', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({email})
+      });
+      const data = await res.json();
+      if(!res.ok){
+        status.textContent = data.message || 'Something went wrong.';
+        status.style.color = '#EF4444';
+        btn.disabled = false; btn.textContent = 'Unlock';
+      } else {
+        const usesCountEl = document.getElementById('usesCount');
+        if(usesCountEl) usesCountEl.textContent = data.remaining_uses;
+        status.textContent = '✓ Unlocked! ' + data.remaining_uses + ' generations left today.';
+        status.style.color = '#22C55E';
+        btn.textContent = '✓ Unlocked';
+      }
+    } catch(err){
+      status.textContent = 'Network error — please try again.';
+      status.style.color = '#EF4444';
+      btn.disabled = false; btn.textContent = 'Unlock';
+    }
+  }
 </script>
 </body>
 </html>
