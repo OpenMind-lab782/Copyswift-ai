@@ -332,6 +332,8 @@ def init_db():
         db.execute("CREATE TABLE IF NOT EXISTS free_usage (id INTEGER PRIMARY KEY AUTOINCREMENT, fingerprint TEXT UNIQUE NOT NULL, count INTEGER DEFAULT 0, week_start TEXT)")
         db.execute("CREATE TABLE IF NOT EXISTS affiliates (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL, ref_code TEXT UNIQUE NOT NULL, wallet_coin TEXT DEFAULT 'USDT', wallet_address TEXT DEFAULT '', total_earned REAL DEFAULT 0, pending_payout REAL DEFAULT 0, created_at TEXT DEFAULT (datetime('now')))")
         db.execute("CREATE TABLE IF NOT EXISTS referrals (id INTEGER PRIMARY KEY AUTOINCREMENT, ref_code TEXT NOT NULL, subscriber_email TEXT NOT NULL, amount_earned REAL DEFAULT 2.0, status TEXT DEFAULT 'pending', created_at TEXT DEFAULT (datetime('now')), paid_at TEXT)")
+        db.execute("CREATE TABLE IF NOT EXISTS free_tool_leads (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL, ip TEXT, tool TEXT DEFAULT 'ad-copy', created_at TEXT DEFAULT (datetime('now')))")
+        db.execute("CREATE TABLE IF NOT EXISTS ip_usage (id INTEGER PRIMARY KEY AUTOINCREMENT, ip TEXT NOT NULL, date TEXT NOT NULL, count INTEGER DEFAULT 1, UNIQUE(ip, date))")
         db.commit()
 
 init_db()
@@ -2533,11 +2535,38 @@ def _ad_copy_usage_key():
 def _ad_copy_remaining_uses():
     session.permanent = True
     used = session.get(_ad_copy_usage_key(), 0)
-    return max(0, DAILY_FREE_LIMIT - used)
+    limit = 5 if session.get("ad_copy_bonus_unlocked") else DAILY_FREE_LIMIT
+    return max(0, limit - used)
 
 def _ad_copy_increment_uses():
     key = _ad_copy_usage_key()
     session[key] = session.get(key, 0) + 1
+
+IP_DAILY_LIMIT = 10
+
+def _get_client_ip():
+    fwd = request.headers.get("X-Forwarded-For", "")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    return request.remote_addr or "unknown"
+
+def _ad_copy_ip_usage():
+    ip = _get_client_ip()
+    today = _date.today().isoformat()
+    with get_db() as db:
+        row = db.execute("SELECT count FROM ip_usage WHERE ip=? AND date=?", (ip, today)).fetchone()
+        return row["count"] if row else 0
+
+def _ad_copy_ip_increment():
+    ip = _get_client_ip()
+    today = _date.today().isoformat()
+    with get_db() as db:
+        db.execute(
+            "INSERT INTO ip_usage (ip, date, count) VALUES (?, ?, 1) "
+            "ON CONFLICT(ip, date) DO UPDATE SET count = count + 1",
+            (ip, today),
+        )
+        db.commit()
 
 
 @app.route('/tools/ad-copy')
@@ -2567,11 +2596,17 @@ def ad_copy_variant(industry):
 
 @app.route('/tools/ad-copy/generate', methods=['POST'])
 def ad_copy_generate():
+    if _ad_copy_ip_usage() >= IP_DAILY_LIMIT:
+        return jsonify({
+            "error": "ip_limit_reached",
+            "message": "This network has reached today's generation limit. Please try again tomorrow.",
+        }), 429
+
     remaining = _ad_copy_remaining_uses()
     if remaining <= 0:
         return jsonify({
             "error": "daily_limit_reached",
-            "message": "You've used today's 3 free generations. Sign up free for 5 more across every CopySwift AI tool.",
+            "message": "You've used today's free generations. Unlock 2 bonus generations with your email, or come back tomorrow.",
         }), 429
 
     data = request.get_json(force=True) or {}
@@ -2605,10 +2640,28 @@ def ad_copy_generate():
         return jsonify({"error": "generation_failed", "message": str(e)}), 500
 
     _ad_copy_increment_uses()
+    _ad_copy_ip_increment()
     return jsonify({
         "variations": variations,
         "remaining_uses": _ad_copy_remaining_uses(),
     })
+
+
+@app.route('/tools/ad-copy/unlock-bonus', methods=['POST'])
+def ad_copy_unlock_bonus():
+    data = request.get_json(force=True) or {}
+    email = (data.get("email") or "").strip().lower()
+    if not email or "@" not in email or "." not in email.split("@")[-1]:
+        return jsonify({"error": "invalid_email", "message": "Please enter a valid email address."}), 400
+    if session.get("ad_copy_bonus_unlocked"):
+        return jsonify({"remaining_uses": _ad_copy_remaining_uses(), "already_unlocked": True})
+    ip = _get_client_ip()
+    with get_db() as db:
+        db.execute("INSERT INTO free_tool_leads (email, ip, tool) VALUES (?, ?, 'ad-copy')", (email, ip))
+        db.commit()
+    session["ad_copy_bonus_unlocked"] = True
+    session.permanent = True
+    return jsonify({"remaining_uses": _ad_copy_remaining_uses(), "unlocked": True})
 
 # === END BLOCK ===
 # === APPEND THIS BLOCK TO THE END OF app.py ===
