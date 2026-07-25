@@ -1,12 +1,12 @@
 from dotenv import load_dotenv
 load_dotenv()
 from flask import Flask, render_template_string, render_template, request, session, redirect, jsonify
+from groq import Groq
 import os, hashlib, json, requests, time, sqlite3, base64, logging
 import cloudinary
 import cloudinary.uploader
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timedelta
 from functools import wraps
-from prompt_engine import build_prompt
 # --- Application logging ---------------------------------------------------
 logging.basicConfig(
     level=logging.INFO,
@@ -14,73 +14,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger("copyswift")
 
-
-# --- Groq HTTP API compatibility client ------------------------------------
-class _GroqHTTPResponse:
-    def __init__(self, data):
-        choices = data.get("choices", [])
-        self.choices = []
-        for choice in choices:
-            message = choice.get("message", {})
-            self.choices.append(
-                type("Choice", (), {
-                    "message": type("Message", (), {
-                        "content": message.get("content", "")
-                    })()
-                })()
-            )
-
-class _GroqChatCompletions:
-    def create(self, messages, model, reasoning_effort=None, temperature=None, max_tokens=None):
-        api_key = os.environ.get("GROQ_API_KEY", "").strip()
-
-        if not api_key:
-            raise RuntimeError(
-                "GROQ_API_KEY is not configured. "
-                "Please add your Groq API key to the environment."
-            )
-
-        payload = {
-            "model": model,
-            "messages": messages
-        }
-
-        if reasoning_effort is not None:
-            payload["reasoning_effort"] = reasoning_effort
-
-        if temperature is not None:
-            payload["temperature"] = temperature
-
-        if max_tokens is not None:
-            payload["max_tokens"] = max_tokens
-
-        response = requests.post(
-            "https://api.groq.com/openai/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            },
-            json=payload,
-            timeout=120
-        )
-
-        response.raise_for_status()
-        return _GroqHTTPResponse(response.json())
-
-class _GroqChat:
-    def __init__(self):
-        self.completions = _GroqChatCompletions()
-
-class _GroqHTTPClient:
-    def __init__(self):
-        self.chat = _GroqChat()
-
-client = _GroqHTTPClient()
-# ---------------------------------------------------------------------------
-
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "copyswift-secret-2024")
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
+client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 DB_PATH = "copyswift.db"
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")

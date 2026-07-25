@@ -1,0 +1,10 @@
+[33m49117db[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Add inline bonus-unlock email prompt to free ad copy tool frontend
+[33ma6775bd[m Add IP-based rate limiting and email bonus-unlock for free ad copy tool
+[33md1c21a8[m Add batch 2 of new industry variants: food, services, and region-specific categories
+[33mdd2bf8b[m Add batch 1 of new industry variants: fuel, health, auto, and trade services
+[33mc572ac0[m Add artisans, trades, and service-provider industry variants and personas
+[33m16f771e[m Add Animate This Image button and video polling to frontend
+[33me2225a8[m Clean up debug fields, return user-friendly error messages
+[33m94ecee1[m Fix default motion prompt - remove ambiguous word 'camera' causing content morphing
+[33m9c0a489[m Fix aspect_ratio requirement for fal.ai image-to-video
+[33mafb6369[m Return fal.ai debug info directly in API response for troubleshooting

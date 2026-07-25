@@ -1,86 +1,16 @@
 from dotenv import load_dotenv
 load_dotenv()
 from flask import Flask, render_template_string, render_template, request, session, redirect, jsonify
-import os, hashlib, json, requests, time, sqlite3, base64, logging
+from groq import Groq
+import os, hashlib, json, requests, time, sqlite3, base64
 import cloudinary
 import cloudinary.uploader
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timedelta
 from functools import wraps
-from prompt_engine import build_prompt
-# --- Application logging ---------------------------------------------------
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s"
-)
-logger = logging.getLogger("copyswift")
-
-
-# --- Groq HTTP API compatibility client ------------------------------------
-class _GroqHTTPResponse:
-    def __init__(self, data):
-        choices = data.get("choices", [])
-        self.choices = []
-        for choice in choices:
-            message = choice.get("message", {})
-            self.choices.append(
-                type("Choice", (), {
-                    "message": type("Message", (), {
-                        "content": message.get("content", "")
-                    })()
-                })()
-            )
-
-class _GroqChatCompletions:
-    def create(self, messages, model, reasoning_effort=None, temperature=None, max_tokens=None):
-        api_key = os.environ.get("GROQ_API_KEY", "").strip()
-
-        if not api_key:
-            raise RuntimeError(
-                "GROQ_API_KEY is not configured. "
-                "Please add your Groq API key to the environment."
-            )
-
-        payload = {
-            "model": model,
-            "messages": messages
-        }
-
-        if reasoning_effort is not None:
-            payload["reasoning_effort"] = reasoning_effort
-
-        if temperature is not None:
-            payload["temperature"] = temperature
-
-        if max_tokens is not None:
-            payload["max_tokens"] = max_tokens
-
-        response = requests.post(
-            "https://api.groq.com/openai/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            },
-            json=payload,
-            timeout=120
-        )
-
-        response.raise_for_status()
-        return _GroqHTTPResponse(response.json())
-
-class _GroqChat:
-    def __init__(self):
-        self.completions = _GroqChatCompletions()
-
-class _GroqHTTPClient:
-    def __init__(self):
-        self.chat = _GroqChat()
-
-client = _GroqHTTPClient()
-# ---------------------------------------------------------------------------
-
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "copyswift-secret-2024")
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
+client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 DB_PATH = "copyswift.db"
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")
@@ -1688,8 +1618,7 @@ def home():
                     credits_balance = get_credit_balance(user_email)
                     limit_reached = (credits_balance <= 0)
             except Exception as e:
-                logger.exception("Main ad copy generation failed")
-                error = "We couldn't generate your ad copy right now. Please try again. If the problem continues, contact CopySwift AI support."
+                error = str(e)
     return render_template_string(HTML, result=result, error=error, product=product, audience=audience,
         selected_type=selected_type, copy_types=COPY_TYPES,
         credits_balance=credits_balance, limit_reached=limit_reached,
@@ -1967,12 +1896,7 @@ def api_generate_bundle():
                 cc = client.chat.completions.create(messages=[{"role":"user","content":prompt + "\n\nIMPORTANT: Output plain text only. Do not use Markdown formatting such as **, ##, or bullet dashes. Write it exactly as it should appear to the end reader."}], model="openai/gpt-oss-20b", reasoning_effort="low")
                 results[key] = cc.choices[0].message.content
         except Exception as e:
-            logger.exception("AI campaign bundle generation failed")
-            return jsonify({
-                "success": False,
-                "error": "generation_failed",
-                "message": "We couldn't generate your campaign right now. Please try again. If the problem continues, contact CopySwift AI support."
-            }), 500
+            return jsonify({"error": str(e)}), 500
 
         if not is_admin:
             db.execute('UPDATE credits SET balance = balance - 3 WHERE email=?', (email,))
@@ -2177,16 +2101,6 @@ def api_update_business_profile():
 def api_check_pro():
     email = request.args.get('email','')
     return jsonify({"pro": is_pro_email(email)})
-
-# --- User-friendly server error handling ----------------------------------
-@app.errorhandler(500)
-def handle_internal_server_error(error):
-    logger.exception("Unhandled server error: %s", error)
-    return jsonify({
-        "success": False,
-        "error": "server_error",
-        "message": "Something went wrong while processing your request. Please try again. If the problem continues, contact CopySwift AI support."
-    }), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
@@ -2723,11 +2637,7 @@ def ad_copy_generate():
         result = cc.choices[0].message.content
         variations = [v.strip() for v in result.split('---') if v.strip()]
     except Exception as e:
-        logger.exception("Free Ad Copy generation failed")
-        return jsonify({
-            "error": "generation_failed",
-            "message": "We couldn't generate your ad copy right now. Please try again. If the problem continues, contact CopySwift AI support."
-        }), 500
+        return jsonify({"error": "generation_failed", "message": str(e)}), 500
 
     _ad_copy_increment_uses()
     _ad_copy_ip_increment()
