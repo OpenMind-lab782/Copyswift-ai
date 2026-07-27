@@ -3,3 +3,34 @@ __pycache__/
 data.db
 build.log
 backup_old/
+
+# Environment files
+.env
+.env.*
+
+# Logs
+*.log
+upgrade.log
+
+# Backups
+backups/
+backup/
+*.bak
+*.backup
+
+# Temporary files
+*.tmp
+*.swp
+
+# Python cache
+.pytest_cache/
+.mypy_cache/
+
+# Local test scripts
+test_*.py
+
+# Old framework
+framework_v31/
+
+# Local backup app
+app.py.before_v23

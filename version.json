@@ -1,5 +1,8 @@
 {
   "version": "2.0.0",
   "last_upgrade": "20260725_164125",
-  "installed_patches": []
+  "installed_patches": [
+    "2.1.0",
+    "3.2.1"
+  ]
 }

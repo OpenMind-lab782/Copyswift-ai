@@ -1734,6 +1734,22 @@ def verify_paystack():
             purchase = activate_credit_purchase(ref)
             if email:
                 session['user_email'] = email
+
+            try:
+                send_notification_email(
+                    email,
+                    "Payment Successful - CopySwift AI™",
+                    f"""
+                    <h2>Payment Successful</h2>
+                    <p>Hello,</p>
+                    <p>Your payment has been received successfully.</p>
+                    <p>Your AI credits have been activated and are now available in your account.</p>
+                    <hr>
+                    <p><b>Thank you for choosing CopySwift AI™.</b></p>
+                    """
+                )
+            except Exception as e:
+                print(f"[Email] {e}")
     return redirect('/')
 
 @app.route('/confirm-crypto', methods=['POST'])
@@ -2757,6 +2773,8 @@ def ad_copy_unlock_bonus():
 # === APPEND THIS BLOCK TO THE END OF app.py ===
 import re as _re
 from bs4 import BeautifulSoup as _BeautifulSoup
+from email_service import send_email
+from notifications.email import send_notification_email
 
 def _extract_price(soup):
     # Try common price patterns: itemprop, class names, then a regex fallback
