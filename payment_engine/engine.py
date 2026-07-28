@@ -5,19 +5,66 @@ from payment_engine.gateways.paystack import PaystackGateway
 from payment_engine.gateways.flutterwave import FlutterwaveGateway
 from payment_engine.gateways.dpo import DPOGateway
 
-registry = GatewayRegistry()
-
-registry.register(CryptoGateway())
-registry.register(PaystackGateway())
-registry.register(FlutterwaveGateway())
-registry.register(DPOGateway())
 
 class PaymentEngine:
 
-    VERSION = "1.1.0"
+    VERSION = "1.2.0"
+
+    def __init__(self):
+        self.registry = GatewayRegistry()
+
+        self.registry.register(CryptoGateway())
+        self.registry.register(PaystackGateway())
+        self.registry.register(FlutterwaveGateway())
+        self.registry.register(DPOGateway())
 
     def gateways(self):
-        return registry.list()
+        return self.registry.list()
 
-    def gateway(self, name):
-        return registry.get(name)
+    def get_gateway(self, name):
+        gateway = self.registry.get(name)
+
+        if gateway is None:
+            raise ValueError(f"Unknown gateway: {name}")
+
+        return gateway
+
+    def create_payment(
+        self,
+        gateway,
+        amount,
+        currency,
+        customer
+    ):
+        return self.get_gateway(gateway).initialize_payment(
+            amount,
+            currency,
+            customer
+        )
+
+    def verify_payment(
+        self,
+        gateway,
+        reference
+    ):
+        return self.get_gateway(gateway).verify_payment(
+            reference
+        )
+
+    def refund_payment(
+        self,
+        gateway,
+        reference
+    ):
+        return self.get_gateway(gateway).refund_payment(
+            reference
+        )
+
+    def handle_webhook(
+        self,
+        gateway,
+        payload
+    ):
+        return self.get_gateway(gateway).handle_webhook(
+            payload
+        )
