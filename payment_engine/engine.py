@@ -29,6 +29,16 @@ class PaymentEngine:
 
         return gateway
 
+
+
+    def submit_payment(self, request):
+        gateway = self.get_gateway(request.gateway)
+
+        return gateway.initialize_payment(
+            request.amount,
+            request.currency,
+            request.customer
+        )
     def create_payment(
         self,
         gateway,
