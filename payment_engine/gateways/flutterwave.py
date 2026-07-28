@@ -1,0 +1,2 @@
+class FlutterwaveGateway:
+    pass
