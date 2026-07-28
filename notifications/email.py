@@ -28,5 +28,4 @@ def send_notification_email(
         to_email=to_email,
         subject=subject,
         html=html,
-        text=text,
     )
