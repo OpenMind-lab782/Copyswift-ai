@@ -1899,6 +1899,34 @@ def admin_gift_credits():
             amount = int(amount)
             if amount > 0:
                 add_credits(email, amount)
+
+                try:
+                    send_notification_email(
+                        email,
+                        "🎁 You received bonus credits!",
+                        f"""
+<h2>Congratulations!</h2>
+<p>{amount} bonus credits have been added to your CopySwift AI account.</p>
+<p><strong>Reason:</strong> {reason}</p>
+"""
+                    )
+                except Exception as e:
+                    app.logger.exception(f"Gift email failed: {e}")
+
+                try:
+                    send_notification_email(
+                        os.environ.get("ADMIN_EMAIL"),
+                        "Admin Notification - Credits Gifted",
+                        f"""
+<h2>Credits Gifted</h2>
+<p><strong>User:</strong> {email}</p>
+<p><strong>Credits:</strong> {amount}</p>
+<p><strong>Reason:</strong> {reason}</p>
+"""
+                    )
+                except Exception as e:
+                    app.logger.exception(f"Admin notification failed: {e}")
+
                 session['admin_flash'] = f"Gifted {amount} bonus credits to {email} ({reason})"
             else:
                 session['admin_flash'] = "Amount must be a positive number"
