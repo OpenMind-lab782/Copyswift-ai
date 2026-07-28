@@ -1732,6 +1732,12 @@ def pay_paystack():
 def verify_paystack():
     ref = request.args.get('reference') or session.get('pay_ref','')
     if ref and PAYSTACK_SECRET:
+
+        engine_result = payment_engine.verify_payment(
+            "paystack",
+            ref
+        )
+
         res = paystack_verify(ref)
         if res.get('data',{}).get('status') == 'success':
             email = session.get('pay_email','')
