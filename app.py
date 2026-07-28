@@ -79,6 +79,10 @@ client = _GroqHTTPClient()
 # ---------------------------------------------------------------------------
 
 app = Flask(__name__)
+
+payment_engine = PaymentEngine()
+
+
 app.secret_key = os.environ.get("SECRET_KEY", "copyswift-secret-2024")
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
 
@@ -1761,6 +1765,21 @@ def confirm_crypto():
     if package not in CREDIT_PACKAGES:
         package = 'mini'
     pkg = CREDIT_PACKAGES[package]
+
+    request_obj = PaymentRequest(
+        gateway="crypto",
+        amount=pkg["usd"],
+        currency=coin,
+        customer=email,
+        reference=tx_hash,
+        metadata={
+            "package": package,
+            "ads": pkg["ads"]
+        }
+    )
+
+    payment_engine.submit_payment(request_obj)
+
     save_payment(email, "crypto", f"${pkg['usd']} {coin}", tx_hash, coin, "pending")
     save_credit_purchase(email, package, pkg['ads'], pkg['usd'], f"{coin}", "crypto", tx_hash, "pending", ref_code=resolve_ref_code(email))
     session['user_email'] = email
@@ -2803,6 +2822,9 @@ import re as _re
 from bs4 import BeautifulSoup as _BeautifulSoup
 from email_service import send_email
 from notifications.email import send_notification_email
+from payment_engine.engine import PaymentEngine
+from payment_engine.models import PaymentRequest
+
 
 def _extract_price(soup):
     # Try common price patterns: itemprop, class names, then a regex fallback
