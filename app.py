@@ -1,12 +1,21 @@
 from dotenv import load_dotenv
-load_dotenv()
 from flask import Flask, render_template_string, render_template, request, session, redirect, jsonify
+from payment_engine.api.merchants import merchant_api
 import os, hashlib, json, requests, time, sqlite3, base64, logging
 import cloudinary
 import cloudinary.uploader
 from datetime import datetime, timedelta
 from functools import wraps
 from prompt_engine import build_prompt
+from datetime import date as _date
+import re as _re
+from bs4 import BeautifulSoup as _BeautifulSoup
+from email_service import send_email
+from notifications.email import send_notification_email
+from payment_engine.engine import PaymentEngine
+from payment_engine.models import PaymentRequest
+
+load_dotenv()
 # --- Application logging ---------------------------------------------------
 logging.basicConfig(
     level=logging.INFO,
@@ -79,6 +88,9 @@ client = _GroqHTTPClient()
 # ---------------------------------------------------------------------------
 
 app = Flask(__name__)
+
+app.register_blueprint(merchant_api, url_prefix="/api/v1")
+
 
 payment_engine = PaymentEngine()
 
@@ -2263,7 +2275,6 @@ if __name__ == '__main__':
 # Reuses your existing `client` (Groq) and session-based patterns already in app.py.
 # Does NOT touch your credits table — free tool uses its own daily session counter.
 
-from datetime import date as _date
 
 INDUSTRY_VARIANTS = {
     "fashion-retail": {
@@ -2824,12 +2835,6 @@ def ad_copy_unlock_bonus():
 
 # === END BLOCK ===
 # === APPEND THIS BLOCK TO THE END OF app.py ===
-import re as _re
-from bs4 import BeautifulSoup as _BeautifulSoup
-from email_service import send_email
-from notifications.email import send_notification_email
-from payment_engine.engine import PaymentEngine
-from payment_engine.models import PaymentRequest
 
 
 def _extract_price(soup):
