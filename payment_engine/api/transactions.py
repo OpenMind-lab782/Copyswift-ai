@@ -1,7 +1,11 @@
+
 from flask import Blueprint, jsonify, request
 
 from payment_engine.database.database import get_db
 from payment_engine.database.repository import TransactionRepository
+from payment_engine.services.transaction_service import TransactionService
+
+service = TransactionService()
 
 transactions = Blueprint("transactions", __name__)
 
@@ -91,3 +95,11 @@ def get_transaction(reference):
 
     finally:
         db.close()
+
+@transactions.route("/transactions/statistics", methods=["GET"])
+def transaction_statistics():
+    return jsonify({
+        "status": "success",
+        "data": service.statistics(),
+    })
+
