@@ -1,55 +1,33 @@
-from payment_engine.base import BaseGateway
-from payment_engine.logger import log_payment_event, log_error
+from payment_engine.gateways.base import BaseGateway
 
 
 class PaystackGateway(BaseGateway):
+    """
+    Paystack Gateway Adapter
+    """
 
-    name = "paystack"
+    @property
+    def name(self):
+        return "paystack"
 
-    def initialize_payment(self, amount, currency, customer):
-
-        log_payment_event(
-            "paystack_initialize",
-            customer=customer,
-            amount=amount,
-            currency=currency
+    def initialize_payment(self, amount, currency, customer, **kwargs):
+        raise NotImplementedError(
+            "Paystack initialize_payment() not yet implemented."
         )
-
-        return {
-            "success": True,
-            "gateway": self.name,
-            "status": "initialized"
-        }
 
     def verify_payment(self, reference):
-
-        log_payment_event(
-            "paystack_verify",
-            reference=reference
+        raise NotImplementedError(
+            "Paystack verify_payment() not yet implemented."
         )
 
+    def refund_payment(self, reference, amount=None):
+        raise NotImplementedError(
+            "Paystack refund_payment() not yet implemented."
+        )
+
+    def health_check(self):
         return {
-            "success": True,
+            "status": "healthy",
             "gateway": self.name,
-            "status": "verified",
-            "reference": reference
-        }
-
-    def refund_payment(self, reference):
-
-        return {
-            "success": False,
-            "message": "Refund not implemented.",
-            "reference": reference
-        }
-
-    def handle_webhook(self, payload):
-
-        log_payment_event(
-            "paystack_webhook",
-            payload=bool(payload)
-        )
-
-        return {
-            "success": True
+            "mode": "adapter-ready"
         }

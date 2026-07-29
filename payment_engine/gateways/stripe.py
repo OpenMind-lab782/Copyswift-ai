@@ -1,10 +1,10 @@
 from payment_engine.gateways.base import BaseGateway
 
-class FlutterwaveGateway(BaseGateway):
+class StripeGateway(BaseGateway):
 
     @property
     def name(self):
-        return "flutterwave"
+        return "stripe"
 
     def initialize_payment(self, amount, currency, customer, **kwargs):
         raise NotImplementedError()

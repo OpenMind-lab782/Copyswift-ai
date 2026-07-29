@@ -1,11 +1,14 @@
 from flask import Flask
 
+from payment_engine.api.routes import api
+from payment_engine.api.transactions import transactions
+
 
 def create_app():
     app = Flask(__name__)
 
-    from .routes import api
     app.register_blueprint(api)
+    app.register_blueprint(transactions)
 
     return app
 
