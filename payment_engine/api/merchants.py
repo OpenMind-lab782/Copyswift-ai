@@ -66,3 +66,15 @@ def register_merchant():
             "status": "error",
             "message": str(exc)
         }), 400
+
+
+@merchant_api.route("/merchants/statistics", methods=["GET"])
+def merchant_statistics():
+    merchants = service.list_merchants()
+
+    return jsonify({
+        "status": "success",
+        "data": {
+            "total_merchants": len(merchants)
+        }
+    })
