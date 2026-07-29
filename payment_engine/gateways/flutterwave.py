@@ -13,7 +13,13 @@ class FlutterwaveGateway(BaseGateway):
         }
 
     def verify_payment(self, reference):
-        return {"verified": False}
+        return {
+            "success": False,
+            "gateway": self.name,
+            "status": "failed",
+            "reference": reference,
+            "verified": False,
+        }
 
     def refund_payment(self, reference):
         return {"refunded": False}

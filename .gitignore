@@ -34,3 +34,7 @@ framework_v31/
 
 # Local backup app
 app.py.before_v23
+
+# Local patch backups
+*.before_fix
+*.before_gift_email_patch
