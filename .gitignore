@@ -1,40 +1,37 @@
+# Python
 __pycache__/
-*.pyc
-data.db
-build.log
-backup_old/
+*.py[cod]
+*$py.class
 
-# Environment files
-.env
-.env.*
+# Virtual environments
+.venv/
+venv/
+env/
+
+# SQLite databases
+*.db
+*.sqlite
+*.sqlite3
 
 # Logs
+logs/
 *.log
-upgrade.log
 
-# Backups
-backups/
-backup/
-*.bak
-*.backup
-
-# Temporary files
-*.tmp
-*.swp
-
-# Python cache
+# Coverage
+.coverage
+htmlcov/
 .pytest_cache/
-.mypy_cache/
 
-# Local test scripts
-test_*.py
+# IDEs
+.vscode/
+.idea/
 
-# Old framework
-framework_v31/
+# macOS
+.DS_Store
 
-# Local backup app
-app.py.before_v23
+# Termux temporary files
+tmp/
 
-# Local patch backups
-*.before_fix
-*.before_gift_email_patch
+# Environment variables
+.env
+.env.*
