@@ -2785,7 +2785,23 @@ def ad_copy_generate():
     if not offer:
         return jsonify({"error": "missing_offer", "message": "Tell us what you're selling first."}), 400
 
+    profile = get_active_business_profile(session.get("user_email"))
+
+    brand_context = ""
+    if profile:
+        brand_context = (
+            f"Business Name: {profile.get('business_name','')}\n"
+            f"Product: {profile.get('product','')}\n"
+            f"Audience: {profile.get('audience','')}\n"
+            f"Brand Voice: {profile.get('brand_voice','Professional')}\n"
+            f"Brand Style: {profile.get('brand_style','Modern')}\n"
+            f"Business Goal: {profile.get('brand_goal','Sales')}\n"
+            f"Brand Keywords: {profile.get('brand_keywords','')}\n"
+            f"Preferred CTA: {profile.get('brand_cta','Order Now')}\n\n"
+        )
+
     prompt = (
+        brand_context +
         f"Write 3 short ad copy variations for {platform}, in a {tone} tone.\n"
         f"What's being sold: {offer}\n"
         f"Target customer: {customer or 'general African small business customers'}\n"
@@ -2811,8 +2827,19 @@ def ad_copy_generate():
 
     _ad_copy_increment_uses()
     _ad_copy_ip_increment()
+    strategist = {
+        "objective": "Increase conversions",
+        "recommended_platform": platform,
+        "recommended_audience": customer or "General African small business customers",
+        "best_posting_time": "09:00-11:00 or 18:00-21:00",
+        "marketing_tip": "Reply to every interested customer within 5 minutes for higher conversion.",
+        "follow_up": "Republish the best-performing variation after 48 hours.",
+        "ab_test": "Test variation 1 against variation 2 and compare engagement."
+    }
+
     return jsonify({
         "variations": variations,
+        "strategist": strategist,
         "remaining_uses": _ad_copy_remaining_uses(),
     })
 
