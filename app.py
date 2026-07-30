@@ -1,4 +1,9 @@
 from dotenv import load_dotenv
+
+from brain.memory import load_business_memory
+from brain.prompt_builder import build_prompt
+from brain.scoring import score_campaign
+
 from flask import Flask, render_template_string, render_template, request, session, redirect, jsonify
 from payment_engine.api.merchants import merchant_api
 import os, hashlib, json, requests, time, sqlite3, base64, logging
@@ -483,6 +488,38 @@ def set_active_business_profile(email, profile_id):
     with get_db() as db:
         db.execute("UPDATE business_profiles SET is_active=0 WHERE email=?", (email,))
         db.execute("UPDATE business_profiles SET is_active=1 WHERE id=? AND email=?", (profile_id, email))
+        db.commit()
+
+
+
+def save_campaign_learning(email, headlines, cta, objection):
+    """Persist simple campaign learnings for the active business profile."""
+    if not email:
+        return
+
+    with get_db() as db:
+        profile = db.execute(
+            "SELECT id FROM business_profiles WHERE email=? AND is_active=1",
+            (email,)
+        ).fetchone()
+
+        if not profile:
+            return
+
+        db.execute("""
+            UPDATE business_profiles
+            SET
+                winning_headlines = COALESCE(winning_headlines,'') || ? || char(10),
+                winning_ctas = COALESCE(winning_ctas,'') || ? || char(10),
+                customer_objections = COALESCE(customer_objections,'') || ? || char(10)
+            WHERE id=?
+        """, (
+            headlines,
+            cta,
+            objection,
+            profile["id"]
+        ))
+
         db.commit()
 
 def update_business_profile(email, profile_id, business_name, product, audience, tone):
@@ -2787,27 +2824,13 @@ def ad_copy_generate():
 
     profile = get_active_business_profile(session.get("user_email"))
 
-    brand_context = ""
-    if profile:
-        brand_context = (
-            f"Business Name: {profile.get('business_name','')}\n"
-            f"Product: {profile.get('product','')}\n"
-            f"Audience: {profile.get('audience','')}\n"
-            f"Brand Voice: {profile.get('brand_voice','Professional')}\n"
-            f"Brand Style: {profile.get('brand_style','Modern')}\n"
-            f"Business Goal: {profile.get('brand_goal','Sales')}\n"
-            f"Brand Keywords: {profile.get('brand_keywords','')}\n"
-            f"Preferred CTA: {profile.get('brand_cta','Order Now')}\n\n"
-        )
-
-    prompt = (
-        brand_context +
-        f"Write 3 short ad copy variations for {platform}, in a {tone} tone.\n"
-        f"What's being sold: {offer}\n"
-        f"Target customer: {customer or 'general African small business customers'}\n"
-        f"Their main hesitation to address: {hesitation or 'none specified'}\n"
-        f"Each variation must be under 60 words, include a hook, the pitch, and a clear call-to-action. "
-        f"Separate the 3 variations with '---'. Write in plain text only — no Markdown, no **, no ## headers, no bullet symbols."
+    prompt = build_prompt(
+        profile,
+        offer,
+        customer,
+        hesitation,
+        platform,
+        tone,
     )
 
     try:
@@ -2817,7 +2840,25 @@ def ad_copy_generate():
             reasoning_effort="low",
         )
         result = cc.choices[0].message.content
-        variations = [v.strip() for v in result.split('---') if v.strip()]
+
+        if "###STRATEGY###" in result:
+            ad_text, strategy_text = result.split("###STRATEGY###", 1)
+        else:
+            ad_text = result
+            strategy_text = ""
+
+        variations = [v.strip() for v in ad_text.split('---') if v.strip()]
+
+        strategist = {
+            "objective": "",
+            "recommended_platform": platform,
+            "recommended_audience": customer or "General African small business customers",
+            "best_posting_time": "",
+            "marketing_tip": "",
+            "follow_up": "",
+            "ab_test": "",
+            "ai_strategy": strategy_text.strip(),
+        }
     except Exception as e:
         logger.exception("Free Ad Copy generation failed")
         return jsonify({
@@ -2827,15 +2868,6 @@ def ad_copy_generate():
 
     _ad_copy_increment_uses()
     _ad_copy_ip_increment()
-    strategist = {
-        "objective": "Increase conversions",
-        "recommended_platform": platform,
-        "recommended_audience": customer or "General African small business customers",
-        "best_posting_time": "09:00-11:00 or 18:00-21:00",
-        "marketing_tip": "Reply to every interested customer within 5 minutes for higher conversion.",
-        "follow_up": "Republish the best-performing variation after 48 hours.",
-        "ab_test": "Test variation 1 against variation 2 and compare engagement."
-    }
 
     return jsonify({
         "variations": variations,
