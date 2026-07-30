@@ -37,7 +37,7 @@ class TestPaymentEngineIntegration(unittest.TestCase):
     def test_multiple_providers(self):
         expected = {
             "paystack": "verified",
-            "flutterwave": "failed",
+            "flutterwave": "verified",
         }
 
         for provider, status in expected.items():

@@ -3,6 +3,9 @@ from dotenv import load_dotenv
 from brain.memory import load_business_memory
 from brain.prompt_builder import build_prompt
 from brain.scoring import score_campaign
+from brain.evaluation_service import evaluate_campaign
+from brain.campaign_learning import learning_summary
+from brain.campaign_learning import persist_learning
 
 from flask import Flask, render_template_string, render_template, request, session, redirect, jsonify
 from payment_engine.api.merchants import merchant_api
@@ -2859,6 +2862,24 @@ def ad_copy_generate():
             "ab_test": "",
             "ai_strategy": strategy_text.strip(),
         }
+
+        campaign_score = evaluate_campaign(
+            client,
+            MODEL,
+            "\n\n".join(variations)
+        )
+        learning = learning_summary(campaign_score)
+
+        if profile:
+            with get_db() as db:
+                persist_learning(
+                    db,
+                    profile["id"],
+                    "\n\n".join(variations),
+                    campaign_score,
+                )
+                db.commit()
+
     except Exception as e:
         logger.exception("Free Ad Copy generation failed")
         return jsonify({
@@ -2872,6 +2893,8 @@ def ad_copy_generate():
     return jsonify({
         "variations": variations,
         "strategist": strategist,
+        "campaign_score": campaign_score,
+        "learning": learning,
         "remaining_uses": _ad_copy_remaining_uses(),
     })
 
