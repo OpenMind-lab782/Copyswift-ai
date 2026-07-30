@@ -16,3 +16,4 @@ __pycache__/
 # Logs
 logs/
 *.log
+swift_payment_engine.db
