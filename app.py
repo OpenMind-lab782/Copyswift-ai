@@ -1,12 +1,32 @@
 from dotenv import load_dotenv
-load_dotenv()
+
+from brain.memory import load_business_memory
+from brain.prompt_builder import build_prompt
+from brain.scoring import score_campaign
+from brain.evaluation_service import evaluate_campaign
+from brain.campaign_learning import learning_summary
+from brain.campaign_learning import persist_learning
+
 from flask import Flask, render_template_string, render_template, request, session, redirect, jsonify
+from payment_engine.api.merchants import merchant_api
+from payment_engine.api.payments import payment_api
+from payment_engine.api.openapi import openapi_api
+from payment_engine.api.webhooks import webhook_api
 import os, hashlib, json, requests, time, sqlite3, base64, logging
 import cloudinary
 import cloudinary.uploader
 from datetime import datetime, timedelta
 from functools import wraps
 from prompt_engine import build_prompt
+from datetime import date as _date
+import re as _re
+from bs4 import BeautifulSoup as _BeautifulSoup
+from email_service import send_email
+from notifications.email import send_notification_email
+from payment_engine.engine import PaymentEngine
+from payment_engine.models import PaymentRequest
+
+load_dotenv()
 # --- Application logging ---------------------------------------------------
 logging.basicConfig(
     level=logging.INFO,
@@ -79,6 +99,12 @@ client = _GroqHTTPClient()
 # ---------------------------------------------------------------------------
 
 app = Flask(__name__)
+
+app.register_blueprint(merchant_api, url_prefix="/api/v1")
+app.register_blueprint(payment_api, url_prefix="/api/v1")
+app.register_blueprint(openapi_api, url_prefix="/api/v1")
+app.register_blueprint(webhook_api, url_prefix="/api/v1")
+
 
 payment_engine = PaymentEngine()
 
@@ -471,6 +497,38 @@ def set_active_business_profile(email, profile_id):
     with get_db() as db:
         db.execute("UPDATE business_profiles SET is_active=0 WHERE email=?", (email,))
         db.execute("UPDATE business_profiles SET is_active=1 WHERE id=? AND email=?", (profile_id, email))
+        db.commit()
+
+
+
+def save_campaign_learning(email, headlines, cta, objection):
+    """Persist simple campaign learnings for the active business profile."""
+    if not email:
+        return
+
+    with get_db() as db:
+        profile = db.execute(
+            "SELECT id FROM business_profiles WHERE email=? AND is_active=1",
+            (email,)
+        ).fetchone()
+
+        if not profile:
+            return
+
+        db.execute("""
+            UPDATE business_profiles
+            SET
+                winning_headlines = COALESCE(winning_headlines,'') || ? || char(10),
+                winning_ctas = COALESCE(winning_ctas,'') || ? || char(10),
+                customer_objections = COALESCE(customer_objections,'') || ? || char(10)
+            WHERE id=?
+        """, (
+            headlines,
+            cta,
+            objection,
+            profile["id"]
+        ))
+
         db.commit()
 
 def update_business_profile(email, profile_id, business_name, product, audience, tone):
@@ -1721,9 +1779,28 @@ def pay_paystack():
             session['pay_email'] = email
             session['pay_package'] = package
             save_credit_purchase(email, package, pkg['ads'], pkg['usd'], f"₦{amount_ngn:,.2f}", "paystack", ref, ref_code=resolve_ref_code(email))
+            engine_result = payment_engine.create_payment(
+                gateway="paystack",
+                amount=amount_ngn,
+                currency="NGN",
+                customer={
+                    "email": email
+                }
+            )
+
+            if (
+                isinstance(engine_result, dict)
+                and engine_result.get("authorization_url")
+            ):
+                return redirect(
+                    engine_result["authorization_url"]
+                )
+
             res = paystack_init(email, amount_kobo, ref)
+
             if res.get('status'):
                 return redirect(res['data']['authorization_url'])
+
             error = res.get('message','Payment init failed.')
     return render_template_string(PAYSTACK_HTML, error=error, email=email,
         package=package, pkg=pkg, amount_ngn=amount_ngn, ref_code=ref_code)
@@ -2263,7 +2340,6 @@ if __name__ == '__main__':
 # Reuses your existing `client` (Groq) and session-based patterns already in app.py.
 # Does NOT touch your credits table — free tool uses its own daily session counter.
 
-from datetime import date as _date
 
 INDUSTRY_VARIANTS = {
     "fashion-retail": {
@@ -2774,13 +2850,15 @@ def ad_copy_generate():
     if not offer:
         return jsonify({"error": "missing_offer", "message": "Tell us what you're selling first."}), 400
 
-    prompt = (
-        f"Write 3 short ad copy variations for {platform}, in a {tone} tone.\n"
-        f"What's being sold: {offer}\n"
-        f"Target customer: {customer or 'general African small business customers'}\n"
-        f"Their main hesitation to address: {hesitation or 'none specified'}\n"
-        f"Each variation must be under 60 words, include a hook, the pitch, and a clear call-to-action. "
-        f"Separate the 3 variations with '---'. Write in plain text only — no Markdown, no **, no ## headers, no bullet symbols."
+    profile = get_active_business_profile(session.get("user_email"))
+
+    prompt = build_prompt(
+        profile,
+        offer,
+        customer,
+        hesitation,
+        platform,
+        tone,
     )
 
     try:
@@ -2790,7 +2868,43 @@ def ad_copy_generate():
             reasoning_effort="low",
         )
         result = cc.choices[0].message.content
-        variations = [v.strip() for v in result.split('---') if v.strip()]
+
+        if "###STRATEGY###" in result:
+            ad_text, strategy_text = result.split("###STRATEGY###", 1)
+        else:
+            ad_text = result
+            strategy_text = ""
+
+        variations = [v.strip() for v in ad_text.split('---') if v.strip()]
+
+        strategist = {
+            "objective": "",
+            "recommended_platform": platform,
+            "recommended_audience": customer or "General African small business customers",
+            "best_posting_time": "",
+            "marketing_tip": "",
+            "follow_up": "",
+            "ab_test": "",
+            "ai_strategy": strategy_text.strip(),
+        }
+
+        campaign_score = evaluate_campaign(
+            client,
+            MODEL,
+            "\n\n".join(variations)
+        )
+        learning = learning_summary(campaign_score)
+
+        if profile:
+            with get_db() as db:
+                persist_learning(
+                    db,
+                    profile["id"],
+                    "\n\n".join(variations),
+                    campaign_score,
+                )
+                db.commit()
+
     except Exception as e:
         logger.exception("Free Ad Copy generation failed")
         return jsonify({
@@ -2800,8 +2914,12 @@ def ad_copy_generate():
 
     _ad_copy_increment_uses()
     _ad_copy_ip_increment()
+
     return jsonify({
         "variations": variations,
+        "strategist": strategist,
+        "campaign_score": campaign_score,
+        "learning": learning,
         "remaining_uses": _ad_copy_remaining_uses(),
     })
 
@@ -2824,12 +2942,6 @@ def ad_copy_unlock_bonus():
 
 # === END BLOCK ===
 # === APPEND THIS BLOCK TO THE END OF app.py ===
-import re as _re
-from bs4 import BeautifulSoup as _BeautifulSoup
-from email_service import send_email
-from notifications.email import send_notification_email
-from payment_engine.engine import PaymentEngine
-from payment_engine.models import PaymentRequest
 
 
 def _extract_price(soup):

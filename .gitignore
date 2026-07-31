@@ -1,40 +1,34 @@
+# Python
 __pycache__/
-*.pyc
-data.db
-build.log
-backup_old/
+*.py[cod]
+*.egg-info/
 
-# Environment files
+# Environment
 .env
-.env.*
+
+# Databases
+*.db
+*.sqlite3
 
 # Logs
 *.log
-upgrade.log
 
-# Backups
-backups/
-backup/
+# Backup files
 *.bak
-*.backup
 
-# Temporary files
-*.tmp
-*.swp
+# Patch generators
+patch_*.py
 
-# Python cache
+# Temporary scripts
+initialize_business_profile.py
+validate_business_profile.py
+verify_learning_persistence.py
+
+# Python caches
 .pytest_cache/
 .mypy_cache/
 
-# Local test scripts
-test_*.py
-
-# Old framework
-framework_v31/
-
-# Local backup app
-app.py.before_v23
-
-# Local patch backups
-*.before_fix
-*.before_gift_email_patch
+# Backup files
+.env.backup*
+.env.corrupted_backup
+backups/

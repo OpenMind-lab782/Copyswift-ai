@@ -1,0 +1,8 @@
+[
+    {
+        "timestamp": "2026-07-29T13:51:52.644019Z",
+        "operation": "VERIFY_PAYMENT",
+        "reference": "TEST-001",
+        "reason": "Gateway timeout"
+    }
+]

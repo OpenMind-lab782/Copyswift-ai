@@ -1,55 +1,74 @@
-from payment_engine.base import BaseGateway
-from payment_engine.logger import log_payment_event, log_error
+from payment_engine.gateways.base import BaseGateway
+from payment_engine.gateway_capabilities import GatewayCapabilities
+from payment_engine.utils.reference import PaymentReference
 
 
 class PaystackGateway(BaseGateway):
+    """
+    Development Mock Paystack Gateway.
 
-    name = "paystack"
+    This adapter simulates successful Paystack behaviour
+    until real merchant credentials are available.
+    """
 
-    def initialize_payment(self, amount, currency, customer):
+    @property
+    def name(self):
+        return "paystack"
 
-        log_payment_event(
-            "paystack_initialize",
-            customer=customer,
-            amount=amount,
-            currency=currency
+
+    @property
+    def capabilities(self):
+        return GatewayCapabilities(
+            supports_cards=True,
+            supports_bank_transfer=True,
+            supports_refunds=True,
+        )
+
+
+    def initialize_payment(self, amount, currency, customer, **kwargs):
+        reference = kwargs.get(
+            "reference",
+            PaymentReference.generate()
         )
 
         return {
-            "success": True,
+            "status": "verified",
             "gateway": self.name,
-            "status": "initialized"
+            "mode": "mock",
+            "authorization_url": (
+                f"https://mock.paystack.local/pay/{reference}"
+            ),
+            "reference": reference,
+            "amount": amount,
+            "currency": currency,
         }
 
     def verify_payment(self, reference):
-
-        log_payment_event(
-            "paystack_verify",
-            reference=reference
-        )
-
         return {
-            "success": True,
-            "gateway": self.name,
             "status": "verified",
-            "reference": reference
+            "gateway": self.name,
+            "mode": "mock",
+            "reference": reference,
+            "paid": True,
+            "amount": 100,
+            "currency": "NGN",
+            "customer": "mock@copyswiftai.com",
+            "message": "Mock payment verified successfully."
         }
 
-    def refund_payment(self, reference):
-
+    def refund_payment(self, reference, amount=None):
         return {
-            "success": False,
-            "message": "Refund not implemented.",
-            "reference": reference
+            "status": "success",
+            "gateway": self.name,
+            "mode": "mock",
+            "reference": reference,
+            "refunded_amount": amount,
+            "message": "Mock refund completed."
         }
 
-    def handle_webhook(self, payload):
-
-        log_payment_event(
-            "paystack_webhook",
-            payload=bool(payload)
-        )
-
+    def health_check(self):
         return {
-            "success": True
+            "status": "healthy",
+            "gateway": self.name,
+            "mode": "mock"
         }

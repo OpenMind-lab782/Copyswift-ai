@@ -1,4 +1,7 @@
 class GatewayRegistry:
+    """
+    Central registry for all payment gateways.
+    """
 
     def __init__(self):
         self._gateways = {}
@@ -9,5 +12,14 @@ class GatewayRegistry:
     def get(self, name):
         return self._gateways.get(name)
 
+    def exists(self, name):
+        return name in self._gateways
+
     def list(self):
         return sorted(self._gateways.keys())
+
+    def names(self):
+        return self.list()
+
+    def all(self):
+        return dict(self._gateways)

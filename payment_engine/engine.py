@@ -12,6 +12,9 @@ from payment_engine.metrics import MetricsCollector
 from payment_engine.tracing import CorrelationId
 from payment_engine.latency import LatencyRecorder, Timer
 from payment_engine.health_monitor import GatewayHealthMonitor
+from payment_engine.provider_mode import ProviderModeManager
+from payment_engine.gateway_config import GatewayConfig
+from payment_engine.gateway_factory import GatewayFactory
 
 from payment_engine.gateways.crypto import CryptoGateway
 from payment_engine.gateways.paystack import PaystackGateway
@@ -30,6 +33,8 @@ class PaymentEngine:
         self.gateway_health = GatewayHealthMonitor()
         self.started_at = datetime.now(timezone.utc)
         self.registry = GatewayRegistry()
+        self.provider_mode = ProviderModeManager()
+        self.gateway_config = GatewayConfig()
         self.health = HealthRegistry()
         self.idempotency = IdempotencyManager()
         self.events = EventBus()
@@ -45,13 +50,46 @@ class PaymentEngine:
             recovery_timeout=self.config.circuit_recovery_timeout,
         )
 
-        self.registry.register(CryptoGateway())
-        self.registry.register(PaystackGateway())
-        self.registry.register(FlutterwaveGateway())
-        self.registry.register(DPOGateway())
+        for gateway_name in GatewayFactory.supported_gateways():
+            self.registry.register(
+                GatewayFactory.create(gateway_name)
+            )
+
+        self.gateway_config.configure('crypto')
+        self.gateway_config.configure('paystack')
+        self.gateway_config.configure('flutterwave')
+        self.gateway_config.configure('dpo')
 
     def gateways(self):
         return self.registry.list()
+
+
+    def get_provider_mode(self):
+        return self.provider_mode.mode
+
+    def set_provider_mode(self, mode):
+        self.provider_mode.set_mode(mode)
+
+
+    def get_gateway_mode(self, gateway_name):
+        return self.gateway_config.mode(gateway_name)
+
+    def gateway_capability_report(self):
+        report = {}
+
+        for name in self.registry.list():
+            gateway = self.registry.get(name)
+            caps = getattr(gateway, "capabilities", None)
+
+            report[name] = {} if caps is None else vars(caps)
+
+        return report
+
+
+    def configure_gateway(self, gateway_name, mode):
+        self.gateway_config.configure(gateway_name, mode)
+
+
 
 
     def get_metrics(self):
