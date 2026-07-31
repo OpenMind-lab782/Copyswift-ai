@@ -1,32 +1,37 @@
-import unittest
+from tests.base import SwiftEngineTestCase
 
 from payment_engine.exceptions import (
-    PaymentEngineError,
+    SwiftPaymentError,
+    PaymentError,
     GatewayError,
-    GatewayNotFoundError,
-    DuplicateReferenceError,
-    PaymentTimeoutError,
-    CircuitBreakerOpenError,
+    MerchantError,
+    RepositoryError,
+    TransactionError,
+    ValidationError,
 )
 
 
-class TestExceptions(unittest.TestCase):
+class ExceptionFrameworkTests(SwiftEngineTestCase):
+
+    def test_payment_error(self):
+        self.assertTrue(issubclass(PaymentError, SwiftPaymentError))
 
     def test_gateway_error(self):
-        self.assertTrue(issubclass(GatewayError, PaymentEngineError))
+        self.assertTrue(issubclass(GatewayError, SwiftPaymentError))
 
-    def test_gateway_not_found(self):
-        self.assertTrue(issubclass(GatewayNotFoundError, GatewayError))
+    def test_merchant_error(self):
+        self.assertTrue(issubclass(MerchantError, SwiftPaymentError))
 
-    def test_duplicate_reference(self):
-        self.assertTrue(issubclass(DuplicateReferenceError, PaymentEngineError))
+    def test_repository_error(self):
+        self.assertTrue(issubclass(RepositoryError, SwiftPaymentError))
 
-    def test_timeout(self):
-        self.assertTrue(issubclass(PaymentTimeoutError, PaymentEngineError))
+    def test_transaction_error(self):
+        self.assertTrue(issubclass(TransactionError, SwiftPaymentError))
 
-    def test_circuit_breaker(self):
-        self.assertTrue(issubclass(CircuitBreakerOpenError, PaymentEngineError))
+    def test_validation_error(self):
+        self.assertTrue(issubclass(ValidationError, SwiftPaymentError))
 
 
 if __name__ == "__main__":
+    import unittest
     unittest.main()

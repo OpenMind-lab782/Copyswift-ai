@@ -1,0 +1,3 @@
+from payment_engine.repositories.sqlite_payment_repository import SQLitePaymentRepository
+
+payment_repository = SQLitePaymentRepository()

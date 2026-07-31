@@ -1,22 +1,49 @@
-from payment_engine.base import BaseGateway
+from payment_engine.gateways.base import BaseGateway
+from payment_engine.gateway_capabilities import GatewayCapabilities
+
 
 class CryptoGateway(BaseGateway):
 
-    name = "crypto"
+    @property
+    def name(self):
+        return "crypto"
 
-    def initialize_payment(self, amount, currency, customer):
+    @property
+    def capabilities(self):
+        return GatewayCapabilities(
+            supports_crypto=True,
+        )
+
+    def initialize_payment(self, amount, currency, customer, **kwargs):
         return {
-            "success": True,
+            "status": "success",
             "gateway": self.name,
+            "mode": "mock",
             "amount": amount,
-            "currency": currency
+            "currency": currency,
+            "customer": customer,
         }
 
     def verify_payment(self, reference):
-        return {"verified": False}
+        return {
+            "status": "verified",
+            "gateway": self.name,
+            "mode": "mock",
+            "reference": reference,
+            "paid": True,
+        }
 
-    def refund_payment(self, reference):
-        return {"refunded": False}
+    def refund_payment(self, reference, amount=None):
+        return {
+            "status": "unsupported",
+            "gateway": self.name,
+            "reference": reference,
+            "message": "Refunds are not supported for crypto.",
+        }
 
-    def handle_webhook(self, payload):
-        return True
+    def health_check(self):
+        return {
+            "status": "healthy",
+            "gateway": self.name,
+            "mode": "mock",
+        }

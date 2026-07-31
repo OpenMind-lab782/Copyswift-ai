@@ -1,4 +1,5 @@
 from payment_engine.gateways.base import BaseGateway
+from payment_engine.gateway_capabilities import GatewayCapabilities
 
 
 class FlutterwaveGateway(BaseGateway):
@@ -12,6 +13,14 @@ class FlutterwaveGateway(BaseGateway):
     @property
     def name(self):
         return "flutterwave"
+
+    @property
+    def capabilities(self):
+        return GatewayCapabilities(
+            supports_cards=True,
+            supports_bank_transfer=True,
+            supports_refunds=True,
+        )
 
     def initialize_payment(self, amount, currency, customer, **kwargs):
         return {

@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class DeadLetterQueue:
@@ -30,7 +30,7 @@ class DeadLetterQueue:
         records = self._load()
 
         records.append({
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "operation": operation,
             "reference": reference,
             "reason": reason

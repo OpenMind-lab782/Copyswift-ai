@@ -9,6 +9,9 @@ from brain.campaign_learning import persist_learning
 
 from flask import Flask, render_template_string, render_template, request, session, redirect, jsonify
 from payment_engine.api.merchants import merchant_api
+from payment_engine.api.payments import payment_api
+from payment_engine.api.openapi import openapi_api
+from payment_engine.api.webhooks import webhook_api
 import os, hashlib, json, requests, time, sqlite3, base64, logging
 import cloudinary
 import cloudinary.uploader
@@ -98,6 +101,9 @@ client = _GroqHTTPClient()
 app = Flask(__name__)
 
 app.register_blueprint(merchant_api, url_prefix="/api/v1")
+app.register_blueprint(payment_api, url_prefix="/api/v1")
+app.register_blueprint(openapi_api, url_prefix="/api/v1")
+app.register_blueprint(webhook_api, url_prefix="/api/v1")
 
 
 payment_engine = PaymentEngine()
@@ -1773,9 +1779,28 @@ def pay_paystack():
             session['pay_email'] = email
             session['pay_package'] = package
             save_credit_purchase(email, package, pkg['ads'], pkg['usd'], f"₦{amount_ngn:,.2f}", "paystack", ref, ref_code=resolve_ref_code(email))
+            engine_result = payment_engine.create_payment(
+                gateway="paystack",
+                amount=amount_ngn,
+                currency="NGN",
+                customer={
+                    "email": email
+                }
+            )
+
+            if (
+                isinstance(engine_result, dict)
+                and engine_result.get("authorization_url")
+            ):
+                return redirect(
+                    engine_result["authorization_url"]
+                )
+
             res = paystack_init(email, amount_kobo, ref)
+
             if res.get('status'):
                 return redirect(res['data']['authorization_url'])
+
             error = res.get('message','Payment init failed.')
     return render_template_string(PAYSTACK_HTML, error=error, email=email,
         package=package, pkg=pkg, amount_ngn=amount_ngn, ref_code=ref_code)

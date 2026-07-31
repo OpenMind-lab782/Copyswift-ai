@@ -1,5 +1,5 @@
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class AuditLogger:
@@ -12,7 +12,7 @@ class AuditLogger:
         self.logfile.parent.mkdir(parents=True, exist_ok=True)
 
     def log(self, action, reference, status, gateway="", details=""):
-        timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
         line = (
             f"{timestamp} | "

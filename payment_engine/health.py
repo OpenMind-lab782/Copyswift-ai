@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 @dataclass
@@ -13,7 +13,7 @@ class GatewayHealth:
 
     def record_success(self):
         self.success_count += 1
-        self.last_success = datetime.utcnow().isoformat()
+        self.last_success = datetime.now(timezone.utc).isoformat()
         self.status = "ONLINE"
 
     def record_failure(self, error):

@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from payment_engine.gateway_capabilities import GatewayCapabilities
 
 
 class BaseGateway(ABC):
@@ -10,6 +11,12 @@ class BaseGateway(ABC):
     @abstractmethod
     def name(self):
         pass
+
+
+    @property
+    def capabilities(self):
+        return GatewayCapabilities()
+
 
     @abstractmethod
     def initialize_payment(self, amount, currency, customer, **kwargs):

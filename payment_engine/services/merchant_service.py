@@ -1,21 +1,55 @@
-from payment_engine.database.merchant_repository import MerchantRepository
+import uuid
+import secrets
 
 
 class MerchantService:
+    """
+    In-memory merchant service.
+    Will later be replaced with database persistence.
+    """
 
     def __init__(self):
-        self.repository = MerchantRepository()
+        self._merchants = {}
 
-    def register_merchant(self, name, email):
-        existing = self.repository.get_by_name(name)
+    def create_merchant(self, data):
+        merchant_id = str(uuid.uuid4())
 
-        if existing:
-            raise ValueError(f"Merchant '{name}' already exists.")
+        merchant = {
+            "merchant_id": merchant_id,
+            "name": data.get("name"),
+            "email": data.get("email"),
+            "status": "active",
+            "api_key": self.generate_api_key(),
+        }
 
-        return self.repository.create(name, email)
+        self._merchants[merchant_id] = merchant
 
-    def get_merchant(self, name):
-        return self.repository.get_by_name(name)
+        return merchant
 
     def list_merchants(self):
-        return self.repository.list_all()
+        return list(self._merchants.values())
+
+    def get_merchant(self, merchant_id):
+        return self._merchants.get(merchant_id)
+
+
+    def generate_api_key(self):
+        return secrets.token_hex(32)
+
+
+    def find_by_api_key(self, api_key):
+        for merchant in self._merchants.values():
+            if merchant.get("api_key") == api_key:
+                return merchant
+        return None
+
+    def authenticate(self, api_key):
+        merchant = self.find_by_api_key(api_key)
+
+        if merchant is None:
+            return None
+
+        if merchant.get("status") != "active":
+            return None
+
+        return merchant
