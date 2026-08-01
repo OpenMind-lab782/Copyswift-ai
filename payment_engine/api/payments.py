@@ -83,6 +83,14 @@ def get_payment(reference):
     if payment is None:
         return jsonify({"error": "Payment not found"}), 404
 
+    merchant = getattr(g, "merchant", None)
+
+    if (
+        merchant is not None
+        and payment.get("merchant_id") != merchant["merchant_id"]
+    ):
+        return jsonify({"error": "Payment not found"}), 404
+
     return jsonify(payment)
 
 
