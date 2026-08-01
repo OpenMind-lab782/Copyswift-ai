@@ -112,3 +112,23 @@ def verify_payment(reference):
     )
 
     return jsonify(payment_service.get(reference))
+
+
+@payment_api.route("/payments/<reference>/cancel", methods=["POST"])
+@require_api_key
+def cancel_payment(reference):
+    limited = _check_rate_limit()
+    if limited:
+        return limited
+
+    payment = payment_service.get(reference)
+
+    if payment is None:
+        return jsonify({"error": "Payment not found"}), 404
+
+    payment_service.update_status(
+        reference,
+        "cancelled",
+    )
+
+    return jsonify(payment_service.get(reference))
