@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, g
 
 from payment_engine.api.auth import require_api_key
 from payment_engine.engine import PaymentEngine
@@ -40,7 +40,7 @@ def initialize_payment():
         customer=data["customer"],
     )
 
-    merchant = getattr(request, "merchant", None)
+    merchant = getattr(g, "merchant", None)
 
     if merchant is not None and isinstance(result, dict):
         result["merchant_id"] = merchant["merchant_id"]
@@ -57,7 +57,7 @@ def list_payments():
     if limited:
         return limited
 
-    merchant = getattr(request, "merchant", None)
+    merchant = getattr(g, "merchant", None)
     payments = payment_service.list()
 
     if merchant is not None:
