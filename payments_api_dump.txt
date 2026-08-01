@@ -40,11 +40,6 @@ def initialize_payment():
         customer=data["customer"],
     )
 
-    merchant = getattr(request, "merchant", None)
-
-    if merchant is not None and isinstance(result, dict):
-        result["merchant_id"] = merchant["merchant_id"]
-
     payment_service.save(result)
 
     return jsonify(result), 201
@@ -57,18 +52,7 @@ def list_payments():
     if limited:
         return limited
 
-    merchant = getattr(request, "merchant", None)
-    payments = payment_service.list()
-
-    if merchant is not None:
-        merchant_id = merchant.get("merchant_id")
-        payments = [
-            payment
-            for payment in payments
-            if payment.get("merchant_id") == merchant_id
-        ]
-
-    return jsonify(payments)
+    return jsonify(payment_service.list())
 
 
 @payment_api.route("/payments/<reference>", methods=["GET"])
@@ -104,3 +88,4 @@ def verify_payment(reference):
     )
 
     return jsonify(payment_service.get(reference))
+

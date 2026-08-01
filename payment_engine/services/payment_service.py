@@ -16,6 +16,9 @@ class PaymentService:
     def list(self):
         return payment_repository.list()
 
+    def clear(self):
+        return payment_repository.clear()
+
     def update_status(self, reference, status):
         return transaction_manager.execute(
             payment_repository.update_status,

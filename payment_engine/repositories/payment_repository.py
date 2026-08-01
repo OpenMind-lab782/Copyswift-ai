@@ -13,6 +13,9 @@ class PaymentRepository:
     def list(self):
         return list(self._payments.values())
 
+    def clear(self):
+        self._payments.clear()
+
     def update_status(self, reference, status):
         payment = self._payments.get(reference)
 

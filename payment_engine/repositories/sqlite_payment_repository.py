@@ -68,3 +68,8 @@ class SQLitePaymentRepository:
         self.db.commit()
 
         return self.get(reference)
+
+    def clear(self):
+        cursor = self.db.cursor()
+        cursor.execute("DELETE FROM payments")
+        self.db.commit()
