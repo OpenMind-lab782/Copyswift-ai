@@ -16,13 +16,26 @@ class PaymentService:
         if payment is None:
             return None
 
-        payment["timeline"] = [
+        timeline = [
             {
                 "event": "created",
-                "status": payment.get("status"),
+                "status": "created",
                 "timestamp": payment.get("created_at")
             }
         ]
+
+        status = payment.get("status")
+
+        if status != "created":
+            timeline.append(
+                {
+                    "event": status,
+                    "status": status,
+                    "timestamp": payment.get("updated_at")
+                }
+            )
+
+        payment["timeline"] = timeline
 
         return payment
 
