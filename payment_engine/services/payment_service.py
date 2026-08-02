@@ -37,6 +37,15 @@ class PaymentService:
 
         payment["timeline"] = timeline
 
+        payment["events"] = [
+            {
+                "event": item["event"],
+                "status": item["status"],
+                "timestamp": item["timestamp"]
+            }
+            for item in timeline
+        ]
+
         return payment
 
     def list(self):
