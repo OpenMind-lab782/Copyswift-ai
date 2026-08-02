@@ -1,6 +1,6 @@
 class MigrationManager:
 
-    CURRENT_VERSION = 1
+    CURRENT_VERSION = 2
 
     def __init__(self, database):
         self.db = database
@@ -22,6 +22,21 @@ class MigrationManager:
             cursor.execute(
                 "INSERT INTO schema_version (version) VALUES (?)",
                 (self.CURRENT_VERSION,)
+            )
+
+        version = self.current_version()
+
+        if version < 2:
+            try:
+                cursor.execute(
+                    "ALTER TABLE payments ADD COLUMN idempotency_key TEXT"
+                )
+            except Exception:
+                pass
+
+            cursor.execute(
+                "UPDATE schema_version SET version = ?",
+                (2,)
             )
 
         self.db.commit()

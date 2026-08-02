@@ -18,9 +18,10 @@ class SQLitePaymentRepository:
             status,
             gateway,
             customer_email,
-            metadata
+            metadata,
+            idempotency_key
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             payment.get("reference"),
             payment.get("merchant_id"),
@@ -29,7 +30,8 @@ class SQLitePaymentRepository:
             payment.get("status"),
             payment.get("gateway"),
             payment.get("customer_email"),
-            str(payment.get("metadata", {}))
+            str(payment.get("metadata", {})),
+            payment.get("idempotency_key")
         ))
 
         self.db.commit()

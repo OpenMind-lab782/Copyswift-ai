@@ -33,6 +33,15 @@ def initialize_payment():
 
     data = request.get_json(force=True)
 
+    idempotency_key = request.headers.get("Idempotency-Key")
+
+    existing = payment_service.find_by_idempotency_key(
+        idempotency_key
+    )
+
+    if existing is not None:
+        return jsonify(existing), 200
+
     result = engine.create_payment(
         gateway=data["gateway"],
         amount=data["amount"],
@@ -44,6 +53,14 @@ def initialize_payment():
 
     if merchant is not None and isinstance(result, dict):
         result["merchant_id"] = merchant["merchant_id"]
+
+    if idempotency_key:
+        result["idempotency_key"] = idempotency_key
+
+    print("=" * 60)
+    print("PAYMENT BEFORE SAVE")
+    print("=" * 60)
+    print(result)
 
     payment_service.save(result)
 

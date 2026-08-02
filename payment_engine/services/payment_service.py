@@ -16,6 +16,16 @@ class PaymentService:
     def list(self):
         return payment_repository.list()
 
+    def find_by_idempotency_key(self, key):
+        if not key:
+            return None
+
+        for payment in self.list():
+            if payment.get("idempotency_key") == key:
+                return payment
+
+        return None
+
     def clear(self):
         return payment_repository.clear()
 

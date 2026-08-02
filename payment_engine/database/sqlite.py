@@ -36,6 +36,7 @@ class SQLiteDatabase:
             gateway TEXT,
             customer_email TEXT,
             metadata TEXT,
+            idempotency_key TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
