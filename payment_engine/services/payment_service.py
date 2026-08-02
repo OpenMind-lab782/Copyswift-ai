@@ -11,7 +11,20 @@ class PaymentService:
         )
 
     def get(self, reference):
-        return payment_repository.get(reference)
+        payment = payment_repository.get(reference)
+
+        if payment is None:
+            return None
+
+        payment["timeline"] = [
+            {
+                "event": "created",
+                "status": payment.get("status"),
+                "timestamp": payment.get("created_at")
+            }
+        ]
+
+        return payment
 
     def list(self):
         return payment_repository.list()
