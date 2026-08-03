@@ -111,6 +111,32 @@ def get_payment(reference):
     return jsonify(payment)
 
 
+@payment_api.route("/payments/<reference>/events", methods=["GET"])
+@require_api_key
+def get_payment_events(reference):
+    limited = _check_rate_limit()
+    if limited:
+        return limited
+
+    payment = payment_service.get(reference)
+
+    if payment is None:
+        return jsonify({"events": []}), 200
+
+    merchant = getattr(g, "merchant", None)
+
+    if (
+        merchant is not None
+        and payment.get("merchant_id") != merchant["merchant_id"]
+    ):
+        return jsonify({"events": []}), 200
+
+    return jsonify({
+        "reference": reference,
+        "events": payment.get("events", [])
+    })
+
+
 @payment_api.route("/payments/<reference>/verify", methods=["POST"])
 @require_api_key
 def verify_payment(reference):
