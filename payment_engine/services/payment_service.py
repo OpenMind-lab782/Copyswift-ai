@@ -1,6 +1,8 @@
 from payment_engine.repositories import (
     payment_repository,
-    payment_event_repository,
+)
+from payment_engine.services.payment_event_service import (
+    payment_event_service,
 )
 from payment_engine.transactions import transaction_manager
 
@@ -14,13 +16,11 @@ class PaymentService:
             payment
         )
 
-        payment_event_repository.save(
+        payment_event_service.record(
             payment["reference"],
-            {
-                "event": "created",
-                "status": payment.get("status"),
-                "timestamp": payment.get("created_at")
-            }
+            "created",
+            payment.get("status"),
+            payment.get("created_at")
         )
 
         return result
@@ -52,7 +52,7 @@ class PaymentService:
 
         payment["timeline"] = timeline
 
-        events = payment_event_repository.list(
+        events = payment_event_service.list(
             payment["reference"]
         )
 
