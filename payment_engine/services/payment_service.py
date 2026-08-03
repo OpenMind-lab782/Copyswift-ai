@@ -1,14 +1,29 @@
-from payment_engine.repositories import payment_repository
+from payment_engine.repositories import (
+    payment_repository,
+    payment_event_repository,
+)
 from payment_engine.transactions import transaction_manager
 
 
 class PaymentService:
 
     def save(self, payment):
-        return transaction_manager.execute(
+
+        result = transaction_manager.execute(
             payment_repository.save,
             payment
         )
+
+        payment_event_repository.save(
+            payment["reference"],
+            {
+                "event": "created",
+                "status": payment.get("status"),
+                "timestamp": payment.get("created_at")
+            }
+        )
+
+        return result
 
     def get(self, reference):
         payment = payment_repository.get(reference)
@@ -37,14 +52,21 @@ class PaymentService:
 
         payment["timeline"] = timeline
 
-        payment["events"] = [
-            {
-                "event": item["event"],
-                "status": item["status"],
-                "timestamp": item["timestamp"]
-            }
-            for item in timeline
-        ]
+        events = payment_event_repository.list(
+            payment["reference"]
+        )
+
+        if events:
+            payment["events"] = events
+        else:
+            payment["events"] = [
+                {
+                    "event": item["event"],
+                    "status": item["status"],
+                    "timestamp": item["timestamp"]
+                }
+                for item in timeline
+            ]
 
         return payment
 
