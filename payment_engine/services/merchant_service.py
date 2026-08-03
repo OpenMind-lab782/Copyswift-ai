@@ -53,3 +53,17 @@ class MerchantService:
             return None
 
         return merchant
+
+
+    def create(self, **data):
+        return self.create_merchant(data)
+
+    def rotate_api_key(self, merchant_id):
+        merchant = self.get_merchant(merchant_id)
+
+        if merchant is None:
+            return None
+
+        merchant["api_key"] = self.generate_api_key()
+
+        return merchant
