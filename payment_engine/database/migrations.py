@@ -1,6 +1,6 @@
 class MigrationManager:
 
-    CURRENT_VERSION = 3
+    CURRENT_VERSION = 5
 
     def __init__(self, database):
         self.db = database
@@ -53,7 +53,41 @@ class MigrationManager:
                 (3,)
             )
 
+
+        if version < 4:
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS settlements (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                merchant_id TEXT NOT NULL,
+                reference TEXT NOT NULL,
+                amount REAL NOT NULL,
+                currency TEXT NOT NULL
+            )
+            """)
+
+            cursor.execute(
+                "UPDATE schema_version SET version = ?",
+                (4,)
+            )
+
+
+
+        if version < 5:
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS reconciliation_records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                merchant_id TEXT NOT NULL,
+                reference TEXT NOT NULL
+            )
+            """)
+
+            cursor.execute(
+                "UPDATE schema_version SET version = ?",
+                (5,)
+            )
+
         self.db.commit()
+
 
     def current_version(self):
         cursor = self.db.cursor()

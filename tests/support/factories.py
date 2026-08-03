@@ -3,7 +3,7 @@ class PaymentFactory:
     counter = 1
 
     @classmethod
-    def create(cls):
+    def create(cls, **overrides):
 
         payment = {
             "reference": f"TEST-{cls.counter:06d}",
@@ -15,6 +15,8 @@ class PaymentFactory:
             "customer_email": "customer@example.com",
             "metadata": {}
         }
+
+        payment.update(overrides)
 
         cls.counter += 1
 

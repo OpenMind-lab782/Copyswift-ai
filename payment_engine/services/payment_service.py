@@ -87,8 +87,21 @@ class PaymentService:
         return payment_repository.clear()
 
     def update_status(self, reference, status):
-        return transaction_manager.execute(
+        payment = transaction_manager.execute(
             payment_repository.update_status,
             reference,
             status
         )
+
+        if payment is not None:
+            payment_event_service.record(
+                reference=reference,
+                event=status,
+                status=status,
+                timestamp=payment.get("updated_at"),
+                metadata={
+                    "source": "payment_service"
+                }
+            )
+
+        return payment

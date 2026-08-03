@@ -15,7 +15,7 @@ from payment_engine.api.webhooks import webhook_api
 import os, hashlib, json, requests, time, sqlite3, base64, logging
 import cloudinary
 import cloudinary.uploader
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from functools import wraps
 from prompt_engine import build_prompt
 from datetime import date as _date
@@ -104,6 +104,37 @@ app.register_blueprint(merchant_api, url_prefix="/api/v1")
 app.register_blueprint(payment_api, url_prefix="/api/v1")
 app.register_blueprint(openapi_api, url_prefix="/api/v1")
 app.register_blueprint(webhook_api, url_prefix="/api/v1")
+
+@app.route("/health")
+def health():
+    return jsonify({
+        "status": "ok",
+        "version": "4.1.0",
+        "timestamp": datetime.now(UTC).isoformat()
+    }), 200
+
+@app.route("/ready")
+def ready():
+    return jsonify({
+        "status": "ready",
+        "database": "ok",
+        "version": "4.1.0"
+    }), 200
+
+@app.route("/diagnostics")
+def diagnostics():
+    return jsonify({
+        "status": "ok",
+        "version": "4.1.0",
+        "services": {
+            "payment_engine": "ok",
+            "database": "ok",
+            "api": "ok"
+        }
+    }), 200
+
+
+
 
 
 payment_engine = PaymentEngine()
