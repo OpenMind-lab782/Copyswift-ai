@@ -42,6 +42,16 @@ class SQLiteDatabase:
         )
         """)
 
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS payment_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            reference TEXT NOT NULL,
+            event TEXT NOT NULL,
+            status TEXT NOT NULL,
+            timestamp TEXT
+        )
+        """)
+
         self.connection.commit()
 
         MigrationManager(self).initialize()
