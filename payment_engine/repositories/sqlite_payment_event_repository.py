@@ -1,3 +1,4 @@
+import json
 from payment_engine.database.sqlite import db
 
 
@@ -14,14 +15,16 @@ class SQLitePaymentEventRepository:
             reference,
             event,
             status,
-            timestamp
+            timestamp,
+            metadata
         )
-        VALUES (?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?)
         """, (
             reference,
             event.get("event"),
             event.get("status"),
-            event.get("timestamp")
+            event.get("timestamp"),
+            json.dumps(event.get("metadata", {}))
         ))
 
         self.db.commit()
@@ -35,7 +38,8 @@ class SQLitePaymentEventRepository:
             """
             SELECT event,
                    status,
-                   timestamp
+                   timestamp,
+                   metadata
             FROM payment_events
             WHERE reference = ?
             ORDER BY id ASC
@@ -43,10 +47,21 @@ class SQLitePaymentEventRepository:
             (reference,)
         )
 
-        return [
-            dict(row)
-            for row in cursor.fetchall()
-        ]
+        events = []
+
+        for row in cursor.fetchall():
+            event = dict(row)
+
+            try:
+                event["metadata"] = json.loads(
+                    event.get("metadata") or "{}"
+                )
+            except Exception:
+                event["metadata"] = {}
+
+            events.append(event)
+
+        return events
 
     def clear(self):
         cursor = self.db.cursor()

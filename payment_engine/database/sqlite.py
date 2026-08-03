@@ -48,7 +48,8 @@ class SQLiteDatabase:
             reference TEXT NOT NULL,
             event TEXT NOT NULL,
             status TEXT NOT NULL,
-            timestamp TEXT
+            timestamp TEXT,
+            metadata TEXT
         )
         """)
 

@@ -1,6 +1,6 @@
 class MigrationManager:
 
-    CURRENT_VERSION = 2
+    CURRENT_VERSION = 3
 
     def __init__(self, database):
         self.db = database
@@ -37,6 +37,20 @@ class MigrationManager:
             cursor.execute(
                 "UPDATE schema_version SET version = ?",
                 (2,)
+            )
+
+
+        if version < 3:
+            try:
+                cursor.execute(
+                    "ALTER TABLE payment_events ADD COLUMN metadata TEXT"
+                )
+            except Exception:
+                pass
+
+            cursor.execute(
+                "UPDATE schema_version SET version = ?",
+                (3,)
             )
 
         self.db.commit()

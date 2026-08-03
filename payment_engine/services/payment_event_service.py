@@ -8,7 +8,8 @@ class PaymentEventService:
         reference,
         event,
         status,
-        timestamp
+        timestamp,
+        metadata=None
     ):
         return payment_event_repository.save(
             reference,
@@ -16,6 +17,7 @@ class PaymentEventService:
                 "event": event,
                 "status": status,
                 "timestamp": timestamp,
+                "metadata": metadata or {},
             },
         )
 
