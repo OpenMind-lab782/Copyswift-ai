@@ -12,10 +12,10 @@ class PaymentEventServiceTests(unittest.TestCase):
 
     def test_record_and_list_events(self):
         payment_event_service.record(
-            "PAY-001",
-            "created",
-            "created",
-            "2026-08-03 10:00:00"
+            reference="PAY-001",
+            event="created",
+            status="created",
+            timestamp="2026-08-03 00:00:00",
         )
 
         events = payment_event_service.list("PAY-001")
