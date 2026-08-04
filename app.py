@@ -109,7 +109,7 @@ app.register_blueprint(webhook_api, url_prefix="/api/v1")
 def health():
     return jsonify({
         "status": "ok",
-        "version": "4.1.0",
+        "version": "5.0.0",
         "timestamp": datetime.now(UTC).isoformat()
     }), 200
 
@@ -118,14 +118,14 @@ def ready():
     return jsonify({
         "status": "ready",
         "database": "ok",
-        "version": "4.1.0"
+        "version": "5.0.0"
     }), 200
 
 @app.route("/diagnostics")
 def diagnostics():
     return jsonify({
         "status": "ok",
-        "version": "4.1.0",
+        "version": "5.0.0",
         "services": {
             "payment_engine": "ok",
             "database": "ok",
