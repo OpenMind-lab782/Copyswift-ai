@@ -12,6 +12,11 @@ from payment_engine.api.merchants import merchant_api
 from payment_engine.api.payments import payment_api
 from payment_engine.api.openapi import openapi_api
 from payment_engine.api.webhooks import webhook_api
+from payment_engine.api.assistant import assistant_api
+from payment_engine.api.checkout import checkout_api
+from payment_engine.api.customer import customer_api
+from payment_engine.api.dashboard import dashboard_api
+from payment_engine.api.auth_routes import auth_api
 import os, hashlib, json, requests, time, sqlite3, base64, logging
 import cloudinary
 import cloudinary.uploader
@@ -104,6 +109,11 @@ app.register_blueprint(merchant_api, url_prefix="/api/v1")
 app.register_blueprint(payment_api, url_prefix="/api/v1")
 app.register_blueprint(openapi_api, url_prefix="/api/v1")
 app.register_blueprint(webhook_api, url_prefix="/api/v1")
+app.register_blueprint(assistant_api, url_prefix="/api/v1")
+app.register_blueprint(checkout_api, url_prefix="/api/v1")
+app.register_blueprint(customer_api, url_prefix="/api/v1")
+app.register_blueprint(dashboard_api, url_prefix="/api/v1")
+app.register_blueprint(auth_api, url_prefix="/api/v1")
 
 @app.route("/health")
 def health():
