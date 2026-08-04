@@ -1,39 +1,28 @@
-from dataclasses import dataclass
-import os
+"""
+Swift Payment Engine Configuration Package
 
-from .settings import Settings
+Compatibility layer exposing the legacy EngineConfig
+while providing the new configuration modules.
+"""
 
-settings = Settings()
+from importlib.util import module_from_spec, spec_from_file_location
+from pathlib import Path
 
+from .validator import ConfigurationValidator
 
-@dataclass(frozen=True)
-class EngineConfig:
-    """Backward-compatible engine configuration."""
+_legacy_path = Path(__file__).resolve().parent.parent / "config.py"
 
-    retry_attempts: int = 3
-    retry_delay: float = 0.0
+_spec = spec_from_file_location(
+    "_legacy_config",
+    _legacy_path,
+)
 
-    timeout_seconds: float = 5.0
+_legacy = module_from_spec(_spec)
+_spec.loader.exec_module(_legacy)
 
-    circuit_failure_threshold: int = 3
-    circuit_recovery_timeout: float = 30.0
+EngineConfig = _legacy.EngineConfig
 
-    enable_metrics: bool = True
-    enable_events: bool = True
-    enable_middleware: bool = True
-
-    @property
-    def environment(self):
-        return settings.environment
-
-    @property
-    def database(self):
-        return settings.database
-
-    @property
-    def gateway_mode(self):
-        return settings.gateway_mode
-
-    @property
-    def log_level(self):
-        return settings.log_level
+__all__ = [
+    "EngineConfig",
+    "ConfigurationValidator",
+]
