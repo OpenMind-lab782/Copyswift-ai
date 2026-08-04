@@ -101,6 +101,28 @@ class CopySwiftAPI {
         );
     }
 
+
+
+    marketBrain(payload) {
+        return this.post(
+            "/api/v1/market-brain",
+            payload,
+        );
+    }
+
+    marketStrategist(payload) {
+        return this.post(
+            "/api/v1/market-strategist",
+            payload,
+        );
+    }
+
+    aiSalesManager(payload) {
+        return this.post(
+            "/api/v1/ai-sales-manager",
+            payload,
+        );
+    }
 }
 
 window.API = new CopySwiftAPI();

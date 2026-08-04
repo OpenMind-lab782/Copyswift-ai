@@ -6,8 +6,6 @@ async function sendMessage(event) {
 
     event.preventDefault();
 
-    const customer =
-        localStorage.getItem("copyswift_email") || "Guest";
 
     const message = document
         .getElementById("message")
@@ -21,11 +19,10 @@ async function sendMessage(event) {
 
     try {
 
-        const result = await API.assistant(
-            customer,
-            "general",
-            message,
-        );
+        const result =
+            await Workspace.askAssistant(
+                message,
+            );
 
         console.log(result);
 

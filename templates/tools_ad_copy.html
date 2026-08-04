@@ -148,6 +148,8 @@
 <script src="/static/js/config.js"></script>
 <script src="/static/js/api.js"></script>
 <script src="/static/js/app.js"></script>
+<script src="/static/js/assistant.js"></script>
+<script src="/static/js/workspace.js"></script>
 
 </head>
 <body>
@@ -159,7 +161,34 @@
   </h1>
   <p class="sub">Generate Facebook, WhatsApp &amp; Instagram ad copy{% if variant.label %} for {{ variant.label }}{% else %} for African businesses{% endif %} — free, no card, no signup.</p>
 
-  <div class="credits-pill">
+  
+<div class="panel" id="workspace-status-panel">
+  <h3>Workspace Status</h3>
+
+  <p>
+    Status:
+    <strong id="workspace-status">
+      Initializing...
+    </strong>
+  </p>
+
+  <p>
+    Platform:
+    <span id="workspace-platform">
+      Loading...
+    </span>
+  </p>
+
+  <p>
+    Version:
+    <span id="workspace-version">
+      Loading...
+    </span>
+  </p>
+</div>
+
+
+<div class="credits-pill">
     <div class="left">✅ <span>Free uses today</span></div>
     <div><span class="count" id="usesCount">{{ remaining_uses }}</span> left &nbsp;·&nbsp; <a href="/#pricing" class="buy">Get more free →</a></div>
   </div>
