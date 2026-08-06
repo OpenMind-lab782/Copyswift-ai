@@ -1,7 +1,8 @@
 {
-  "name": "CopySwift AI",
-  "version": "3.0.0",
-  "build": 1,
-  "status": "development",
-  "last_patch": null
+  "version": "2.0.0",
+  "last_upgrade": "20260725_164125",
+  "installed_patches": [
+    "2.1.0",
+    "3.2.1"
+  ]
 }

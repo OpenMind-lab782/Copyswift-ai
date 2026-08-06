@@ -1,6 +1,34 @@
+# Python
 __pycache__/
-*.pyc
-data.db
-build.log
-backup_old/
+*.py[cod]
+*.egg-info/
+
+# Environment
 .env
+
+# Databases
+*.db
+*.sqlite3
+
+# Logs
+*.log
+
+# Backup files
+*.bak
+
+# Patch generators
+patch_*.py
+
+# Temporary scripts
+initialize_business_profile.py
+validate_business_profile.py
+verify_learning_persistence.py
+
+# Python caches
+.pytest_cache/
+.mypy_cache/
+
+# Backup files
+.env.backup*
+.env.corrupted_backup
+backups/

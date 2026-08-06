@@ -1,0 +1,29 @@
+{
+  "platform": {
+    "name": "CopySwiftAI",
+    "version": "5.0.0",
+    "company": "OpenMind Lab"
+  },
+  "plans": {
+    "starter": {
+      "name": "Starter",
+      "audience": "Individuals and freelancers"
+    },
+    "pro": {
+      "name": "Pro",
+      "audience": "Growing businesses and teams"
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "audience": "Organizations"
+    }
+  },
+  "features": [
+    "AI Ad Copy Generator",
+    "AI Sales Manager",
+    "Unified AI Assistant",
+    "Swift Payment Engine",
+    "Market Brain",
+    "Market Strategist"
+  ]
+}

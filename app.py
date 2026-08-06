@@ -1,16 +1,165 @@
 from dotenv import load_dotenv
-load_dotenv()
+
+from brain.memory import load_business_memory
+from brain.prompt_builder import build_prompt
+from brain.scoring import score_campaign
+from brain.evaluation_service import evaluate_campaign
+from brain.campaign_learning import learning_summary
+from brain.campaign_learning import persist_learning
+
 from flask import Flask, render_template_string, render_template, request, session, redirect, jsonify
-from groq import Groq
-import os, hashlib, json, requests, time, sqlite3, base64
+from payment_engine.api.merchants import merchant_api
+from payment_engine.api.payments import payment_api
+from payment_engine.api.openapi import openapi_api
+from payment_engine.api.webhooks import webhook_api
+from payment_engine.api.assistant import assistant_api
+from payment_engine.api.ai_services import ai_services_api
+from payment_engine.api.checkout import checkout_api
+from payment_engine.api.customer import customer_api
+from payment_engine.api.dashboard import dashboard_api
+from payment_engine.api.system import system_api
+from payment_engine.api.index import index_api
+from payment_engine.api.frontend import frontend_api
+from payment_engine.api.auth_routes import auth_api
+import os, hashlib, json, requests, time, sqlite3, base64, logging
 import cloudinary
 import cloudinary.uploader
-from datetime import datetime, timedelta, timedelta
+from datetime import datetime, timedelta, UTC
 from functools import wraps
+from prompt_engine import build_prompt
+from datetime import date as _date
+import re as _re
+from bs4 import BeautifulSoup as _BeautifulSoup
+from email_service import send_email
+from notifications.email import send_notification_email
+from payment_engine.engine import PaymentEngine
+from payment_engine.models import PaymentRequest
+
+load_dotenv()
+# --- Application logging ---------------------------------------------------
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+)
+logger = logging.getLogger("copyswift")
+
+
+# --- Groq HTTP API compatibility client ------------------------------------
+class _GroqHTTPResponse:
+    def __init__(self, data):
+        choices = data.get("choices", [])
+        self.choices = []
+        for choice in choices:
+            message = choice.get("message", {})
+            self.choices.append(
+                type("Choice", (), {
+                    "message": type("Message", (), {
+                        "content": message.get("content", "")
+                    })()
+                })()
+            )
+
+class _GroqChatCompletions:
+    def create(self, messages, model, reasoning_effort=None, temperature=None, max_tokens=None):
+        api_key = os.environ.get("GROQ_API_KEY", "").strip()
+
+        if not api_key:
+            raise RuntimeError(
+                "GROQ_API_KEY is not configured. "
+                "Please add your Groq API key to the environment."
+            )
+
+        payload = {
+            "model": model,
+            "messages": messages
+        }
+
+        if reasoning_effort is not None:
+            payload["reasoning_effort"] = reasoning_effort
+
+        if temperature is not None:
+            payload["temperature"] = temperature
+
+        if max_tokens is not None:
+            payload["max_tokens"] = max_tokens
+
+        response = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            json=payload,
+            timeout=120
+        )
+
+        response.raise_for_status()
+        return _GroqHTTPResponse(response.json())
+
+class _GroqChat:
+    def __init__(self):
+        self.completions = _GroqChatCompletions()
+
+class _GroqHTTPClient:
+    def __init__(self):
+        self.chat = _GroqChat()
+
+client = _GroqHTTPClient()
+# ---------------------------------------------------------------------------
+
 app = Flask(__name__)
+
+app.register_blueprint(merchant_api, url_prefix="/api/v1")
+app.register_blueprint(payment_api, url_prefix="/api/v1")
+app.register_blueprint(openapi_api, url_prefix="/api/v1")
+app.register_blueprint(webhook_api, url_prefix="/api/v1")
+app.register_blueprint(assistant_api, url_prefix="/api/v1")
+app.register_blueprint(checkout_api, url_prefix="/api/v1")
+app.register_blueprint(customer_api, url_prefix="/api/v1")
+app.register_blueprint(dashboard_api, url_prefix="/api/v1")
+app.register_blueprint(system_api, url_prefix="/api/v1")
+app.register_blueprint(index_api, url_prefix="/api/v1")
+app.register_blueprint(frontend_api, url_prefix="/api/v1")
+app.register_blueprint(auth_api, url_prefix="/api/v1")
+app.register_blueprint(ai_services_api, url_prefix="/api/v1")
+
+@app.route("/health")
+def health():
+    return jsonify({
+        "status": "ok",
+        "version": "5.0.0",
+        "timestamp": datetime.now(UTC).isoformat()
+    }), 200
+
+@app.route("/ready")
+def ready():
+    return jsonify({
+        "status": "ready",
+        "database": "ok",
+        "version": "5.0.0"
+    }), 200
+
+@app.route("/diagnostics")
+def diagnostics():
+    return jsonify({
+        "status": "ok",
+        "version": "5.0.0",
+        "services": {
+            "payment_engine": "ok",
+            "database": "ok",
+            "api": "ok"
+        }
+    }), 200
+
+
+
+
+
+payment_engine = PaymentEngine()
+
+
 app.secret_key = os.environ.get("SECRET_KEY", "copyswift-secret-2024")
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 DB_PATH = "copyswift.db"
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")
@@ -168,6 +317,70 @@ def check_talking_video(talk_id):
         print(traceback.format_exc())
         return {'status': 'error'}
 
+FAL_KEY = os.environ.get('FAL_KEY', '')
+
+def start_image_to_video(image_url, prompt='Gentle slow zoom in, product stays still and clearly visible, soft studio lighting, professional advertising style', aspect_ratio='1:1'):
+    """Start a fal.ai image-to-video job. Returns request_id immediately (non-blocking)."""
+    try:
+        headers = {
+            'Authorization': f'Key {FAL_KEY}',
+            'Content-Type': 'application/json'
+        }
+        if aspect_ratio not in ('16:9', '9:16', '1:1'):
+            aspect_ratio = '1:1'
+        payload = {
+            'image_url': image_url,
+            'prompt': prompt[:500],
+            'aspect_ratio': aspect_ratio
+        }
+        resp = requests.post('https://queue.fal.run/fal-ai/wan-i2v', headers=headers, json=payload, timeout=20)
+        if resp.status_code >= 400:
+            print('fal.ai error response body:', resp.text)
+        resp.raise_for_status()
+        data = resp.json()
+        return {'request_id': data.get('request_id'), 'status_url': data.get('status_url'), 'response_url': data.get('response_url')}
+    except Exception as e:
+        import traceback
+        print(f'Image-to-video start error: {e}')
+        print(traceback.format_exc())
+        return None
+
+def check_image_to_video(status_url, response_url):
+    """Check status of a fal.ai image-to-video job. Returns dict with status and url if ready."""
+    try:
+        headers = {'Authorization': f'Key {FAL_KEY}'}
+        check = requests.get(status_url, headers=headers, timeout=15)
+        check.raise_for_status()
+        data = check.json()
+        status = data.get('status')
+        print(f'fal.ai status check response: {data}')
+        if status == 'COMPLETED':
+            result = requests.get(response_url, headers=headers, timeout=15)
+            if result.status_code >= 400:
+                print(f'fal.ai result fetch error body: {result.text}')
+                return {'status': 'error', 'message': 'Video generation failed. Please try a different image.'}
+            result.raise_for_status()
+            result_data = result.json()
+            raw_url = result_data.get('video', {}).get('url')
+            if not raw_url:
+                return {'status': 'error', 'message': 'Video generation failed. Please try a different image.'}
+            upload_result = cloudinary.uploader.upload(
+                raw_url,
+                folder='copyswift_ai/image_to_video',
+                resource_type='video'
+            )
+            return {'status': 'done', 'video_url': upload_result.get('secure_url', '')}
+        elif status in ('IN_QUEUE', 'IN_PROGRESS'):
+            return {'status': 'pending'}
+        else:
+            print(f'fal.ai unexpected status payload: {data}')
+            return {'status': 'error', 'message': 'Video generation failed. Please try again.'}
+    except Exception as e:
+        import traceback
+        print(f'Image-to-video check error: {e}')
+        print(traceback.format_exc())
+        return {'status': 'error', 'message': 'Video generation failed. Please try again.'}
+
 def get_usd_ngn_rate():
     """Fetch a live USD->NGN exchange rate. Falls back to a fixed rate on error."""
     try:
@@ -268,6 +481,8 @@ def init_db():
         db.execute("CREATE TABLE IF NOT EXISTS free_usage (id INTEGER PRIMARY KEY AUTOINCREMENT, fingerprint TEXT UNIQUE NOT NULL, count INTEGER DEFAULT 0, week_start TEXT)")
         db.execute("CREATE TABLE IF NOT EXISTS affiliates (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL, ref_code TEXT UNIQUE NOT NULL, wallet_coin TEXT DEFAULT 'USDT', wallet_address TEXT DEFAULT '', total_earned REAL DEFAULT 0, pending_payout REAL DEFAULT 0, created_at TEXT DEFAULT (datetime('now')))")
         db.execute("CREATE TABLE IF NOT EXISTS referrals (id INTEGER PRIMARY KEY AUTOINCREMENT, ref_code TEXT NOT NULL, subscriber_email TEXT NOT NULL, amount_earned REAL DEFAULT 2.0, status TEXT DEFAULT 'pending', created_at TEXT DEFAULT (datetime('now')), paid_at TEXT)")
+        db.execute("CREATE TABLE IF NOT EXISTS free_tool_leads (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL, ip TEXT, tool TEXT DEFAULT 'ad-copy', created_at TEXT DEFAULT (datetime('now')))")
+        db.execute("CREATE TABLE IF NOT EXISTS ip_usage (id INTEGER PRIMARY KEY AUTOINCREMENT, ip TEXT NOT NULL, date TEXT NOT NULL, count INTEGER DEFAULT 1, UNIQUE(ip, date))")
         db.commit()
 
 init_db()
@@ -331,6 +546,38 @@ def set_active_business_profile(email, profile_id):
     with get_db() as db:
         db.execute("UPDATE business_profiles SET is_active=0 WHERE email=?", (email,))
         db.execute("UPDATE business_profiles SET is_active=1 WHERE id=? AND email=?", (profile_id, email))
+        db.commit()
+
+
+
+def save_campaign_learning(email, headlines, cta, objection):
+    """Persist simple campaign learnings for the active business profile."""
+    if not email:
+        return
+
+    with get_db() as db:
+        profile = db.execute(
+            "SELECT id FROM business_profiles WHERE email=? AND is_active=1",
+            (email,)
+        ).fetchone()
+
+        if not profile:
+            return
+
+        db.execute("""
+            UPDATE business_profiles
+            SET
+                winning_headlines = COALESCE(winning_headlines,'') || ? || char(10),
+                winning_ctas = COALESCE(winning_ctas,'') || ? || char(10),
+                customer_objections = COALESCE(customer_objections,'') || ? || char(10)
+            WHERE id=?
+        """, (
+            headlines,
+            cta,
+            objection,
+            profile["id"]
+        ))
+
         db.commit()
 
 def update_business_profile(email, profile_id, business_name, product, audience, tone):
@@ -796,6 +1043,10 @@ input[type=hidden]{display:none}
   <div id="imgResult" style="margin-top:15px;display:none">
     <img id="generatedImg" src="" style="width:100%;border-radius:12px;border:1px solid #00d4ff44" />
     <a id="imgDownload" href="" download="copyswift-ad.png" target="_blank" style="display:block;text-align:center;margin-top:10px;color:#00d4ff;font-size:13px">⬇️ Download Image</a>
+    <button id="animateBtn" onclick="animateImage()" style="width:100%;margin-top:12px;padding:13px;background:linear-gradient(135deg,#7c3aed,#00d4ff);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer">🎬 Animate This Image (20 credits)</button>
+    <div id="animateStatus" style="display:none;text-align:center;color:#94a3b8;font-size:13px;margin-top:8px">⏳ Animating your image — this can take up to a minute...</div>
+    <div id="animateError" style="display:none;color:#ef4444;font-size:13px;margin-top:8px;text-align:center"></div>
+    <video id="animatedVideo" controls style="display:none;width:100%;border-radius:12px;margin-top:10px;border:1px solid #00d4ff44"></video>
   </div>
   <div id="imgError" style="color:#ff4444;font-size:13px;margin-top:10px;display:none"></div>
 </div>
@@ -1099,6 +1350,57 @@ async function generateImage(){
   }
   btn.disabled=false;btn.textContent='🖼️ Generate Image';
 }
+
+async function animateImage(){
+  const imageUrl = document.getElementById('generatedImg').src;
+  const email = document.querySelector('input[name=email]')?.value || '';
+  if(!imageUrl){alert('Generate an image first.');return;}
+  const btn = document.getElementById('animateBtn');
+  const status = document.getElementById('animateStatus');
+  const errDiv = document.getElementById('animateError');
+  const video = document.getElementById('animatedVideo');
+  btn.disabled = true; btn.textContent = '⏳ Starting...';
+  status.style.display = 'block'; errDiv.style.display = 'none'; video.style.display = 'none';
+  try{
+    const resp = await fetch('/api/generate-image-video', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({image_url: imageUrl, email: email})});
+    const data = await resp.json();
+    if(!data.request_id){
+      errDiv.textContent = data.error || 'Failed to start animation.';
+      errDiv.style.display = 'block'; status.style.display = 'none';
+      btn.disabled = false; btn.textContent = '🎬 Animate This Image (20 credits)';
+      return;
+    }
+    pollAnimation(data.status_url, data.response_url, btn, status, errDiv, video);
+  }catch(e){
+    errDiv.textContent = 'Error: ' + e.message;
+    errDiv.style.display = 'block'; status.style.display = 'none';
+    btn.disabled = false; btn.textContent = '🎬 Animate This Image (20 credits)';
+  }
+}
+
+async function pollAnimation(statusUrl, responseUrl, btn, status, errDiv, video){
+  try{
+    const resp = await fetch('/api/check-image-video', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status_url: statusUrl, response_url: responseUrl})});
+    const data = await resp.json();
+    if(data.status === 'done'){
+      video.src = data.video_url;
+      video.style.display = 'block';
+      status.style.display = 'none';
+      btn.disabled = false; btn.textContent = '🎬 Animate This Image (20 credits)';
+    } else if(data.status === 'pending'){
+      setTimeout(()=>pollAnimation(statusUrl, responseUrl, btn, status, errDiv, video), 4000);
+    } else {
+      errDiv.textContent = data.message || 'Animation failed. Please try again.';
+      errDiv.style.display = 'block'; status.style.display = 'none';
+      btn.disabled = false; btn.textContent = '🎬 Animate This Image (20 credits)';
+    }
+  }catch(e){
+    errDiv.textContent = 'Error checking status: ' + e.message;
+    errDiv.style.display = 'block'; status.style.display = 'none';
+    btn.disabled = false; btn.textContent = '🎬 Animate This Image (20 credits)';
+  }
+}
+
 document.getElementById('copyForm')?.addEventListener('submit',function(){const b=document.getElementById('genBtn');b.disabled=true;b.textContent='⚡ Generating...'})
 const PACKAGES = {{ credit_packages|tojson }};
 function openCryptoModal(pkgId){
@@ -1497,7 +1799,8 @@ def home():
                     credits_balance = get_credit_balance(user_email)
                     limit_reached = (credits_balance <= 0)
             except Exception as e:
-                error = str(e)
+                logger.exception("Main ad copy generation failed")
+                error = "We couldn't generate your ad copy right now. Please try again. If the problem continues, contact CopySwift AI support."
     return render_template_string(HTML, result=result, error=error, product=product, audience=audience,
         selected_type=selected_type, copy_types=COPY_TYPES,
         credits_balance=credits_balance, limit_reached=limit_reached,
@@ -1525,9 +1828,28 @@ def pay_paystack():
             session['pay_email'] = email
             session['pay_package'] = package
             save_credit_purchase(email, package, pkg['ads'], pkg['usd'], f"₦{amount_ngn:,.2f}", "paystack", ref, ref_code=resolve_ref_code(email))
+            engine_result = payment_engine.create_payment(
+                gateway="paystack",
+                amount=amount_ngn,
+                currency="NGN",
+                customer={
+                    "email": email
+                }
+            )
+
+            if (
+                isinstance(engine_result, dict)
+                and engine_result.get("authorization_url")
+            ):
+                return redirect(
+                    engine_result["authorization_url"]
+                )
+
             res = paystack_init(email, amount_kobo, ref)
+
             if res.get('status'):
                 return redirect(res['data']['authorization_url'])
+
             error = res.get('message','Payment init failed.')
     return render_template_string(PAYSTACK_HTML, error=error, email=email,
         package=package, pkg=pkg, amount_ngn=amount_ngn, ref_code=ref_code)
@@ -1536,12 +1858,34 @@ def pay_paystack():
 def verify_paystack():
     ref = request.args.get('reference') or session.get('pay_ref','')
     if ref and PAYSTACK_SECRET:
+
+        engine_result = payment_engine.verify_payment(
+            "paystack",
+            ref
+        )
+
         res = paystack_verify(ref)
         if res.get('data',{}).get('status') == 'success':
             email = session.get('pay_email','')
             purchase = activate_credit_purchase(ref)
             if email:
                 session['user_email'] = email
+
+            try:
+                send_notification_email(
+                    email,
+                    "Payment Successful - CopySwift AI™",
+                    f"""
+                    <h2>Payment Successful</h2>
+                    <p>Hello,</p>
+                    <p>Your payment has been received successfully.</p>
+                    <p>Your AI credits have been activated and are now available in your account.</p>
+                    <hr>
+                    <p><b>Thank you for choosing CopySwift AI™.</b></p>
+                    """
+                )
+            except Exception as e:
+                print(f"[Email] {e}")
     return redirect('/')
 
 @app.route('/confirm-crypto', methods=['POST'])
@@ -1553,6 +1897,21 @@ def confirm_crypto():
     if package not in CREDIT_PACKAGES:
         package = 'mini'
     pkg = CREDIT_PACKAGES[package]
+
+    request_obj = PaymentRequest(
+        gateway="crypto",
+        amount=pkg["usd"],
+        currency=coin,
+        customer=email,
+        reference=tx_hash,
+        metadata={
+            "package": package,
+            "ads": pkg["ads"]
+        }
+    )
+
+    payment_engine.submit_payment(request_obj)
+
     save_payment(email, "crypto", f"${pkg['usd']} {coin}", tx_hash, coin, "pending")
     save_credit_purchase(email, package, pkg['ads'], pkg['usd'], f"{coin}", "crypto", tx_hash, "pending", ref_code=resolve_ref_code(email))
     session['user_email'] = email
@@ -1691,6 +2050,34 @@ def admin_gift_credits():
             amount = int(amount)
             if amount > 0:
                 add_credits(email, amount)
+
+                try:
+                    send_notification_email(
+                        email,
+                        "🎁 You received bonus credits!",
+                        f"""
+<h2>Congratulations!</h2>
+<p>{amount} bonus credits have been added to your CopySwift AI account.</p>
+<p><strong>Reason:</strong> {reason}</p>
+"""
+                    )
+                except Exception as e:
+                    app.logger.exception(f"Gift email failed: {e}")
+
+                try:
+                    send_notification_email(
+                        os.environ.get("ADMIN_EMAIL"),
+                        "Admin Notification - Credits Gifted",
+                        f"""
+<h2>Credits Gifted</h2>
+<p><strong>User:</strong> {email}</p>
+<p><strong>Credits:</strong> {amount}</p>
+<p><strong>Reason:</strong> {reason}</p>
+"""
+                    )
+                except Exception as e:
+                    app.logger.exception(f"Admin notification failed: {e}")
+
                 session['admin_flash'] = f"Gifted {amount} bonus credits to {email} ({reason})"
             else:
                 session['admin_flash'] = "Amount must be a positive number"
@@ -1775,7 +2162,12 @@ def api_generate_bundle():
                 cc = client.chat.completions.create(messages=[{"role":"user","content":prompt + "\n\nIMPORTANT: Output plain text only. Do not use Markdown formatting such as **, ##, or bullet dashes. Write it exactly as it should appear to the end reader."}], model="openai/gpt-oss-20b", reasoning_effort="low")
                 results[key] = cc.choices[0].message.content
         except Exception as e:
-            return jsonify({"error": str(e)}), 500
+            logger.exception("AI campaign bundle generation failed")
+            return jsonify({
+                "success": False,
+                "error": "generation_failed",
+                "message": "We couldn't generate your campaign right now. Please try again. If the problem continues, contact CopySwift AI support."
+            }), 500
 
         if not is_admin:
             db.execute('UPDATE credits SET balance = balance - 3 WHERE email=?', (email,))
@@ -1871,6 +2263,43 @@ def api_check_video(talk_id):
     result = check_talking_video(talk_id)
     return jsonify(result)
 
+@app.route('/api/generate-image-video', methods=['POST'])
+def api_generate_image_video():
+    data = request.get_json() or {}
+    email = session.get('user_email', '') or data.get('email', '')
+    if not email:
+        return jsonify({'error': 'Not logged in'}), 401
+    image_url = data.get('image_url', '').strip()
+    prompt = data.get('prompt', '').strip()
+    if not image_url:
+        return jsonify({'error': 'An image URL is required'}), 400
+    is_admin = email == os.environ.get('ADMIN_EMAIL', '')
+    with get_db() as db:
+        balance = get_credit_balance(email)
+        if not is_admin and balance < 20:
+            return jsonify({'error': 'Insufficient credits. Image-to-video costs 20 credits.'}), 402
+        job = start_image_to_video(image_url, prompt) if prompt else start_image_to_video(image_url)
+        if not job or not job.get('request_id'):
+            return jsonify({'error': 'Image-to-video generation failed to start. Please try again.'}), 500
+        if not is_admin:
+            db.execute('UPDATE credits SET balance = balance - 20 WHERE email=?', (email,))
+            db.commit()
+        return jsonify({
+            'request_id': job['request_id'],
+            'status_url': job['status_url'],
+            'response_url': job['response_url'],
+        })
+
+@app.route('/api/check-image-video', methods=['POST'])
+def api_check_image_video():
+    data = request.get_json() or {}
+    status_url = data.get('status_url', '')
+    response_url = data.get('response_url', '')
+    if not status_url or not response_url:
+        return jsonify({'error': 'Missing status_url or response_url'}), 400
+    result = check_image_to_video(status_url, response_url)
+    return jsonify(result)
+
 @app.route('/api/streak', methods=['GET'])
 def api_get_streak():
     email = session.get('user_email', '') or request.args.get('email', '')
@@ -1944,13 +2373,22 @@ def api_check_pro():
     email = request.args.get('email','')
     return jsonify({"pro": is_pro_email(email)})
 
+# --- User-friendly server error handling ----------------------------------
+@app.errorhandler(500)
+def handle_internal_server_error(error):
+    logger.exception("Unhandled server error: %s", error)
+    return jsonify({
+        "success": False,
+        "error": "server_error",
+        "message": "Something went wrong while processing your request. Please try again. If the problem continues, contact CopySwift AI support."
+    }), 500
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
 # === APPEND THIS BLOCK TO THE END OF app.py (before any if __name__ == '__main__') ===
 # Reuses your existing `client` (Groq) and session-based patterns already in app.py.
 # Does NOT touch your credits table — free tool uses its own daily session counter.
 
-from datetime import date as _date
 
 INDUSTRY_VARIANTS = {
     "fashion-retail": {
@@ -2034,6 +2472,330 @@ INDUSTRY_VARIANTS = {
         "customer_placeholder": "e.g. Small online sellers needing delivery",
         "hesitation_placeholder": "e.g. Past bad experience with couriers",
     },
+    "artisans": {
+        "label": "Artisans & Skilled Trades",
+        "meta_title": "Free AI Ad Copy Generator for Artisans & Skilled Trades | CopySwift AI",
+        "meta_description": "Generate ad copy that gets your phone ringing for repair, fabrication, and skilled trade work. Free, no signup.",
+        "headline": ["Ad copy that", "gets your phone", "ringing"],
+        "offer_placeholder": "e.g. Furniture repair and custom woodwork, home visits",
+        "customer_placeholder": "e.g. Homeowners needing repairs this week",
+        "hesitation_placeholder": "e.g. Worried about being overcharged",
+    },
+    "plumbers": {
+        "label": "Plumbers",
+        "meta_title": "Free AI Ad Copy Generator for Plumbers | CopySwift AI",
+        "meta_description": "Write ad copy that fills your callout schedule. Free, no signup.",
+        "headline": ["Ad copy that", "fills your", "job pipeline"],
+        "offer_placeholder": "e.g. Emergency pipe repair, same-day callout",
+        "customer_placeholder": "e.g. Homeowners with a leaking pipe",
+        "hesitation_placeholder": "e.g. Worried it'll cost more than quoted",
+    },
+    "welders": {
+        "label": "Welders & Metal Fabricators",
+        "meta_title": "Free AI Ad Copy Generator for Welders & Metal Fabricators | CopySwift AI",
+        "meta_description": "Write ad copy that wins you more fabrication and installation jobs. Free, no signup.",
+        "headline": ["Ad copy that", "welds you", "more clients"],
+        "offer_placeholder": "e.g. Gate and burglar-proof fabrication, on-site installation",
+        "customer_placeholder": "e.g. Homeowners securing a new property",
+        "hesitation_placeholder": "e.g. Unsure about material quality",
+    },
+    "electricians": {
+        "label": "Electricians",
+        "meta_title": "Free AI Ad Copy Generator for Electricians | CopySwift AI",
+        "meta_description": "Write ad copy that powers up your booking calendar. Free, no signup.",
+        "headline": ["Ad copy that", "powers up", "your bookings"],
+        "offer_placeholder": "e.g. Home rewiring, prepaid meter installation",
+        "customer_placeholder": "e.g. Homeowners with electrical faults",
+        "hesitation_placeholder": "e.g. Worried about safety and certification",
+    },
+    "gaming-betting": {
+        "label": "Gaming & Betting Shops",
+        "meta_title": "Free AI Ad Copy Generator for Gaming & Betting Shops | CopySwift AI",
+        "meta_description": "Write ad copy that keeps punters coming back. Free, no signup.",
+        "headline": ["Ad copy that", "keeps punters", "coming back"],
+        "offer_placeholder": "e.g. Weekend odds boost, new customer bonus",
+        "customer_placeholder": "e.g. Regular football betting customers",
+        "hesitation_placeholder": "e.g. Worried payouts are slow",
+    },
+    "pos-agents": {
+        "label": "POS & Agent Banking",
+        "meta_title": "Free AI Ad Copy Generator for POS & Agent Banking Operators | CopySwift AI",
+        "meta_description": "Write ad copy that brings more walk-in customers to your POS point. Free, no signup.",
+        "headline": ["Ad copy that", "brings more", "walk-in customers"],
+        "offer_placeholder": "e.g. POS withdrawal, transfer and bill payment agent",
+        "customer_placeholder": "e.g. Residents needing cash withdrawal nearby",
+        "hesitation_placeholder": "e.g. Worried about network downtime",
+    },
+    "school-operators": {
+        "label": "School Operators",
+        "meta_title": "Free AI Ad Copy Generator for School Operators | CopySwift AI",
+        "meta_description": "Write enrollment ad copy that fills your classrooms. Free, no signup.",
+        "headline": ["Ad copy that", "fills your", "classroom"],
+        "offer_placeholder": "e.g. Nursery and primary school, new term enrollment open",
+        "customer_placeholder": "e.g. Parents of children aged 3-11",
+        "hesitation_placeholder": "e.g. Worried about school fees value",
+    },
+    "home-tutors": {
+        "label": "Home Lesson Givers & Tutors",
+        "meta_title": "Free AI Ad Copy Generator for Home Tutors | CopySwift AI",
+        "meta_description": "Write ad copy parents actually book. Free, no signup.",
+        "headline": ["Ad copy", "parents", "actually book"],
+        "offer_placeholder": "e.g. Home lessons, maths and English, weekday afternoons",
+        "customer_placeholder": "e.g. Parents of secondary school students",
+        "hesitation_placeholder": "e.g. Unsure the tutor is qualified",
+    },
+    "fitness-coaches": {
+        "label": "Gymnastics & Fitness Coaches",
+        "meta_title": "Free AI Ad Copy Generator for Fitness Coaches | CopySwift AI",
+        "meta_description": "Write ad copy that fills your next class or session. Free, no signup.",
+        "headline": ["Ad copy that", "fills your", "next class"],
+        "offer_placeholder": "e.g. Weight-loss bootcamp, 6-week program",
+        "customer_placeholder": "e.g. Working professionals wanting to get fit",
+        "hesitation_placeholder": "e.g. Worried about committing to a schedule",
+    },
+    "brick-block-makers": {
+        "label": "Brick & Block Moulders/Layers",
+        "meta_title": "Free AI Ad Copy Generator for Brick & Block Moulders | CopySwift AI",
+        "meta_description": "Write ad copy that builds your next construction contract. Free, no signup.",
+        "headline": ["Ad copy that", "builds your", "next contract"],
+        "offer_placeholder": "e.g. Block moulding and delivery, bulk orders welcome",
+        "customer_placeholder": "e.g. Builders and homeowners starting construction",
+        "hesitation_placeholder": "e.g. Worried about block strength or quality",
+    },
+    "borehole-drilling": {
+        "label": "Borehole Drilling Services",
+        "meta_title": "Free AI Ad Copy Generator for Borehole Drilling Services | CopySwift AI",
+        "meta_description": "Write ad copy that digs up new clients. Free, no signup.",
+        "headline": ["Ad copy that", "digs up", "new clients"],
+        "offer_placeholder": "e.g. Borehole drilling and water pump installation",
+        "customer_placeholder": "e.g. Homeowners without reliable water supply",
+        "hesitation_placeholder": "e.g. Worried about drilling depth guarantees",
+    },
+    "fuel-gas-retail": {
+        "label": "Fuel, Diesel & Gas Retailers",
+        "meta_title": "Free AI Ad Copy Generator for Fuel & Gas Retailers | CopySwift AI",
+        "meta_description": "Write ad copy that brings customers to your station or depot. Free, no signup.",
+        "headline": ["Ad copy that", "keeps customers", "fueling up here"],
+        "offer_placeholder": "e.g. Diesel and cooking gas refill, bulk delivery available",
+        "customer_placeholder": "e.g. Nearby households and small businesses",
+        "hesitation_placeholder": "e.g. Worried about short measure",
+    },
+    "physiotherapy-massage": {
+        "label": "Physiotherapy & Massage Centers",
+        "meta_title": "Free AI Ad Copy Generator for Physiotherapy & Massage Centers | CopySwift AI",
+        "meta_description": "Write ad copy that fills your treatment schedule. Free, no signup.",
+        "headline": ["Ad copy that", "eases pain", "and fills slots"],
+        "offer_placeholder": "e.g. Deep tissue massage and physiotherapy sessions",
+        "customer_placeholder": "e.g. Adults with back or joint pain",
+        "hesitation_placeholder": "e.g. Unsure it'll actually help",
+    },
+    "car-dealers": {
+        "label": "Car Dealers & Auto Sales",
+        "meta_title": "Free AI Ad Copy Generator for Car Dealers | CopySwift AI",
+        "meta_description": "Write ad copy that moves vehicles off your lot. Free, no signup.",
+        "headline": ["Ad copy that", "moves cars", "off the lot"],
+        "offer_placeholder": "e.g. Tokunbo Toyota Corolla, low mileage, clean title",
+        "customer_placeholder": "e.g. First-time car buyers on a budget",
+        "hesitation_placeholder": "e.g. Worried about hidden faults",
+    },
+    "transport-operators": {
+        "label": "Car, Truck, Keke & Okada Transport Operators",
+        "meta_title": "Free AI Ad Copy Generator for Transport Operators | CopySwift AI",
+        "meta_description": "Write ad copy for car, truck, keke, and okada transport services. Free, no signup.",
+        "headline": ["Ad copy that", "keeps riders", "coming back"],
+        "offer_placeholder": "e.g. Daily keke charter service, fixed routes",
+        "customer_placeholder": "e.g. Commuters and businesses needing haulage",
+        "hesitation_placeholder": "e.g. Worried about reliability or safety",
+    },
+    "counselling-homes": {
+        "label": "Counselling & Wellness Homes",
+        "meta_title": "Free AI Ad Copy Generator for Counselling & Wellness Homes | CopySwift AI",
+        "meta_description": "Write ad copy that reaches people gently and builds trust. Free, no signup.",
+        "headline": ["Ad copy that", "builds trust", "from the first line"],
+        "offer_placeholder": "e.g. Private counselling sessions, confidential and judgment-free",
+        "customer_placeholder": "e.g. Individuals and families seeking support",
+        "hesitation_placeholder": "e.g. Worried about privacy and stigma",
+    },
+    "health-supplements": {
+        "label": "Health Supplement Manufacturers & Distributors",
+        "meta_title": "Free AI Ad Copy Generator for Health Supplement Brands | CopySwift AI",
+        "meta_description": "Write ad copy that builds trust in your supplement brand. Free, no signup.",
+        "headline": ["Ad copy that", "builds trust", "in every bottle"],
+        "offer_placeholder": "e.g. Natural immune-boosting capsules, 30-day supply",
+        "customer_placeholder": "e.g. Health-conscious adults 30-55",
+        "hesitation_placeholder": "e.g. Worried it's not genuine or effective",
+    },
+    "power-solar-installers": {
+        "label": "Generator, Inverter & Solar Installers",
+        "meta_title": "Free AI Ad Copy Generator for Solar & Power Installers | CopySwift AI",
+        "meta_description": "Write ad copy that turns power problems into booked installations. Free, no signup.",
+        "headline": ["Ad copy that", "turns blackouts", "into bookings"],
+        "offer_placeholder": "e.g. Solar inverter installation, 5-year warranty",
+        "customer_placeholder": "e.g. Homeowners tired of unstable power",
+        "hesitation_placeholder": "e.g. Worried about upfront cost",
+    },
+    "auto-mechanics": {
+        "label": "Auto Mechanics & Spare Parts Dealers",
+        "meta_title": "Free AI Ad Copy Generator for Auto Mechanics | CopySwift AI",
+        "meta_description": "Write ad copy that keeps your workshop bay full. Free, no signup.",
+        "headline": ["Ad copy that", "keeps your bay", "full"],
+        "offer_placeholder": "e.g. Full engine diagnostics and repair, same-day service",
+        "customer_placeholder": "e.g. Car owners with an engine issue",
+        "hesitation_placeholder": "e.g. Worried about being overcharged",
+    },
+    "vulcanizers": {
+        "label": "Vulcanizers & Tire Services",
+        "meta_title": "Free AI Ad Copy Generator for Vulcanizers & Tire Services | CopySwift AI",
+        "meta_description": "Write ad copy that brings drivers to your tire stand. Free, no signup.",
+        "headline": ["Ad copy that", "brings drivers", "to your stand"],
+        "offer_placeholder": "e.g. Tire repair, balancing, and replacement",
+        "customer_placeholder": "e.g. Drivers with a flat or worn tire",
+        "hesitation_placeholder": "e.g. Worried about tire quality",
+    },
+    "phone-repair": {
+        "label": "Mobile Phone & Gadget Repair",
+        "meta_title": "Free AI Ad Copy Generator for Phone & Gadget Repair | CopySwift AI",
+        "meta_description": "Write ad copy that gets cracked screens walking through your door. Free, no signup.",
+        "headline": ["Ad copy that", "fixes screens", "and fills queues"],
+        "offer_placeholder": "e.g. Screen and battery replacement, same-day fix",
+        "customer_placeholder": "e.g. Phone owners with a cracked screen",
+        "hesitation_placeholder": "e.g. Worried about fake replacement parts",
+    },
+    "carpenters": {
+        "label": "Furniture Makers & Carpenters",
+        "meta_title": "Free AI Ad Copy Generator for Furniture Makers & Carpenters | CopySwift AI",
+        "meta_description": "Write ad copy that showcases your craftsmanship. Free, no signup.",
+        "headline": ["Ad copy that", "shows off", "your craft"],
+        "offer_placeholder": "e.g. Custom wardrobes and dining sets, made to order",
+        "customer_placeholder": "e.g. Homeowners furnishing a new space",
+        "hesitation_placeholder": "e.g. Worried about delivery timelines",
+    },
+    "barbershops": {
+        "label": "Barbershops",
+        "meta_title": "Free AI Ad Copy Generator for Barbershops | CopySwift AI",
+        "meta_description": "Write ad copy that keeps the chair full. Free, no signup.",
+        "headline": ["Ad copy that", "keeps the chair", "full"],
+        "offer_placeholder": "e.g. Fresh cut and beard trim, walk-ins welcome",
+        "customer_placeholder": "e.g. Men looking for a weekend cut",
+        "hesitation_placeholder": "e.g. Not sure there's a short wait",
+    },
+    "tailors": {
+        "label": "Tailors & Fashion Designers",
+        "meta_title": "Free AI Ad Copy Generator for Tailors & Fashion Designers | CopySwift AI",
+        "meta_description": "Write ad copy that books your next fitting. Free, no signup.",
+        "headline": ["Ad copy that", "books your", "next fitting"],
+        "offer_placeholder": "e.g. Custom Ankara outfits, made to measure",
+        "customer_placeholder": "e.g. Customers planning for an event",
+        "hesitation_placeholder": "e.g. Worried about fit or turnaround time",
+    },
+    "bakeries": {
+        "label": "Bakeries & Confectionery",
+        "meta_title": "Free AI Ad Copy Generator for Bakeries & Confectionery | CopySwift AI",
+        "meta_description": "Write ad copy that sells out your daily bake. Free, no signup.",
+        "headline": ["Ad copy that", "sells out", "your daily bake"],
+        "offer_placeholder": "e.g. Fresh birthday cakes and pastries, same-day order",
+        "customer_placeholder": "e.g. Families planning a birthday or event",
+        "hesitation_placeholder": "e.g. Worried it won't taste as good as the photo",
+    },
+    "poultry-livestock": {
+        "label": "Poultry & Livestock Farmers",
+        "meta_title": "Free AI Ad Copy Generator for Poultry & Livestock Farmers | CopySwift AI",
+        "meta_description": "Write ad copy that moves your stock faster. Free, no signup.",
+        "headline": ["Ad copy that", "moves your", "stock faster"],
+        "offer_placeholder": "e.g. Live and dressed chickens, farm-fresh weekly",
+        "customer_placeholder": "e.g. Households and local food vendors",
+        "hesitation_placeholder": "e.g. Worried about freshness or size",
+    },
+    "fish-farmers": {
+        "label": "Fish Farmers & Fishmongers",
+        "meta_title": "Free AI Ad Copy Generator for Fish Farmers & Fishmongers | CopySwift AI",
+        "meta_description": "Write ad copy that sells your catch before it goes bad. Free, no signup.",
+        "headline": ["Ad copy that", "sells your catch", "fast"],
+        "offer_placeholder": "e.g. Fresh catfish and tilapia, pond to plate",
+        "customer_placeholder": "e.g. Households and restaurants nearby",
+        "hesitation_placeholder": "e.g. Worried about freshness",
+    },
+    "caterers": {
+        "label": "Caterers & Event Chefs",
+        "meta_title": "Free AI Ad Copy Generator for Caterers & Event Chefs | CopySwift AI",
+        "meta_description": "Write ad copy that books your next event. Free, no signup.",
+        "headline": ["Ad copy that", "books your", "next event"],
+        "offer_placeholder": "e.g. Wedding and party catering, 50-500 guests",
+        "customer_placeholder": "e.g. Couples and families planning an event",
+        "hesitation_placeholder": "e.g. Worried about taste or portion sizes",
+    },
+    "laundry": {
+        "label": "Laundry & Dry Cleaning",
+        "meta_title": "Free AI Ad Copy Generator for Laundry & Dry Cleaning | CopySwift AI",
+        "meta_description": "Write ad copy that fills your pickup schedule. Free, no signup.",
+        "headline": ["Ad copy that", "fills your", "pickup schedule"],
+        "offer_placeholder": "e.g. Wash, iron and fold, same-day pickup and delivery",
+        "customer_placeholder": "e.g. Busy professionals with no time to wash",
+        "hesitation_placeholder": "e.g. Worried about clothes getting damaged",
+    },
+    "printing-branding": {
+        "label": "Printing, Branding & Signage",
+        "meta_title": "Free AI Ad Copy Generator for Printing & Branding | CopySwift AI",
+        "meta_description": "Write ad copy that wins you more print and branding jobs. Free, no signup.",
+        "headline": ["Ad copy that", "prints you", "more clients"],
+        "offer_placeholder": "e.g. Business cards, banners and shop signage",
+        "customer_placeholder": "e.g. Small businesses needing branded materials",
+        "hesitation_placeholder": "e.g. Worried about print quality",
+    },
+    "photography": {
+        "label": "Photography & Videography Studios",
+        "meta_title": "Free AI Ad Copy Generator for Photography & Videography | CopySwift AI",
+        "meta_description": "Write ad copy that books your next shoot. Free, no signup.",
+        "headline": ["Ad copy that", "books your", "next shoot"],
+        "offer_placeholder": "e.g. Wedding and portrait photography packages",
+        "customer_placeholder": "e.g. Couples and families planning a shoot",
+        "hesitation_placeholder": "e.g. Worried about photo quality or style fit",
+    },
+    "cleaning-services": {
+        "label": "Cleaning Services",
+        "meta_title": "Free AI Ad Copy Generator for Cleaning Services | CopySwift AI",
+        "meta_description": "Write ad copy that fills your cleaning schedule. Free, no signup.",
+        "headline": ["Ad copy that", "fills your", "cleaning schedule"],
+        "offer_placeholder": "e.g. Home and office deep cleaning, weekly packages",
+        "customer_placeholder": "e.g. Busy households and small offices",
+        "hesitation_placeholder": "e.g. Worried about trust and reliability",
+    },
+    "funeral-services": {
+        "label": "Funeral & Burial Services",
+        "meta_title": "Free AI Ad Copy Generator for Funeral & Burial Services | CopySwift AI",
+        "meta_description": "Write respectful ad copy that reaches families when they need it most. Free, no signup.",
+        "headline": ["Ad copy that", "serves families", "with dignity"],
+        "offer_placeholder": "e.g. Full funeral planning and burial services",
+        "customer_placeholder": "e.g. Families arranging a service",
+        "hesitation_placeholder": "e.g. Worried about cost and transparency",
+    },
+    "sachet-water": {
+        "label": "Water & Sachet Water Producers",
+        "meta_title": "Free AI Ad Copy Generator for Sachet Water Producers | CopySwift AI",
+        "meta_description": "Write ad copy that builds trust in your water brand. Free, no signup.",
+        "headline": ["Ad copy that", "builds trust", "sachet by sachet"],
+        "offer_placeholder": "e.g. NAFDAC-registered sachet water, bulk supply",
+        "customer_placeholder": "e.g. Shops and event vendors needing bulk supply",
+        "hesitation_placeholder": "e.g. Worried about purity and certification",
+    },
+    "spaza-shops": {
+        "label": "Spaza & Township Convenience Shops",
+        "meta_title": "Free AI Ad Copy Generator for Spaza & Township Shops | CopySwift AI",
+        "meta_description": "Write ad copy that brings more neighbours through your door. Free, no signup.",
+        "headline": ["Ad copy that", "brings the", "neighbourhood in"],
+        "offer_placeholder": "e.g. Airtime, groceries and essentials, open daily",
+        "customer_placeholder": "e.g. Neighbours within walking distance",
+        "hesitation_placeholder": "e.g. Unsure if you're open or stocked",
+    },
+    "tour-guides": {
+        "label": "Tour Guides & Travel Agencies",
+        "meta_title": "Free AI Ad Copy Generator for Tour Guides & Travel Agencies | CopySwift AI",
+        "meta_description": "Write ad copy that books your next tour. Free, no signup.",
+        "headline": ["Ad copy that", "books your", "next tour"],
+        "offer_placeholder": "e.g. Guided day tours, small group, all-inclusive",
+        "customer_placeholder": "e.g. Tourists and diaspora visitors",
+        "hesitation_placeholder": "e.g. Worried about safety or hidden costs",
+    },
 }
 
 DAILY_FREE_LIMIT = 3
@@ -2053,11 +2815,38 @@ def _ad_copy_usage_key():
 def _ad_copy_remaining_uses():
     session.permanent = True
     used = session.get(_ad_copy_usage_key(), 0)
-    return max(0, DAILY_FREE_LIMIT - used)
+    limit = 5 if session.get("ad_copy_bonus_unlocked") else DAILY_FREE_LIMIT
+    return max(0, limit - used)
 
 def _ad_copy_increment_uses():
     key = _ad_copy_usage_key()
     session[key] = session.get(key, 0) + 1
+
+IP_DAILY_LIMIT = 10
+
+def _get_client_ip():
+    fwd = request.headers.get("X-Forwarded-For", "")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    return request.remote_addr or "unknown"
+
+def _ad_copy_ip_usage():
+    ip = _get_client_ip()
+    today = _date.today().isoformat()
+    with get_db() as db:
+        row = db.execute("SELECT count FROM ip_usage WHERE ip=? AND date=?", (ip, today)).fetchone()
+        return row["count"] if row else 0
+
+def _ad_copy_ip_increment():
+    ip = _get_client_ip()
+    today = _date.today().isoformat()
+    with get_db() as db:
+        db.execute(
+            "INSERT INTO ip_usage (ip, date, count) VALUES (?, ?, 1) "
+            "ON CONFLICT(ip, date) DO UPDATE SET count = count + 1",
+            (ip, today),
+        )
+        db.commit()
 
 
 @app.route('/tools/ad-copy')
@@ -2087,11 +2876,17 @@ def ad_copy_variant(industry):
 
 @app.route('/tools/ad-copy/generate', methods=['POST'])
 def ad_copy_generate():
+    if _ad_copy_ip_usage() >= IP_DAILY_LIMIT:
+        return jsonify({
+            "error": "ip_limit_reached",
+            "message": "This network has reached today's generation limit. Please try again tomorrow.",
+        }), 429
+
     remaining = _ad_copy_remaining_uses()
     if remaining <= 0:
         return jsonify({
             "error": "daily_limit_reached",
-            "message": "You've used today's 3 free generations. Sign up free for 5 more across every CopySwift AI tool.",
+            "message": "You've used today's free generations. Unlock 2 bonus generations with your email, or come back tomorrow.",
         }), 429
 
     data = request.get_json(force=True) or {}
@@ -2104,13 +2899,15 @@ def ad_copy_generate():
     if not offer:
         return jsonify({"error": "missing_offer", "message": "Tell us what you're selling first."}), 400
 
-    prompt = (
-        f"Write 3 short ad copy variations for {platform}, in a {tone} tone.\n"
-        f"What's being sold: {offer}\n"
-        f"Target customer: {customer or 'general African small business customers'}\n"
-        f"Their main hesitation to address: {hesitation or 'none specified'}\n"
-        f"Each variation must be under 60 words, include a hook, the pitch, and a clear call-to-action. "
-        f"Separate the 3 variations with '---'. Write in plain text only — no Markdown, no **, no ## headers, no bullet symbols."
+    profile = get_active_business_profile(session.get("user_email"))
+
+    prompt = build_prompt(
+        profile,
+        offer,
+        customer,
+        hesitation,
+        platform,
+        tone,
     )
 
     try:
@@ -2120,20 +2917,81 @@ def ad_copy_generate():
             reasoning_effort="low",
         )
         result = cc.choices[0].message.content
-        variations = [v.strip() for v in result.split('---') if v.strip()]
+
+        if "###STRATEGY###" in result:
+            ad_text, strategy_text = result.split("###STRATEGY###", 1)
+        else:
+            ad_text = result
+            strategy_text = ""
+
+        variations = [v.strip() for v in ad_text.split('---') if v.strip()]
+
+        strategist = {
+            "objective": "",
+            "recommended_platform": platform,
+            "recommended_audience": customer or "General African small business customers",
+            "best_posting_time": "",
+            "marketing_tip": "",
+            "follow_up": "",
+            "ab_test": "",
+            "ai_strategy": strategy_text.strip(),
+        }
+
+        campaign_score = evaluate_campaign(
+            client,
+            MODEL,
+            "\n\n".join(variations)
+        )
+        learning = learning_summary(campaign_score)
+
+        if profile:
+            with get_db() as db:
+                persist_learning(
+                    db,
+                    profile["id"],
+                    "\n\n".join(variations),
+                    campaign_score,
+                )
+                db.commit()
+
     except Exception as e:
-        return jsonify({"error": "generation_failed", "message": str(e)}), 500
+        logger.exception("Free Ad Copy generation failed")
+        return jsonify({
+            "error": "generation_failed",
+            "message": "We couldn't generate your ad copy right now. Please try again. If the problem continues, contact CopySwift AI support."
+        }), 500
 
     _ad_copy_increment_uses()
+    _ad_copy_ip_increment()
+
     return jsonify({
         "variations": variations,
+        "strategist": strategist,
+        "campaign_score": campaign_score,
+        "learning": learning,
         "remaining_uses": _ad_copy_remaining_uses(),
     })
 
+
+@app.route('/tools/ad-copy/unlock-bonus', methods=['POST'])
+def ad_copy_unlock_bonus():
+    data = request.get_json(force=True) or {}
+    email = (data.get("email") or "").strip().lower()
+    if not email or "@" not in email or "." not in email.split("@")[-1]:
+        return jsonify({"error": "invalid_email", "message": "Please enter a valid email address."}), 400
+    if session.get("ad_copy_bonus_unlocked"):
+        return jsonify({"remaining_uses": _ad_copy_remaining_uses(), "already_unlocked": True})
+    ip = _get_client_ip()
+    with get_db() as db:
+        db.execute("INSERT INTO free_tool_leads (email, ip, tool) VALUES (?, ?, 'ad-copy')", (email, ip))
+        db.commit()
+    session["ad_copy_bonus_unlocked"] = True
+    session.permanent = True
+    return jsonify({"remaining_uses": _ad_copy_remaining_uses(), "unlocked": True})
+
 # === END BLOCK ===
 # === APPEND THIS BLOCK TO THE END OF app.py ===
-import re as _re
-from bs4 import BeautifulSoup as _BeautifulSoup
+
 
 def _extract_price(soup):
     # Try common price patterns: itemprop, class names, then a regex fallback
