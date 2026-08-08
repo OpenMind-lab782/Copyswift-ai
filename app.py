@@ -14,6 +14,7 @@ from payment_engine.api.openapi import openapi_api
 from payment_engine.api.webhooks import webhook_api
 from payment_engine.api.assistant import assistant_api
 from payment_engine.api.ai_services import ai_services_api
+from payment_engine.api.reconciliation_settlement import reconciliation_settlement_api
 from payment_engine.api.checkout import checkout_api
 from payment_engine.api.customer import customer_api
 from payment_engine.api.dashboard import dashboard_api
@@ -122,6 +123,7 @@ app.register_blueprint(index_api, url_prefix="/api/v1")
 app.register_blueprint(frontend_api, url_prefix="/api/v1")
 app.register_blueprint(auth_api, url_prefix="/api/v1")
 app.register_blueprint(ai_services_api, url_prefix="/api/v1")
+app.register_blueprint(reconciliation_settlement_api, url_prefix="/api/v1")
 
 @app.route("/health")
 def health():
