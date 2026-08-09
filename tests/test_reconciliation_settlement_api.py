@@ -70,6 +70,114 @@ class ReconciliationSettlementAPITests(unittest.TestCase):
             self.merchant["merchant_id"],
         )
 
+    def test_reconciliation_report_requires_api_key(self):
+        response = self.client.post(
+            "/api/v1/reconciliation/report",
+            json={
+                "reference": "PAY-B68-AUTH",
+                "amount": 1000,
+                "currency": "NGN",
+            },
+        )
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_record_reconciliation_report(self):
+        response = self.client.post(
+            "/api/v1/reconciliation/report",
+            json={
+                "reference": "PAY-B68-001",
+                "amount": 5000,
+                "currency": "NGN",
+            },
+            headers=self.headers(),
+        )
+
+        self.assertEqual(response.status_code, 201)
+
+        record = response.get_json()
+
+        self.assertEqual(
+            record["reference"],
+            "PAY-B68-001",
+        )
+        self.assertEqual(
+            record["amount"],
+            5000,
+        )
+        self.assertEqual(
+            record["currency"],
+            "NGN",
+        )
+
+        report_response = self.client.get(
+            "/api/v1/reconciliation/report",
+            headers=self.headers(),
+        )
+
+        self.assertEqual(report_response.status_code, 200)
+
+        report = report_response.get_json()
+
+        self.assertEqual(
+            report["merchant_id"],
+            self.merchant["merchant_id"],
+        )
+        self.assertEqual(
+            report["total_transactions"],
+            1,
+        )
+        self.assertEqual(
+            report["total_amount"],
+            5000,
+        )
+
+    def test_reconciliation_report_rejects_missing_fields(self):
+        response = self.client.post(
+            "/api/v1/reconciliation/report",
+            json={
+                "reference": "PAY-B68-002",
+            },
+            headers=self.headers(),
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+        body = response.get_json()
+
+        self.assertEqual(
+            body["error"],
+            "Missing required fields",
+        )
+        self.assertIn("amount", body["fields"])
+        self.assertIn("currency", body["fields"])
+
+    def test_reconciliation_report_rejects_invalid_amount(self):
+        response = self.client.post(
+            "/api/v1/reconciliation/report",
+            json={
+                "reference": "PAY-B68-003",
+                "amount": "invalid",
+                "currency": "NGN",
+            },
+            headers=self.headers(),
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_reconciliation_report_rejects_non_positive_amount(self):
+        response = self.client.post(
+            "/api/v1/reconciliation/report",
+            json={
+                "reference": "PAY-B68-004",
+                "amount": 0,
+                "currency": "NGN",
+            },
+            headers=self.headers(),
+        )
+
+        self.assertEqual(response.status_code, 400)
+
     def test_reconciliation_report_is_merchant_scoped(self):
         reconciliation_report_service.record(
             merchant_id=self.merchant["merchant_id"],

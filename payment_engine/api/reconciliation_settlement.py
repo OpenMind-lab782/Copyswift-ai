@@ -83,6 +83,58 @@ def list_reconciliation():
 
 @reconciliation_settlement_api.route(
     "/reconciliation/report",
+    methods=["POST"],
+)
+@require_api_key
+def record_reconciliation_report():
+    merchant_id = _merchant_id()
+
+    if not merchant_id:
+        return jsonify({"error": "Merchant context unavailable"}), 500
+
+    data = _json_body()
+
+    if data is None:
+        return jsonify({"error": "JSON request body required"}), 400
+
+    required = ("reference", "amount", "currency")
+
+    missing = [
+        field
+        for field in required
+        if data.get(field) is None
+    ]
+
+    if missing:
+        return jsonify({
+            "error": "Missing required fields",
+            "fields": missing,
+        }), 400
+
+    try:
+        amount = float(data["amount"])
+    except (TypeError, ValueError):
+        return jsonify({
+            "error": "amount must be numeric"
+        }), 400
+
+    if amount <= 0:
+        return jsonify({
+            "error": "amount must be greater than zero"
+        }), 400
+
+    record = reconciliation_report_service.record(
+        merchant_id=merchant_id,
+        reference=data["reference"],
+        amount=amount,
+        currency=data["currency"],
+    )
+
+    return jsonify(record), 201
+
+
+@reconciliation_settlement_api.route(
+    "/reconciliation/report",
     methods=["GET"],
 )
 @require_api_key
