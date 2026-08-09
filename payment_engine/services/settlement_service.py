@@ -5,8 +5,8 @@ from payment_engine.repositories.settlement_repository import (
 
 class SettlementService:
 
-    def __init__(self):
-        self.repository = SettlementRepository()
+    def __init__(self, repository=None):
+        self.repository = repository or SettlementRepository()
 
     def record(
         self,
@@ -24,7 +24,7 @@ class SettlementService:
 
         return self.repository.save(
             merchant_id,
-            settlement
+            settlement,
         )
 
     def list(self, merchant_id):

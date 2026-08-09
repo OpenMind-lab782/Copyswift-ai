@@ -1,26 +1,14 @@
-class SettlementRepository:
+from payment_engine.repositories.sqlite_settlement_repository import (
+    SQLiteSettlementRepository,
+)
 
-    def __init__(self):
-        self._settlements = {}
 
-    def save(self, merchant_id, settlement):
+class SettlementRepository(SQLiteSettlementRepository):
+    """
+    Default settlement repository.
 
-        self._settlements.setdefault(
-            merchant_id,
-            []
-        ).append(settlement)
+    Kept under the original public class name for backward
+    compatibility while delegating persistence to SQLite.
+    """
 
-        return settlement
-
-    def list(self, merchant_id):
-
-        return list(
-            self._settlements.get(
-                merchant_id,
-                []
-            )
-        )
-
-    def clear(self):
-
-        self._settlements.clear()
+    pass

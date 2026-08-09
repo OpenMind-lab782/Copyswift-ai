@@ -1,7 +1,12 @@
+from payment_engine.repositories.reconciliation_repository import (
+    ReconciliationRepository,
+)
+
+
 class ReconciliationService:
 
-    def __init__(self):
-        self._records = {}
+    def __init__(self, repository=None):
+        self.repository = repository or ReconciliationRepository()
 
     def record(
         self,
@@ -13,23 +18,18 @@ class ReconciliationService:
             "reference": reference,
         }
 
-        self._records.setdefault(
+        return self.repository.save(
             merchant_id,
-            []
-        ).append(record)
-
-        return record
+            record,
+        )
 
     def list(self, merchant_id):
-        return list(
-            self._records.get(
-                merchant_id,
-                []
-            )
+        return self.repository.list(
+            merchant_id
         )
 
     def clear(self):
-        self._records.clear()
+        self.repository.clear()
 
 
 reconciliation_service = ReconciliationService()

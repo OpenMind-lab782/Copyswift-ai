@@ -1,7 +1,15 @@
+from payment_engine.repositories.sqlite_reconciliation_report_repository import (
+    SQLiteReconciliationReportRepository,
+)
+
+
 class ReconciliationReportService:
 
-    def __init__(self):
-        self._records = {}
+    def __init__(self, repository=None):
+        self.repository = (
+            repository
+            or SQLiteReconciliationReportRepository()
+        )
 
     def record(
         self,
@@ -16,18 +24,15 @@ class ReconciliationReportService:
             "currency": currency,
         }
 
-        self._records.setdefault(
+        return self.repository.save(
             merchant_id,
-            []
-        ).append(record)
-
-        return record
+            record,
+        )
 
     def generate(self, merchant_id):
 
-        records = self._records.get(
-            merchant_id,
-            []
+        records = self.repository.list(
+            merchant_id
         )
 
         return {
@@ -41,7 +46,7 @@ class ReconciliationReportService:
         }
 
     def clear(self):
-        self._records.clear()
+        self.repository.clear()
 
 
 reconciliation_report_service = ReconciliationReportService()
