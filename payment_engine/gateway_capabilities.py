@@ -8,3 +8,4 @@ class GatewayCapabilities:
     supports_mobile_money: bool = False
     supports_crypto: bool = False
     supports_refunds: bool = False
+    supports_webhooks: bool = False
