@@ -10,6 +10,9 @@ class MarketBrain:
     Core market intelligence engine.
     """
 
+    def __init__(self, provider=None):
+        self.provider = provider
+
     def analyze(self, market_data):
         return {
             "timestamp": datetime.now(UTC).isoformat(),

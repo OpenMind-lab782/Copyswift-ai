@@ -8,6 +8,9 @@ class AISalesManager:
     Generates basic sales guidance based on customer intent.
     """
 
+    def __init__(self, provider=None):
+        self.provider = provider
+
     def assist(self, customer):
         intent = (customer.get("intent") or "").lower()
 

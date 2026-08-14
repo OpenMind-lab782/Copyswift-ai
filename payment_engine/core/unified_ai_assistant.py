@@ -14,15 +14,33 @@ from payment_engine.core.checkout_recommender import CheckoutRecommender
 
 class UnifiedAIAssistant:
 
-    def __init__(self):
-        self.sales = AISalesManager()
-        self.chat = SalesConversationEngine()
-        self.brain = MarketBrain()
-        self.strategist = MarketStrategist()
-        self.decision = DecisionEngine()
-        self.knowledge = KnowledgeLoader()
-        self.journey = CustomerJourneyEngine()
-        self.checkout = CheckoutRecommender()
+    def __init__(
+        self,
+        provider=None,
+        sales=None,
+        chat=None,
+        brain=None,
+        strategist=None,
+        decision=None,
+        knowledge=None,
+        journey=None,
+        checkout=None,
+    ):
+        from payment_engine.core.ai_provider_factory import AIProviderFactory
+
+        self.provider = provider or AIProviderFactory.create()
+        self.sales = sales or AISalesManager(provider=self.provider)
+        self.chat = chat or SalesConversationEngine(provider=self.provider)
+        self.brain = brain or MarketBrain(provider=self.provider)
+        self.strategist = strategist or MarketStrategist(
+            provider=self.provider
+        )
+        self.decision = decision or DecisionEngine(
+            provider=self.provider
+        )
+        self.knowledge = knowledge or KnowledgeLoader()
+        self.journey = journey or CustomerJourneyEngine()
+        self.checkout = checkout or CheckoutRecommender()
 
     def assist(self, customer_name, intent, message):
 

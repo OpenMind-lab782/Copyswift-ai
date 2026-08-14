@@ -1,10 +1,15 @@
 from flask import Blueprint, jsonify, request
 
+from payment_engine.core.ai_provider_factory import AIProviderFactory
 from payment_engine.core.unified_ai_assistant import UnifiedAIAssistant
 
 assistant_api = Blueprint("assistant_api", __name__)
 
-assistant = UnifiedAIAssistant()
+provider = AIProviderFactory.create()
+
+assistant = UnifiedAIAssistant(
+    provider=provider
+)
 
 
 @assistant_api.route("/assistant/chat", methods=["POST"])

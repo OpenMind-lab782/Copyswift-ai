@@ -8,6 +8,9 @@ class MarketStrategist:
     Converts Market Brain analysis into strategy recommendations.
     """
 
+    def __init__(self, provider=None):
+        self.provider = provider
+
     def recommend(self, analysis):
         trend = analysis.get("trend", "unknown")
         confidence = analysis.get("confidence", 0.0)

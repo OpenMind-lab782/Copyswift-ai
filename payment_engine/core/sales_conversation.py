@@ -7,8 +7,9 @@ from payment_engine.core.knowledge_loader import KnowledgeLoader
 
 class SalesConversationEngine:
 
-    def __init__(self):
-        self.knowledge = KnowledgeLoader()
+    def __init__(self, provider=None, knowledge=None):
+        self.provider = provider
+        self.knowledge = knowledge or KnowledgeLoader()
 
     def reply(self, customer, message):
 

@@ -1,28 +1,38 @@
-"""
-Swift Payment Engine Middleware Package
+class Middleware:
+    """Base middleware contract for payment-engine operations."""
 
-Compatibility layer exposing the legacy MiddlewareManager
-while providing the new middleware package modules.
-"""
+    def before(self, operation, context):
+        return context
 
-from importlib.util import module_from_spec, spec_from_file_location
-from pathlib import Path
+    def after(self, operation, context, result):
+        return result
 
-from .idempotency import IdempotencyStore
 
-_legacy_path = Path(__file__).resolve().parent.parent / "middleware.py"
+class MiddlewareManager:
+    """Executes registered middleware around an operation."""
 
-_spec = spec_from_file_location(
-    "_legacy_middleware",
-    _legacy_path,
-)
+    def __init__(self):
+        self._middleware = []
 
-_legacy = module_from_spec(_spec)
-_spec.loader.exec_module(_legacy)
+    def add(self, middleware):
+        if not isinstance(middleware, Middleware):
+            raise TypeError("middleware must be a Middleware instance")
 
-MiddlewareManager = _legacy.MiddlewareManager
+        self._middleware.append(middleware)
+        return middleware
+
+    def before(self, operation, context):
+        for middleware in self._middleware:
+            context = middleware.before(operation, context)
+        return context
+
+    def after(self, operation, context, result):
+        for middleware in reversed(self._middleware):
+            result = middleware.after(operation, context, result)
+        return result
+
 
 __all__ = [
+    "Middleware",
     "MiddlewareManager",
-    "IdempotencyStore",
 ]
