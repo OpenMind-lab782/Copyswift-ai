@@ -41,6 +41,7 @@ class PostgreSQLDeploymentValidatorTests(unittest.TestCase):
             "postgresql+psycopg://"
             "user:password@localhost:5432/swift_payment"
         )
+        os.environ["SWIFT_DB_BACKEND"] = "postgres"
 
         self.assertTrue(
             PostgreSQLDeploymentValidator.is_ready()
@@ -56,6 +57,43 @@ class PostgreSQLDeploymentValidatorTests(unittest.TestCase):
         self.assertEqual(
             report["driver"],
             "psycopg",
+        )
+
+    def test_missing_repository_backend_is_not_ready(self):
+        os.environ["DATABASE_URL"] = (
+            "postgresql+psycopg://"
+            "user:password@localhost:5432/swift_payment"
+        )
+        os.environ.pop("SWIFT_DB_BACKEND", None)
+
+        errors = PostgreSQLDeploymentValidator.validate_environment()
+
+        self.assertIn(
+            "SWIFT_DB_BACKEND is not configured",
+            errors,
+        )
+        self.assertFalse(
+            PostgreSQLDeploymentValidator.is_ready()
+        )
+
+    def test_sqlite_repository_backend_is_rejected(self):
+        os.environ["DATABASE_URL"] = (
+            "postgresql+psycopg://"
+            "user:password@localhost:5432/swift_payment"
+        )
+        os.environ["SWIFT_DB_BACKEND"] = "sqlite"
+
+        errors = PostgreSQLDeploymentValidator.validate_environment()
+
+        self.assertTrue(
+            any(
+                "SWIFT_DB_BACKEND must be set to 'postgres'"
+                in error
+                for error in errors
+            )
+        )
+        self.assertFalse(
+            PostgreSQLDeploymentValidator.is_ready()
         )
 
     def test_invalid_database_driver_is_rejected(self):

@@ -23,8 +23,12 @@ class PostgreSQLReadinessServiceTests(unittest.TestCase):
         self.original_database_url = os.environ.get(
             "DATABASE_URL"
         )
+        self.original_repository_backend = os.environ.get(
+            "SWIFT_DB_BACKEND"
+        )
 
         os.environ.pop("DATABASE_URL", None)
+        os.environ.pop("SWIFT_DB_BACKEND", None)
 
     def tearDown(self):
         if self.original_database_url is None:
@@ -32,6 +36,13 @@ class PostgreSQLReadinessServiceTests(unittest.TestCase):
         else:
             os.environ["DATABASE_URL"] = (
                 self.original_database_url
+            )
+
+        if self.original_repository_backend is None:
+            os.environ.pop("SWIFT_DB_BACKEND", None)
+        else:
+            os.environ["SWIFT_DB_BACKEND"] = (
+                self.original_repository_backend
             )
 
     def _configured_sqlite_database(self):
@@ -87,6 +98,7 @@ class PostgreSQLReadinessServiceTests(unittest.TestCase):
             "postgresql+psycopg://"
             "user:password@localhost:5432/swift_payment"
         )
+        os.environ["SWIFT_DB_BACKEND"] = "postgres"
 
         service = PostgreSQLReadinessService(
             database=UnhealthyDatabase()
@@ -106,6 +118,7 @@ class PostgreSQLReadinessServiceTests(unittest.TestCase):
             "postgresql+psycopg://"
             "user:password@localhost:5432/swift_payment"
         )
+        os.environ["SWIFT_DB_BACKEND"] = "postgres"
 
         database = self._configured_sqlite_database()
 
@@ -126,6 +139,7 @@ class PostgreSQLReadinessServiceTests(unittest.TestCase):
             "postgresql+psycopg://"
             "user:password@localhost:5432/swift_payment"
         )
+        os.environ["SWIFT_DB_BACKEND"] = "postgres"
 
         database = self._configured_sqlite_database()
 
@@ -154,6 +168,7 @@ class PostgreSQLReadinessServiceTests(unittest.TestCase):
             "postgresql+psycopg://"
             "user:password@localhost:5432/swift_payment"
         )
+        os.environ["SWIFT_DB_BACKEND"] = "postgres"
 
         database = self._configured_sqlite_database()
 
@@ -196,6 +211,7 @@ class PostgreSQLReadinessServiceTests(unittest.TestCase):
             "postgresql://"
             "user:password@localhost:5432/swift_payment"
         )
+        os.environ["SWIFT_DB_BACKEND"] = "postgres"
 
         service = PostgreSQLReadinessService()
 

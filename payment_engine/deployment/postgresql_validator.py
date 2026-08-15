@@ -11,6 +11,7 @@ class PostgreSQLDeploymentValidator:
 
     REQUIRED_ENVIRONMENT = (
         "DATABASE_URL",
+        "SWIFT_DB_BACKEND",
     )
 
     @classmethod
@@ -33,6 +34,13 @@ class PostgreSQLDeploymentValidator:
             errors.append(
                 "DATABASE_URL must use the "
                 "postgresql+psycopg:// SQLAlchemy driver scheme"
+            )
+
+        repository_backend = os.getenv("SWIFT_DB_BACKEND")
+
+        if repository_backend and repository_backend.strip().lower() != "postgres":
+            errors.append(
+                "SWIFT_DB_BACKEND must be set to 'postgres'"
             )
 
         return errors

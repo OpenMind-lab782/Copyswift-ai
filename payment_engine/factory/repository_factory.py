@@ -15,13 +15,40 @@ from payment_engine.repositories.postgres_payment_event_repository import (
 
 
 class RepositoryFactory:
+    """
+    Central repository backend selector.
+
+    SQLite remains the safe development default.
+    PostgreSQL is selected explicitly with:
+
+        SWIFT_DB_BACKEND=postgres
+
+    Unknown backend values fail fast instead of silently falling back
+    to SQLite.
+    """
+
+    SUPPORTED_BACKENDS = {"sqlite", "postgres"}
 
     @staticmethod
     def _backend():
-        return os.getenv(
+        backend = os.getenv(
             "SWIFT_DB_BACKEND",
             "sqlite",
-        ).lower()
+        ).strip().lower()
+
+        if backend not in RepositoryFactory.SUPPORTED_BACKENDS:
+            raise ValueError(
+                "Unsupported SWIFT_DB_BACKEND: "
+                f"{backend!r}. "
+                "Expected 'sqlite' or 'postgres'."
+            )
+
+        return backend
+
+    @staticmethod
+    def backend():
+        """Return the normalized active repository backend."""
+        return RepositoryFactory._backend()
 
     @staticmethod
     def payment_repository():
