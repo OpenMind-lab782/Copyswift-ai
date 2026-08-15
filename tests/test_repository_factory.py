@@ -6,8 +6,14 @@ from payment_engine.factory import RepositoryFactory
 from payment_engine.repositories.postgres_payment_repository import (
     PostgreSQLPaymentRepository,
 )
+from payment_engine.repositories.postgres_payment_event_repository import (
+    PostgreSQLPaymentEventRepository,
+)
 from payment_engine.repositories.sqlite_payment_repository import (
     SQLitePaymentRepository,
+)
+from payment_engine.repositories.sqlite_payment_event_repository import (
+    SQLitePaymentEventRepository,
 )
 
 
@@ -19,7 +25,7 @@ class RepositoryFactoryTests(unittest.TestCase):
             None,
         )
 
-    def test_sqlite_default(self):
+    def test_sqlite_default_payment_repository(self):
         os.environ.pop(
             "SWIFT_DB_BACKEND",
             None,
@@ -32,7 +38,7 @@ class RepositoryFactoryTests(unittest.TestCase):
             SQLitePaymentRepository,
         )
 
-    def test_postgres_backend(self):
+    def test_postgres_payment_repository(self):
         os.environ["SWIFT_DB_BACKEND"] = "postgres"
 
         with patch(
@@ -40,11 +46,41 @@ class RepositoryFactoryTests(unittest.TestCase):
             "PostgreSQLPaymentRepository"
         ) as repository_class:
 
-            repository_class.return_value = (
-                object()
-            )
+            repository_class.return_value = object()
 
             repo = RepositoryFactory.payment_repository()
+
+            repository_class.assert_called_once()
+
+            self.assertIs(
+                repo,
+                repository_class.return_value,
+            )
+
+    def test_sqlite_default_event_repository(self):
+        os.environ.pop(
+            "SWIFT_DB_BACKEND",
+            None,
+        )
+
+        repo = RepositoryFactory.payment_event_repository()
+
+        self.assertIsInstance(
+            repo,
+            SQLitePaymentEventRepository,
+        )
+
+    def test_postgres_event_repository(self):
+        os.environ["SWIFT_DB_BACKEND"] = "postgres"
+
+        with patch(
+            "payment_engine.factory.repository_factory."
+            "PostgreSQLPaymentEventRepository"
+        ) as repository_class:
+
+            repository_class.return_value = object()
+
+            repo = RepositoryFactory.payment_event_repository()
 
             repository_class.assert_called_once()
 

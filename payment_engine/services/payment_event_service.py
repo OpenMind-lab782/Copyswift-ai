@@ -1,7 +1,13 @@
-from payment_engine.repositories import payment_event_repository
+from payment_engine.factory import RepositoryFactory
 
 
 class PaymentEventService:
+
+    def __init__(self, repository=None):
+        self.repository = (
+            repository
+            or RepositoryFactory.payment_event_repository()
+        )
 
     def record(
         self,
@@ -11,7 +17,7 @@ class PaymentEventService:
         timestamp,
         metadata=None
     ):
-        return payment_event_repository.save(
+        return self.repository.save(
             reference,
             {
                 "event": event,
@@ -22,10 +28,10 @@ class PaymentEventService:
         )
 
     def list(self, reference):
-        return payment_event_repository.list(reference)
+        return self.repository.list(reference)
 
     def clear(self):
-        return payment_event_repository.clear()
+        return self.repository.clear()
 
 
 payment_event_service = PaymentEventService()
