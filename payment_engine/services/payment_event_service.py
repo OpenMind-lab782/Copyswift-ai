@@ -15,7 +15,8 @@ class PaymentEventService:
         event,
         status,
         timestamp,
-        metadata=None
+        metadata=None,
+        connection=None,
     ):
         return self.repository.save(
             reference,
@@ -25,6 +26,7 @@ class PaymentEventService:
                 "timestamp": timestamp,
                 "metadata": metadata or {},
             },
+            connection=connection,
         )
 
     def list(self, reference):

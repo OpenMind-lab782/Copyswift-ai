@@ -6,24 +6,14 @@ from payment_engine.database.postgres import PostgreSQLDatabase
 
 
 class PostgreSQLPaymentRepository:
-    """
-    Persistent PostgreSQL payment repository.
-
-    The repository depends on the PostgreSQLDatabase abstraction rather
-    than directly depending on psycopg. This keeps the repository
-    testable and allows SQLAlchemy to manage the PostgreSQL driver.
-    """
 
     def __init__(self, database=None):
-        # Schema provisioning is an explicit deployment/bootstrap concern.
-        # Repository construction must never mutate the production schema.
         self.db = database or PostgreSQLDatabase()
 
     @staticmethod
     def _serialize_metadata(metadata):
         if metadata is None:
             return "{}"
-
         return json.dumps(metadata)
 
     @staticmethod
@@ -45,14 +35,12 @@ class PostgreSQLPaymentRepository:
             return None
 
         payment = dict(row)
-
         payment["metadata"] = cls._deserialize_metadata(
             payment.get("metadata")
         )
-
         return payment
 
-    def save(self, payment):
+    def save(self, payment, connection=None):
         statement = text(
             """
             INSERT INTO payments (
@@ -110,13 +98,18 @@ class PostgreSQLPaymentRepository:
                 payment.get("metadata", {})
             ),
             "idempotency_key": payment.get("idempotency_key"),
-            "idempotency_fingerprint": payment.get("idempotency_fingerprint"),
+            "idempotency_fingerprint": payment.get(
+                "idempotency_fingerprint"
+            ),
             "created_at": payment.get("created_at"),
             "updated_at": payment.get("updated_at"),
         }
 
-        with self.db.engine.begin() as connection:
+        if connection is not None:
             connection.execute(statement, parameters)
+        else:
+            with self.db.engine.begin() as connection:
+                connection.execute(statement, parameters)
 
         return payment
 
@@ -208,14 +201,16 @@ class PostgreSQLPaymentRepository:
         )
 
         with self.db.connect() as connection:
-            rows = connection.execute(statement).mappings().all()
+            rows = connection.execute(
+                statement
+            ).mappings().all()
 
         return [
             self._row_to_payment(row)
             for row in rows
         ]
 
-    def update_status(self, reference, status):
+    def update_status(self, reference, status, connection=None):
         statement = text(
             """
             UPDATE payments
@@ -225,6 +220,43 @@ class PostgreSQLPaymentRepository:
             WHERE reference = :reference
             """
         )
+
+        if connection is not None:
+            result = connection.execute(
+                statement,
+                {
+                    "reference": reference,
+                    "status": status,
+                },
+            )
+
+            if result.rowcount == 0:
+                return None
+
+            row = connection.execute(
+                text(
+                    """
+                    SELECT
+                        reference,
+                        merchant_id,
+                        amount,
+                        currency,
+                        status,
+                        gateway,
+                        customer_email,
+                        metadata,
+                        idempotency_key,
+                        idempotency_fingerprint,
+                        created_at,
+                        updated_at
+                    FROM payments
+                    WHERE reference = :reference
+                    """
+                ),
+                {"reference": reference},
+            ).mappings().first()
+
+            return self._row_to_payment(row)
 
         with self.db.engine.begin() as connection:
             result = connection.execute(

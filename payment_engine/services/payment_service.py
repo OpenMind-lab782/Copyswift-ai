@@ -25,20 +25,25 @@ class PaymentService:
         )
 
     def save(self, payment):
+        database = getattr(self.payment_repository, "db", None)
 
-        result = transaction_manager.execute(
-            self.payment_repository.save,
-            payment
-        )
+        with transaction_manager.transaction(
+            database=database
+        ) as connection:
+            result = self.payment_repository.save(
+                payment,
+                connection=connection,
+            )
 
-        self.payment_event_service.record(
-            payment["reference"],
-            "created",
-            payment.get("status"),
-            payment.get("created_at")
-        )
+            self.payment_event_service.record(
+                payment["reference"],
+                "created",
+                payment.get("status"),
+                payment.get("created_at"),
+                connection=connection,
+            )
 
-        return result
+            return result
 
     def get(self, reference):
         payment = self.payment_repository.get(reference)
@@ -50,7 +55,7 @@ class PaymentService:
             {
                 "event": "created",
                 "status": "created",
-                "timestamp": payment.get("created_at")
+                "timestamp": payment.get("created_at"),
             }
         ]
 
@@ -61,7 +66,7 @@ class PaymentService:
                 {
                     "event": status,
                     "status": status,
-                    "timestamp": payment.get("updated_at")
+                    "timestamp": payment.get("updated_at"),
                 }
             )
 
@@ -78,7 +83,7 @@ class PaymentService:
                 {
                     "event": item["event"],
                     "status": item["status"],
-                    "timestamp": item["timestamp"]
+                    "timestamp": item["timestamp"],
                 }
                 for item in timeline
             ]
@@ -101,21 +106,27 @@ class PaymentService:
         return self.payment_repository.clear()
 
     def update_status(self, reference, status):
-        payment = transaction_manager.execute(
-            self.payment_repository.update_status,
-            reference,
-            status
-        )
+        database = getattr(self.payment_repository, "db", None)
 
-        if payment is not None:
-            self.payment_event_service.record(
-                reference=reference,
-                event=status,
-                status=status,
-                timestamp=payment.get("updated_at"),
-                metadata={
-                    "source": "payment_service"
-                }
+        with transaction_manager.transaction(
+            database=database
+        ) as connection:
+            payment = self.payment_repository.update_status(
+                reference,
+                status,
+                connection=connection,
             )
 
-        return payment
+            if payment is not None:
+                self.payment_event_service.record(
+                    reference=reference,
+                    event=status,
+                    status=status,
+                    timestamp=payment.get("updated_at"),
+                    metadata={
+                        "source": "payment_service"
+                    },
+                    connection=connection,
+                )
+
+            return payment

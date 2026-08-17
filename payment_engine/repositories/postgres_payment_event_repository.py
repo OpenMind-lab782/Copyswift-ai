@@ -6,12 +6,6 @@ from payment_engine.database.postgres import PostgreSQLDatabase
 
 
 class PostgreSQLPaymentEventRepository:
-    """
-    PostgreSQL-backed payment event repository.
-
-    Stores the complete payment event timeline in the PostgreSQL
-    payment_events table.
-    """
 
     def __init__(self, database=None):
         self.db = database or PostgreSQLDatabase()
@@ -20,7 +14,6 @@ class PostgreSQLPaymentEventRepository:
     def _serialize_metadata(metadata):
         if metadata is None:
             return "{}"
-
         return json.dumps(metadata)
 
     @staticmethod
@@ -52,7 +45,7 @@ class PostgreSQLPaymentEventRepository:
             ),
         }
 
-    def save(self, reference, event):
+    def save(self, reference, event, connection=None):
         statement = text(
             """
             INSERT INTO payment_events (
@@ -82,11 +75,11 @@ class PostgreSQLPaymentEventRepository:
             ),
         }
 
-        with self.db.engine.begin() as connection:
-            result = connection.execute(
-                statement,
-                parameters,
-            )
+        if connection is not None:
+            connection.execute(statement, parameters)
+        else:
+            with self.db.engine.begin() as connection:
+                connection.execute(statement, parameters)
 
         return event
 
@@ -118,9 +111,7 @@ class PostgreSQLPaymentEventRepository:
         ]
 
     def clear(self):
-        statement = text(
-            "DELETE FROM payment_events"
-        )
+        statement = text("DELETE FROM payment_events")
 
         with self.db.engine.begin() as connection:
             connection.execute(statement)
