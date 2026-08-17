@@ -83,6 +83,30 @@ class PostgreSQLPaymentEventRepository:
 
         return event
 
+    def has_verified_event(self, reference):
+        statement = text(
+            """
+            SELECT 1
+            FROM payment_events
+            WHERE reference = :reference
+              AND event = :event
+              AND status = :status
+            LIMIT 1
+            """
+        )
+
+        with self.db.connect() as connection:
+            row = connection.execute(
+                statement,
+                {
+                    "reference": reference,
+                    "event": "verified",
+                    "status": "verified",
+                },
+            ).first()
+
+        return row is not None
+
     def list(self, reference):
         statement = text(
             """

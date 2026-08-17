@@ -69,6 +69,28 @@ class PostgreSQLPaymentEventRepositoryTests(unittest.TestCase):
 
         self.db.engine.begin.assert_called_once()
 
+    def test_has_verified_event_returns_true_when_present(self):
+        connection = MagicMock()
+        connection.execute.return_value.first.return_value = {
+            "exists": 1
+        }
+
+        self.db.connect.return_value.__enter__.return_value = connection
+
+        self.assertTrue(
+            self.repository.has_verified_event("PAY-001")
+        )
+
+    def test_has_verified_event_returns_false_when_absent(self):
+        connection = MagicMock()
+        connection.execute.return_value.first.return_value = None
+
+        self.db.connect.return_value.__enter__.return_value = connection
+
+        self.assertFalse(
+            self.repository.has_verified_event("PAY-001")
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

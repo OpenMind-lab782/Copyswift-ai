@@ -34,6 +34,31 @@ class TestPaymentEngineIntegration(unittest.TestCase):
             "duplicate"
         )
 
+    def test_verified_reference_is_persistent_across_engine_instances(self):
+        reference = "INTEGRATION-PERSISTENT-VERIFY-001"
+
+        first_engine = self.engine
+        first = first_engine.verify_payment(
+            "paystack",
+            reference,
+        )
+
+        self.assertEqual(
+            first.get("status"),
+            "verified",
+        )
+
+        second_engine = PaymentEngine()
+        second = second_engine.verify_payment(
+            "paystack",
+            reference,
+        )
+
+        self.assertEqual(
+            second.get("status"),
+            "duplicate",
+        )
+
     def test_multiple_providers(self):
         expected = {
             "paystack": "verified",

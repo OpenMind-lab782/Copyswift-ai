@@ -29,6 +29,11 @@ class PaymentEventService:
             connection=connection,
         )
 
+    def has_verified_event(self, reference):
+        return self.repository.has_verified_event(
+            reference
+        )
+
     def list(self, reference):
         return self.repository.list(reference)
 

@@ -15,6 +15,9 @@ from payment_engine.health_monitor import GatewayHealthMonitor
 from payment_engine.provider_mode import ProviderModeManager
 from payment_engine.gateway_config import GatewayConfig
 from payment_engine.gateway_factory import GatewayFactory
+from payment_engine.services.payment_event_service import (
+    PaymentEventService,
+)
 
 from payment_engine.gateways.crypto import CryptoGateway
 from payment_engine.gateways.paystack import PaystackGateway
@@ -37,6 +40,7 @@ class PaymentEngine:
         self.gateway_config = GatewayConfig()
         self.health = HealthRegistry()
         self.idempotency = IdempotencyManager()
+        self.payment_event_service = PaymentEventService()
         self.events = EventBus()
         register_default_subscribers(self.events)
 
@@ -230,12 +234,19 @@ class PaymentEngine:
             "verify_payment",
             context,
         )
-        if self.idempotency.is_processed(reference):
+        if (
+            self.idempotency.is_processed(reference)
+            or self.payment_event_service.has_verified_event(
+                reference
+            )
+        ):
             duplicate = {
                 "status": "duplicate",
                 "gateway": gateway,
                 "reference": reference,
             }
+
+            self.idempotency.mark_processed(reference)
 
             self.events.publish(
                 "payment_duplicate_detected",
@@ -258,6 +269,17 @@ class PaymentEngine:
             and result.get("status") == "verified"
         ):
             self.idempotency.mark_processed(reference)
+
+            self.payment_event_service.record(
+                reference=reference,
+                event="verified",
+                status="verified",
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                metadata={
+                    "source": "payment_engine.verify_payment",
+                    "gateway": gateway,
+                },
+            )
 
             self.events.publish(
                 "payment_verified",

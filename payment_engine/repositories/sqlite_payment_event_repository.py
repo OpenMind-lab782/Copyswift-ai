@@ -38,6 +38,23 @@ class SQLitePaymentEventRepository:
 
         return event
 
+    def has_verified_event(self, reference):
+        cursor = self.db.cursor()
+
+        cursor.execute(
+            """
+            SELECT 1
+            FROM payment_events
+            WHERE reference = ?
+              AND event = ?
+              AND status = ?
+            LIMIT 1
+            """,
+            (reference, "verified", "verified"),
+        )
+
+        return cursor.fetchone() is not None
+
     def list(self, reference):
         cursor = self.db.cursor()
 
