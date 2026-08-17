@@ -12,6 +12,24 @@ from payment_engine.repositories.sqlite_payment_event_repository import (
 from payment_engine.repositories.postgres_payment_event_repository import (
     PostgreSQLPaymentEventRepository,
 )
+from payment_engine.repositories.sqlite_settlement_repository import (
+    SQLiteSettlementRepository,
+)
+from payment_engine.repositories.postgres_settlement_repository import (
+    PostgreSQLSettlementRepository,
+)
+from payment_engine.repositories.sqlite_reconciliation_repository import (
+    SQLiteReconciliationRepository,
+)
+from payment_engine.repositories.postgres_reconciliation_repository import (
+    PostgreSQLReconciliationRepository,
+)
+from payment_engine.repositories.sqlite_reconciliation_report_repository import (
+    SQLiteReconciliationReportRepository,
+)
+from payment_engine.repositories.postgres_reconciliation_report_repository import (
+    PostgreSQLReconciliationReportRepository,
+)
 
 
 class RepositoryFactory:
@@ -63,3 +81,24 @@ class RepositoryFactory:
             return PostgreSQLPaymentEventRepository()
 
         return SQLitePaymentEventRepository()
+
+    @staticmethod
+    def settlement_repository():
+        if RepositoryFactory._backend() == "postgres":
+            return PostgreSQLSettlementRepository()
+
+        return SQLiteSettlementRepository()
+
+    @staticmethod
+    def reconciliation_repository():
+        if RepositoryFactory._backend() == "postgres":
+            return PostgreSQLReconciliationRepository()
+
+        return SQLiteReconciliationRepository()
+
+    @staticmethod
+    def reconciliation_report_repository():
+        if RepositoryFactory._backend() == "postgres":
+            return PostgreSQLReconciliationReportRepository()
+
+        return SQLiteReconciliationReportRepository()

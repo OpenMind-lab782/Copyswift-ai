@@ -1,6 +1,4 @@
-from payment_engine.repositories.sqlite_reconciliation_report_repository import (
-    SQLiteReconciliationReportRepository,
-)
+from payment_engine.factory import RepositoryFactory
 
 
 class ReconciliationReportService:
@@ -8,7 +6,7 @@ class ReconciliationReportService:
     def __init__(self, repository=None):
         self.repository = (
             repository
-            or SQLiteReconciliationReportRepository()
+            or RepositoryFactory.reconciliation_report_repository()
         )
 
     def record(

@@ -94,11 +94,17 @@ class PostgreSQLRepositoryTests(unittest.TestCase):
 
     def test_list_returns_persisted_payments(self):
         self.repository.save(
-            self.payment(reference="PG-001")
+            self.payment(
+                reference="PG-001",
+                idempotency_key="idem-001",
+            )
         )
 
         self.repository.save(
-            self.payment(reference="PG-002")
+            self.payment(
+                reference="PG-002",
+                idempotency_key="idem-002",
+            )
         )
 
         payments = self.repository.list()
@@ -148,11 +154,17 @@ class PostgreSQLRepositoryTests(unittest.TestCase):
 
     def test_clear_removes_all_payments(self):
         self.repository.save(
-            self.payment(reference="PG-001")
+            self.payment(
+                reference="PG-001",
+                idempotency_key="idem-001",
+            )
         )
 
         self.repository.save(
-            self.payment(reference="PG-002")
+            self.payment(
+                reference="PG-002",
+                idempotency_key="idem-002",
+            )
         )
 
         self.assertEqual(

@@ -1,4 +1,5 @@
 from sqlalchemy import text
+from sqlalchemy.exc import NoInspectionAvailable
 
 
 PAYMENTS_SCHEMA_SQL = """
@@ -12,6 +13,7 @@ CREATE TABLE IF NOT EXISTS payments (
     customer_email VARCHAR(255),
     metadata TEXT,
     idempotency_key VARCHAR(255),
+    idempotency_fingerprint VARCHAR(64),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
@@ -59,12 +61,13 @@ CREATE TABLE IF NOT EXISTS reconciliation_report_records (
 
 def initialize_postgres_schema(database):
     """
-    Create the core Swift Payment Engine PostgreSQL tables.
+    Create or upgrade the core Swift Payment Engine database schema.
 
-    This function is deliberately explicit instead of relying on SQLite
-    migration syntax so that PostgreSQL remains a first-class backend.
+    PostgreSQL remains the production target, while the test suite may
+    inject SQLite engines into the PostgreSQL database adapter. Schema
+    upgrades therefore use SQLAlchemy dialect detection instead of
+    PostgreSQL-only ALTER syntax on every backend.
     """
-
     statements = (
         PAYMENTS_SCHEMA_SQL,
         PAYMENT_EVENTS_SCHEMA_SQL,
@@ -76,3 +79,32 @@ def initialize_postgres_schema(database):
     with database.engine.begin() as connection:
         for statement in statements:
             connection.execute(text(statement))
+
+        try:
+            inspector = __import__("sqlalchemy").inspect(connection)
+        except NoInspectionAvailable:
+            # Architecture/unit tests may inject MagicMock databases.
+            # The explicit initializer must remain callable without
+            # forcing SQLAlchemy reflection against a mock object.
+            return
+
+        payment_columns = {
+            column["name"]
+            for column in inspector.get_columns("payments")
+        }
+
+        if "idempotency_fingerprint" not in payment_columns:
+            connection.execute(
+                text(
+                    "ALTER TABLE payments "
+                    "ADD COLUMN idempotency_fingerprint VARCHAR(64)"
+                )
+            )
+
+        connection.execute(
+            text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS "
+                "uq_payments_merchant_idempotency "
+                "ON payments (merchant_id, idempotency_key)"
+            )
+        )

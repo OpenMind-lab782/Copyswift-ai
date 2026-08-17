@@ -52,6 +52,43 @@ class SQLitePaymentRepository:
 
         return dict(row)
 
+
+    def find_by_idempotency_key(self, merchant_id, key):
+        if not merchant_id or not key:
+            return None
+
+        cursor = self.db.cursor()
+
+        cursor.execute(
+            """
+            SELECT *
+            FROM payments
+            WHERE merchant_id = ?
+              AND idempotency_key = ?
+            LIMIT 1
+            """,
+            (merchant_id, key),
+        )
+
+        row = cursor.fetchone()
+
+        if row is None:
+            return None
+
+        payment = dict(row)
+
+        if isinstance(payment.get("metadata"), str):
+            import json
+
+            try:
+                payment["metadata"] = json.loads(
+                    payment["metadata"]
+                )
+            except (TypeError, ValueError):
+                payment["metadata"] = {}
+
+        return payment
+
     def list(self):
         cursor = self.db.cursor()
 

@@ -65,6 +65,7 @@ class PostgreSQLPaymentRepository:
                 customer_email,
                 metadata,
                 idempotency_key,
+                idempotency_fingerprint,
                 created_at,
                 updated_at
             )
@@ -78,6 +79,7 @@ class PostgreSQLPaymentRepository:
                 :customer_email,
                 :metadata,
                 :idempotency_key,
+                :idempotency_fingerprint,
                 :created_at,
                 :updated_at
             )
@@ -91,6 +93,7 @@ class PostgreSQLPaymentRepository:
                 customer_email = EXCLUDED.customer_email,
                 metadata = EXCLUDED.metadata,
                 idempotency_key = EXCLUDED.idempotency_key,
+                idempotency_fingerprint = EXCLUDED.idempotency_fingerprint,
                 updated_at = EXCLUDED.updated_at
             """
         )
@@ -107,6 +110,7 @@ class PostgreSQLPaymentRepository:
                 payment.get("metadata", {})
             ),
             "idempotency_key": payment.get("idempotency_key"),
+            "idempotency_fingerprint": payment.get("idempotency_fingerprint"),
             "created_at": payment.get("created_at"),
             "updated_at": payment.get("updated_at"),
         }
@@ -129,6 +133,7 @@ class PostgreSQLPaymentRepository:
                 customer_email,
                 metadata,
                 idempotency_key,
+                idempotency_fingerprint,
                 created_at,
                 updated_at
             FROM payments
@@ -140,6 +145,43 @@ class PostgreSQLPaymentRepository:
             row = connection.execute(
                 statement,
                 {"reference": reference},
+            ).mappings().first()
+
+        return self._row_to_payment(row)
+
+    def find_by_idempotency_key(self, merchant_id, key):
+        if not merchant_id or not key:
+            return None
+
+        statement = text(
+            """
+            SELECT
+                reference,
+                merchant_id,
+                amount,
+                currency,
+                status,
+                gateway,
+                customer_email,
+                metadata,
+                idempotency_key,
+                idempotency_fingerprint,
+                created_at,
+                updated_at
+            FROM payments
+            WHERE merchant_id = :merchant_id
+              AND idempotency_key = :idempotency_key
+            LIMIT 1
+            """
+        )
+
+        with self.db.connect() as connection:
+            row = connection.execute(
+                statement,
+                {
+                    "merchant_id": merchant_id,
+                    "idempotency_key": key,
+                },
             ).mappings().first()
 
         return self._row_to_payment(row)
@@ -157,6 +199,7 @@ class PostgreSQLPaymentRepository:
                 customer_email,
                 metadata,
                 idempotency_key,
+                idempotency_fingerprint,
                 created_at,
                 updated_at
             FROM payments
