@@ -35,6 +35,10 @@ from email_service import send_email
 from notifications.email import send_notification_email
 from payment_engine.engine import PaymentEngine
 from payment_engine.models import PaymentRequest
+from payment_engine.deployment import ProductionValidator
+from payment_engine.deployment.postgresql_readiness import (
+    PostgreSQLReadinessService,
+)
 
 load_dotenv()
 # --- Application logging ---------------------------------------------------
@@ -133,24 +137,91 @@ def health():
         "timestamp": datetime.now(UTC).isoformat()
     }), 200
 
+
+def _production_environment():
+    return os.getenv(
+        "RENDER_ENV",
+        "development",
+    ).strip().lower() in {"production", "prod"}
+
+
+def _postgresql_readiness_report():
+    return PostgreSQLReadinessService().report()
+
+
 @app.route("/ready")
 def ready():
+    # Local development continues to support the existing SQLite workflow.
+    if not _production_environment():
+        return jsonify({
+            "status": "ready",
+            "database": "ok",
+            "backend": "sqlite",
+            "version": "5.0.0"
+        }), 200
+
+    # Production readiness is based on the actual PostgreSQL service.
+    report = _postgresql_readiness_report()
+
+    if report["ready"]:
+        return jsonify({
+            "status": "ready",
+            "database": "ok",
+            "backend": report["backend"],
+            "driver": report["driver"],
+            "version": "5.0.0"
+        }), 200
+
     return jsonify({
-        "status": "ready",
-        "database": "ok",
-        "version": "5.0.0"
-    }), 200
+        "status": "not_ready",
+        "database": "unavailable",
+        "backend": report["backend"],
+        "driver": report["driver"],
+        "version": "5.0.0",
+        "errors": report.get("configuration", {}).get(
+            "errors",
+            []
+        ) + report.get("connection", {}).get(
+            "errors",
+            []
+        ) + report.get("schema", {}).get(
+            "errors",
+            []
+        ),
+    }), 503
+
 
 @app.route("/diagnostics")
 def diagnostics():
+    if not _production_environment():
+        return jsonify({
+            "status": "ok",
+            "version": "5.0.0",
+            "environment": "development",
+            "services": {
+                "payment_engine": "ok",
+                "database": "ok",
+                "api": "ok"
+            }
+        }), 200
+
+    report = _postgresql_readiness_report()
+
     return jsonify({
-        "status": "ok",
+        "status": "ok" if report["ready"] else "degraded",
         "version": "5.0.0",
+        "environment": "production",
         "services": {
             "payment_engine": "ok",
-            "database": "ok",
+            "database": (
+                "ok"
+                if report["ready"]
+                else "not_ready"
+            ),
             "api": "ok"
-        }
+        },
+        "postgresql": report,
+        "production_validator": ProductionValidator.report(),
     }), 200
 
 

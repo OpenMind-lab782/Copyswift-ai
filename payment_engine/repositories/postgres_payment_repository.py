@@ -3,9 +3,6 @@ import json
 from sqlalchemy import text
 
 from payment_engine.database.postgres import PostgreSQLDatabase
-from payment_engine.database.postgres_schema import (
-    initialize_postgres_schema,
-)
 
 
 class PostgreSQLPaymentRepository:
@@ -18,8 +15,9 @@ class PostgreSQLPaymentRepository:
     """
 
     def __init__(self, database=None):
+        # Schema provisioning is an explicit deployment/bootstrap concern.
+        # Repository construction must never mutate the production schema.
         self.db = database or PostgreSQLDatabase()
-        initialize_postgres_schema(self.db)
 
     @staticmethod
     def _serialize_metadata(metadata):

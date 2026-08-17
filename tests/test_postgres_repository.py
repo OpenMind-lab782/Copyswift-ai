@@ -3,6 +3,7 @@ import unittest
 from sqlalchemy import create_engine
 
 from payment_engine.database.postgres import PostgreSQLDatabase
+from payment_engine.database.postgres_schema import initialize_postgres_schema
 from payment_engine.repositories.postgres_payment_repository import (
     PostgreSQLPaymentRepository,
 )
@@ -20,6 +21,10 @@ class PostgreSQLRepositoryTests(unittest.TestCase):
             database_url="sqlite:///:memory:",
             engine=self.engine,
         )
+
+        # Schema provisioning is explicit.
+        # Repository construction must not mutate the database schema.
+        initialize_postgres_schema(self.database)
 
         self.repository = PostgreSQLPaymentRepository(
             database=self.database
