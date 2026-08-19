@@ -14,6 +14,7 @@ from payment_engine.core.unified_ai_assistant import UnifiedAIAssistant
 from payment_engine.engine import PaymentEngine
 from ecosystem_core.product_registry import ProductRegistry
 from ecosystem_core.seo_agent import SEOAgent
+from ecosystem_core.document_studio import DocumentStudio
 
 
 class EcosystemKernel:
@@ -51,6 +52,9 @@ class EcosystemKernel:
         )
         self.ai_provider = AIProviderFactory.create()
         self.seo_agent = SEOAgent(provider=self.ai_provider)
+        self.document_studio = DocumentStudio(
+            provider=self.ai_provider
+        )
         self.ai_services = AIServiceManager()
 
         self.market_brain = MarketBrain(
