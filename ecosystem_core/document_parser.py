@@ -8,8 +8,18 @@ class DocumentParser:
 
     _SUPPORTED_FORMATS = ("pdf", "docx")
 
-    def __init__(self, adapters=None):
-        self.adapters = adapters or {}
+    def __init__(self, adapters=None, adapter_registry=None):
+        self.adapter_registry = adapter_registry
+
+        if adapter_registry is not None and adapters:
+            raise ValueError(
+                "Provide either adapters or adapter_registry, not both."
+            )
+
+        self.adapters = adapters if adapters is not None else {}
+
+        if adapter_registry is not None:
+            self.adapters = adapter_registry._adapters
 
     def supported_formats(self):
         """Return formats exposed by the parser boundary."""

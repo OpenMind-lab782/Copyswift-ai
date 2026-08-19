@@ -17,6 +17,7 @@ from ecosystem_core.seo_agent import SEOAgent
 from ecosystem_core.document_studio import DocumentStudio
 from ecosystem_core.document_importer import DocumentImporter
 from ecosystem_core.document_parser import DocumentParser
+from ecosystem_core.document_adapters import DocumentAdapterRegistry
 
 
 class EcosystemKernel:
@@ -55,7 +56,10 @@ class EcosystemKernel:
         self.ai_provider = AIProviderFactory.create()
         self.seo_agent = SEOAgent(provider=self.ai_provider)
         self.document_importer = DocumentImporter()
-        self.document_parser = DocumentParser()
+        self.document_adapter_registry = DocumentAdapterRegistry()
+        self.document_parser = DocumentParser(
+            adapter_registry=self.document_adapter_registry
+        )
         self.document_studio = DocumentStudio(
             provider=self.ai_provider,
             importer=self.document_importer,
@@ -98,3 +102,17 @@ class EcosystemKernel:
         )
 
         self.payment_engine = PaymentEngine()
+
+
+    def register_document_adapter(self, file_format, adapter):
+        """Register a document parser adapter with the shared registry."""
+
+        if self.document_parser.adapter_registry is None:
+            raise RuntimeError(
+                "Document adapter registry is not configured."
+            )
+
+        self.document_parser.adapter_registry.register(
+            file_format,
+            adapter,
+        )
