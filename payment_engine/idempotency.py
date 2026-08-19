@@ -19,6 +19,10 @@ class IdempotencyManager:
         with self._lock:
             self._processed.add(reference)
 
+    def forget(self, reference: str):
+        with self._lock:
+            self._processed.discard(reference)
+
     def reset(self):
         with self._lock:
             self._processed.clear()

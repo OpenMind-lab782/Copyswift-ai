@@ -81,5 +81,46 @@ class PaymentAtomicityTests(unittest.TestCase):
         )
 
 
+
+    def test_verification_state_change_rolls_back_when_event_persistence_fails(self):
+        payment = {
+            "reference": "ATOMIC-VERIFY-001",
+            "merchant_id": "merchant-076",
+            "amount": 1000,
+            "currency": "NGN",
+            "status": "pending",
+            "gateway": "paystack",
+            "customer_email": "customer@example.com",
+            "metadata": {},
+            "idempotency_key": None,
+        }
+
+        self.payment_repository.save(payment)
+
+        with self.assertRaises(RuntimeError):
+            self.service.update_status(
+                "ATOMIC-VERIFY-001",
+                "verified",
+            )
+
+        stored = self.payment_repository.get(
+            "ATOMIC-VERIFY-001"
+        )
+
+        self.assertEqual(
+            stored.get("status"),
+            "pending",
+            "Payment status must roll back when verification event persistence fails",
+        )
+
+        self.assertEqual(
+            self.event_repository.list(
+                "ATOMIC-VERIFY-001"
+            ),
+            [],
+            "Verification event must not remain persisted after rollback",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
