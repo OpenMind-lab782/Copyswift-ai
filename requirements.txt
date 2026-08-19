@@ -8,3 +8,4 @@ together==2.16.1
 beautifulsoup4==4.12.3
 SQLAlchemy>=2.0.0
 psycopg>=3.2.0
+PyMuPDF==1.28.2
