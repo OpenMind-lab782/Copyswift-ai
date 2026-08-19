@@ -8,8 +8,16 @@ from copy import deepcopy
 class DocumentStudio:
     """Initial shared-kernel document inspection component."""
 
-    def __init__(self, provider=None):
+    def __init__(self, provider=None, importer=None, parser=None):
         self.provider = provider
+        self.importer = importer
+        self.parser = parser
+
+    def import_document(self, source):
+        """Normalize a source document through the shared importer."""
+        if self.importer is None:
+            raise RuntimeError("Document importer is not configured.")
+        return self.importer.normalize(source)
 
     def inspect_document(self, document):
         """Inspect a normalized document representation without modifying it."""

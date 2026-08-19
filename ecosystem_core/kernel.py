@@ -15,6 +15,8 @@ from payment_engine.engine import PaymentEngine
 from ecosystem_core.product_registry import ProductRegistry
 from ecosystem_core.seo_agent import SEOAgent
 from ecosystem_core.document_studio import DocumentStudio
+from ecosystem_core.document_importer import DocumentImporter
+from ecosystem_core.document_parser import DocumentParser
 
 
 class EcosystemKernel:
@@ -52,8 +54,12 @@ class EcosystemKernel:
         )
         self.ai_provider = AIProviderFactory.create()
         self.seo_agent = SEOAgent(provider=self.ai_provider)
+        self.document_importer = DocumentImporter()
+        self.document_parser = DocumentParser()
         self.document_studio = DocumentStudio(
-            provider=self.ai_provider
+            provider=self.ai_provider,
+            importer=self.document_importer,
+            parser=self.document_parser,
         )
         self.ai_services = AIServiceManager()
 
