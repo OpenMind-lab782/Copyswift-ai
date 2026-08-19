@@ -13,6 +13,7 @@ from payment_engine.core.market_strategist import MarketStrategist
 from payment_engine.core.unified_ai_assistant import UnifiedAIAssistant
 from payment_engine.engine import PaymentEngine
 from ecosystem_core.product_registry import ProductRegistry
+from ecosystem_core.seo_agent import SEOAgent
 
 
 class EcosystemKernel:
@@ -49,6 +50,7 @@ class EcosystemKernel:
             },
         )
         self.ai_provider = AIProviderFactory.create()
+        self.seo_agent = SEOAgent(provider=self.ai_provider)
         self.ai_services = AIServiceManager()
 
         self.market_brain = MarketBrain(
@@ -72,6 +74,10 @@ class EcosystemKernel:
         self.ai_services.register_service(
             "sales_manager",
             self.sales_manager,
+        )
+        self.ai_services.register_service(
+            "seo_agent",
+            self.seo_agent,
         )
 
         self.assistant = UnifiedAIAssistant(
