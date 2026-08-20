@@ -223,6 +223,59 @@ class DocumentStudio:
         )
 
 
+    def duplicate_element(
+        self,
+        document,
+        element_id,
+        new_element_id,
+        x,
+        y,
+    ):
+        """Return a copy with a duplicated element at a new position."""
+
+        updated_document = deepcopy(document)
+
+        if not isinstance(updated_document, dict):
+            raise TypeError("Document must be a dictionary.")
+
+        source_id = str(element_id)
+        target_id = str(new_element_id)
+
+        for page in updated_document.get("pages") or []:
+            if not isinstance(page, dict):
+                continue
+
+            elements = page.get("elements") or []
+
+            if any(
+                isinstance(element, dict)
+                and str(element.get("id")) == target_id
+                for element in elements
+            ):
+                raise ValueError(
+                    f"Element '{new_element_id}' already exists."
+                )
+
+            for element in elements:
+                if not isinstance(element, dict):
+                    continue
+
+                if str(element.get("id")) != source_id:
+                    continue
+
+                duplicate = deepcopy(element)
+                duplicate["id"] = target_id
+                duplicate["x"] = x
+                duplicate["y"] = y
+
+                elements.append(duplicate)
+                return updated_document
+
+        raise KeyError(
+            f"Element '{element_id}' was not found."
+        )
+
+
     def delete_element(self, document, element_id):
         """Return an edited copy with one element removed."""
 
