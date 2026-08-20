@@ -228,6 +228,96 @@ class SEOAgent:
         }
 
 
+    def analyze_content(self, keyword, content):
+        """Perform deterministic content-quality SEO analysis."""
+
+        keyword_text = (keyword or "").strip()
+        content_text = (content or "").strip()
+
+        normalized_keyword = keyword_text.lower()
+        normalized_content = content_text.lower()
+
+        words = normalized_content.split()
+
+        keyword_occurrences = (
+            normalized_content.count(normalized_keyword)
+            if normalized_keyword
+            else 0
+        )
+
+        word_count = len(words)
+
+        keyword_density = (
+            (keyword_occurrences / word_count) * 100
+            if word_count and keyword_occurrences
+            else 0
+        )
+
+        paragraphs = [
+            paragraph.strip()
+            for paragraph in content_text.split("\n\n")
+            if paragraph.strip()
+        ]
+
+        sentence_count = sum(
+            1
+            for sentence in (
+                content_text.replace("!", ".")
+                .replace("?", ".")
+                .split(".")
+            )
+            if sentence.strip()
+        )
+
+        paragraph_count = len(paragraphs)
+
+        score = 100
+        recommendations = []
+
+        if not content_text:
+            score = 0
+            recommendations.append(
+                "Add substantive content for SEO analysis."
+            )
+        else:
+            if not keyword_text:
+                score -= 20
+                recommendations.append(
+                    "Provide a target keyword for content analysis."
+                )
+
+            if word_count < 30:
+                score -= 20
+                recommendations.append(
+                    "Expand the content with more useful topical coverage."
+                )
+
+            if keyword_text and keyword_occurrences == 0:
+                score -= 30
+                recommendations.append(
+                    "Include the target keyword naturally in the content."
+                )
+
+            if keyword_occurrences and keyword_density > 3:
+                score -= 10
+                recommendations.append(
+                    "Reduce excessive keyword repetition and keep usage natural."
+                )
+
+        score = max(0, min(100, score))
+
+        return {
+            "keyword": keyword_text,
+            "word_count": word_count,
+            "keyword_occurrences": keyword_occurrences,
+            "keyword_density": round(keyword_density, 2),
+            "paragraph_count": paragraph_count,
+            "sentence_count": sentence_count,
+            "score": score,
+            "recommendations": recommendations,
+        }
+
+
     def build_content_strategy(self, seed_keyword):
         """Build a deterministic SEO content strategy from a seed keyword."""
 
