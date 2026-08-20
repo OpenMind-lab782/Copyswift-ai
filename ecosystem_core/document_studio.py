@@ -20,7 +20,35 @@ class DocumentStudio:
             raise RuntimeError("Document importer is not configured.")
         return self.importer.normalize(source)
 
+    def import_binary_document(self, data, file_name):
+        """Parse binary document data and normalize it into the canonical model."""
+
+        if self.parser is None:
+            raise RuntimeError(
+                "Document parser is not configured."
+            )
+
+        parsed = self.parser.parse(
+            data,
+            file_name=file_name,
+        )
+
+        return self.import_document(parsed)
+
     def render_document(self, document, output_name="output.pdf"):
+        """Render a canonical document through the shared renderer."""
+
+        if self.renderer is None:
+            raise RuntimeError(
+                "Document rendering engine is not configured."
+            )
+
+        return self.renderer.render(
+            document,
+            output_name=output_name,
+        )
+
+    def export_document(self, document, output_name="output.pdf"):
         """Render a canonical document through the shared renderer."""
 
         if self.renderer is None:
@@ -111,6 +139,121 @@ class DocumentStudio:
         }
 
 
+    def find_element(self, document, element_id):
+        """Return an element by ID without modifying the document."""
+
+        if not isinstance(document, dict):
+            return None
+
+        target_id = str(element_id)
+
+        for page in document.get("pages") or []:
+            if not isinstance(page, dict):
+                continue
+
+            for element in page.get("elements") or []:
+                if not isinstance(element, dict):
+                    continue
+
+                if str(element.get("id")) == target_id:
+                    return element
+
+        return None
+
+
+    def move_element(self, document, element_id, x, y):
+        """Return an edited copy with an element moved to a new position."""
+
+        updated_document = deepcopy(document)
+
+        if not isinstance(updated_document, dict):
+            raise TypeError("Document must be a dictionary.")
+
+        target_id = str(element_id)
+
+        for page in updated_document.get("pages") or []:
+            if not isinstance(page, dict):
+                continue
+
+            for element in page.get("elements") or []:
+                if not isinstance(element, dict):
+                    continue
+
+                if str(element.get("id")) != target_id:
+                    continue
+
+                element["x"] = x
+                element["y"] = y
+
+                return updated_document
+
+        raise KeyError(
+            f"Element '{element_id}' was not found."
+        )
+
+
+    def resize_element(self, document, element_id, width, height):
+        """Return an edited copy with an element resized."""
+
+        updated_document = deepcopy(document)
+
+        if not isinstance(updated_document, dict):
+            raise TypeError("Document must be a dictionary.")
+
+        target_id = str(element_id)
+
+        for page in updated_document.get("pages") or []:
+            if not isinstance(page, dict):
+                continue
+
+            for element in page.get("elements") or []:
+                if not isinstance(element, dict):
+                    continue
+
+                if str(element.get("id")) != target_id:
+                    continue
+
+                element["width"] = width
+                element["height"] = height
+
+                return updated_document
+
+        raise KeyError(
+            f"Element '{element_id}' was not found."
+        )
+
+
+    def delete_element(self, document, element_id):
+        """Return an edited copy with one element removed."""
+
+        updated_document = deepcopy(document)
+
+        if not isinstance(updated_document, dict):
+            raise TypeError("Document must be a dictionary.")
+
+        target_id = str(element_id)
+
+        for page in updated_document.get("pages") or []:
+            if not isinstance(page, dict):
+                continue
+
+            elements = page.get("elements") or []
+
+            for index, element in enumerate(elements):
+                if not isinstance(element, dict):
+                    continue
+
+                if str(element.get("id")) != target_id:
+                    continue
+
+                del elements[index]
+                return updated_document
+
+        raise KeyError(
+            f"Element '{element_id}' was not found."
+        )
+
+
     def edit_text(self, document, element_id, new_content):
         """Return an edited copy while preserving document structure."""
 
@@ -143,6 +286,97 @@ class DocumentStudio:
 
         raise KeyError(
             f"Text element '{element_id}' was not found."
+        )
+
+
+    def edit_image(self, document, element_id, image_data):
+        """Return an edited copy with replacement image binary data."""
+
+        updated_document = deepcopy(document)
+
+        if not isinstance(updated_document, dict):
+            raise TypeError("Document must be a dictionary.")
+
+        target_id = str(element_id)
+
+        for page in updated_document.get("pages") or []:
+            if not isinstance(page, dict):
+                continue
+
+            for element in page.get("elements") or []:
+                if not isinstance(element, dict):
+                    continue
+
+                if str(element.get("id")) != target_id:
+                    continue
+
+                if str(element.get("type", "")).lower() != "image":
+                    raise ValueError(
+                        "Only image elements can be edited by edit_image()."
+                    )
+
+                element["image_data"] = image_data
+                return updated_document
+
+        raise KeyError(
+            f"Image element '{element_id}' was not found."
+        )
+
+
+    def add_image(
+        self,
+        document,
+        page_number,
+        element_id,
+        image_data,
+        x,
+        y,
+        width,
+        height,
+        image_format=None,
+    ):
+        """Return a copy with a new positioned image element."""
+
+        updated_document = deepcopy(document)
+
+        if not isinstance(updated_document, dict):
+            raise TypeError("Document must be a dictionary.")
+
+        for page in updated_document.get("pages") or []:
+            if not isinstance(page, dict):
+                continue
+
+            if page.get("number") != page_number:
+                continue
+
+            elements = page.setdefault("elements", [])
+
+            if any(
+                isinstance(element, dict)
+                and str(element.get("id")) == str(element_id)
+                for element in elements
+            ):
+                raise ValueError(
+                    f"Element '{element_id}' already exists."
+                )
+
+            elements.append(
+                {
+                    "id": str(element_id),
+                    "type": "image",
+                    "image_data": image_data,
+                    "image_format": image_format,
+                    "x": x,
+                    "y": y,
+                    "width": width,
+                    "height": height,
+                }
+            )
+
+            return updated_document
+
+        raise KeyError(
+            f"Page '{page_number}' was not found."
         )
 
 
