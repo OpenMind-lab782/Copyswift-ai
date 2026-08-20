@@ -318,6 +318,34 @@ class SEOAgent:
         }
 
 
+    def optimize_content(self, keyword, content):
+        """Perform deterministic SEO content optimization."""
+        keyword_text = (keyword or "").strip()
+        content_text = (content or "").strip()
+        original_analysis = self.analyze_content(keyword=keyword_text, content=content_text)
+        optimized_content = content_text
+        changes = []
+        recommendations = []
+        if not content_text:
+            if keyword_text:
+                optimized_content = keyword_text
+                changes.append("Added the target keyword because the source content was empty.")
+            else:
+                recommendations.append("Provide content and a target keyword for meaningful optimization.")
+        elif keyword_text and keyword_text.lower() not in content_text.lower():
+            optimized_content = f"{keyword_text.title()} is an important topic for businesses. {content_text}"
+            changes.append("Added the target keyword naturally to improve keyword coverage.")
+        else:
+            changes.append("Retained the existing keyword coverage because the target keyword is already present.")
+        optimized_analysis = self.analyze_content(keyword=keyword_text, content=optimized_content)
+        if optimized_analysis["word_count"] < 30:
+            recommendations.append("Expand the optimized content with more useful topical coverage.")
+        if keyword_text and optimized_analysis["keyword_occurrences"] == 0:
+            recommendations.append("Include the target keyword naturally in the optimized content.")
+        if optimized_analysis["keyword_density"] > 3:
+            recommendations.append("Review keyword repetition and keep usage natural.")
+        return {"keyword": keyword_text, "original_content": content_text, "optimized_content": optimized_content, "original_analysis": original_analysis, "optimized_analysis": optimized_analysis, "changes": changes, "recommendations": recommendations}
+
     def build_content_strategy(self, seed_keyword):
         """Build a deterministic SEO content strategy from a seed keyword."""
 
