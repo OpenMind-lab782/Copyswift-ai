@@ -223,6 +223,141 @@ class DocumentStudio:
         )
 
 
+    def move_element_forward(self, document, element_id):
+        """Return a copy with an element moved one position forward."""
+
+        updated_document = deepcopy(document)
+
+        if not isinstance(updated_document, dict):
+            raise TypeError("Document must be a dictionary.")
+
+        target_id = str(element_id)
+
+        for page in updated_document.get("pages") or []:
+            if not isinstance(page, dict):
+                continue
+
+            elements = page.get("elements") or []
+
+            for index, element in enumerate(elements):
+                if not isinstance(element, dict):
+                    continue
+
+                if str(element.get("id")) != target_id:
+                    continue
+
+                if index < len(elements) - 1:
+                    elements[index], elements[index + 1] = (
+                        elements[index + 1],
+                        elements[index],
+                    )
+
+                return updated_document
+
+        raise KeyError(
+            f"Element '{element_id}' was not found."
+        )
+
+    def move_element_backward(self, document, element_id):
+        """Return a copy with an element moved one position backward."""
+
+        updated_document = deepcopy(document)
+
+        if not isinstance(updated_document, dict):
+            raise TypeError("Document must be a dictionary.")
+
+        target_id = str(element_id)
+
+        for page in updated_document.get("pages") or []:
+            if not isinstance(page, dict):
+                continue
+
+            elements = page.get("elements") or []
+
+            for index, element in enumerate(elements):
+                if not isinstance(element, dict):
+                    continue
+
+                if str(element.get("id")) != target_id:
+                    continue
+
+                if index > 0:
+                    elements[index], elements[index - 1] = (
+                        elements[index - 1],
+                        elements[index],
+                    )
+
+                return updated_document
+
+        raise KeyError(
+            f"Element '{element_id}' was not found."
+        )
+
+    def move_element_to_front(self, document, element_id):
+        """Return a copy with an element moved to the top layer."""
+
+        updated_document = deepcopy(document)
+
+        if not isinstance(updated_document, dict):
+            raise TypeError("Document must be a dictionary.")
+
+        target_id = str(element_id)
+
+        for page in updated_document.get("pages") or []:
+            if not isinstance(page, dict):
+                continue
+
+            elements = page.get("elements") or []
+
+            for index, element in enumerate(elements):
+                if not isinstance(element, dict):
+                    continue
+
+                if str(element.get("id")) != target_id:
+                    continue
+
+                if index < len(elements) - 1:
+                    elements.append(elements.pop(index))
+
+                return updated_document
+
+        raise KeyError(
+            f"Element '{element_id}' was not found."
+        )
+
+    def move_element_to_back(self, document, element_id):
+        """Return a copy with an element moved to the bottom layer."""
+
+        updated_document = deepcopy(document)
+
+        if not isinstance(updated_document, dict):
+            raise TypeError("Document must be a dictionary.")
+
+        target_id = str(element_id)
+
+        for page in updated_document.get("pages") or []:
+            if not isinstance(page, dict):
+                continue
+
+            elements = page.get("elements") or []
+
+            for index, element in enumerate(elements):
+                if not isinstance(element, dict):
+                    continue
+
+                if str(element.get("id")) != target_id:
+                    continue
+
+                if index > 0:
+                    elements.insert(0, elements.pop(index))
+
+                return updated_document
+
+        raise KeyError(
+            f"Element '{element_id}' was not found."
+        )
+
+
     def duplicate_element(
         self,
         document,
