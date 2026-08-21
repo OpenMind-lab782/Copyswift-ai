@@ -2928,6 +2928,15 @@ def robots_txt():
 
 
 
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    urls = ["/", "/tools/ad-copy"] + [f"/tools/ad-copy/{slug}" for slug in INDUSTRY_VARIANTS]
+    xml = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for path in urls:
+        xml.append(f"  <url><loc>https://copyswiftai.com{path}</loc></url>")
+    xml.append("</urlset>")
+    return chr(10).join(xml) + chr(10), 200, {"Content-Type": "application/xml; charset=utf-8"}
+
 @app.route('/tools/ad-copy')
 def ad_copy_default():
     return render_template(
