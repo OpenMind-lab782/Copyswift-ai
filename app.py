@@ -2922,6 +2922,12 @@ def _ad_copy_ip_increment():
         db.commit()
 
 
+@app.route('/robots.txt')
+def robots_txt():
+    return "User-agent: *\nAllow: /\nSitemap: https://copyswiftai.com/sitemap.xml\n", 200, {"Content-Type": "text/plain; charset=utf-8"}
+
+
+
 @app.route('/tools/ad-copy')
 def ad_copy_default():
     return render_template(
