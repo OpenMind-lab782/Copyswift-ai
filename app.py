@@ -839,6 +839,12 @@ HTML = """<!DOCTYPE html>
 <title>CopySwift AI</title>
 <link rel="canonical" href="https://copyswiftai.com/">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebSite","name":"CopySwiftAI","url":"https://copyswiftai.com/"}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"CopySwiftAI","url":"https://copyswiftai.com/","applicationCategory":"BusinessApplication","operatingSystem":"Web"}
+</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#060912;--surface:#0d1424;--surface2:#111827;--border:#1e2d45;--accent:#00d4ff;--accent2:#7c3aed;--gold:#f59e0b;--text:#e2e8f0;--muted:#64748b;--success:#10b981;--danger:#ef4444}
