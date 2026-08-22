@@ -31,8 +31,15 @@ class NativeMuPDFAdapter:
                 text = "".join(char.get("c", "") for char in block_node.findall(".//char")).strip()
                 if not text:
                     continue
+                font_node = block_node.find(".//font")
+                font_size = float(font_node.get("size")) if font_node is not None and font_node.get("size") else None
+                color = None
+                if font_node is not None:
+                    first_char = font_node.find(".//char")
+                    if first_char is not None:
+                        color = first_char.get("color")
                 bbox = (block_node.get("bbox") or "0 0 0 0").split()
                 x0, y0, x1, y1 = [float(value) for value in bbox[:4]]
-                elements.append({"id": f"page-{page_index}-block-{block_index}", "type": "text", "content": text, "x": x0, "y": y0, "width": max(0, x1 - x0), "height": max(0, y1 - y0)})
+                elements.append({"id": f"page-{page_index}-block-{block_index}", "type": "text", "content": text, "x": x0, "y": y0, "width": max(0, x1 - x0), "height": max(0, y1 - y0), "font": font_node.get("name") if font_node is not None else None, "font_size": font_size, "color": color})
             pages.append({"number": page_index, "width": float(page_node.get("width") or 0), "height": float(page_node.get("height") or 0), "elements": elements})
         return {"name": name, "pages": pages, "metadata": {"source_format": "pdf", "parser_engine": "native-mupdf"}}
