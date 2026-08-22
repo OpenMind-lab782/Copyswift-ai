@@ -22,6 +22,17 @@ class DocumentEngineRegistryKernelTests(unittest.TestCase):
             kernel.document_parser,
         )
 
+    def test_kernel_can_register_optional_document_adapter(self):
+        kernel = EcosystemKernel()
+        class PDFAdapter:
+            def parse(self, data, file_name):
+                return {"name": file_name, "pages": []}
+        adapter = PDFAdapter()
+        kernel.register_document_adapter("pdf", adapter)
+        self.assertIs(kernel.document_parser.adapters["pdf"], adapter)
+        result = kernel.document_parser.parse(b"sample", "document.pdf")
+        self.assertEqual(result["name"], "document.pdf")
+
     def test_kernel_parser_registry_starts_without_optional_engines(self):
         kernel = EcosystemKernel()
 
