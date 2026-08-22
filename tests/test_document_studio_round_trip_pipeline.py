@@ -1,3 +1,4 @@
+from pathlib import Path
 import sys
 import types
 import unittest
@@ -246,6 +247,41 @@ class DocumentStudioRoundTripPipelineTests(unittest.TestCase):
             image_operation["stream"],
             b"ORIGINAL-IMAGE-BYTES",
         )
+
+    def test_native_mupdf_import_reaches_document_studio(self):
+        import subprocess
+        from ecosystem_core.document_adapters import NativeMuPDFAdapter
+        page_file = Path("native-document-studio-page.txt")
+        pdf_file = Path("native-document-studio-page.pdf")
+        try:
+            page_file.write_text(
+                "%%MediaBox 0 0 300 300" + chr(10) +
+                "BT" + chr(10) +
+                "/F1 18 Tf" + chr(10) +
+                "72 200 Td" + chr(10) +
+                "(Native Document Studio Test) Tj" + chr(10) +
+                "ET" + chr(10)
+            )
+            subprocess.run(
+                ["mutool", "create", "-o", str(pdf_file), str(page_file)],
+                check=True,
+                capture_output=True,
+            )
+            kernel = EcosystemKernel()
+            kernel.register_document_adapter("pdf", NativeMuPDFAdapter())
+            imported = kernel.document_studio.import_binary_document(
+                pdf_file.read_bytes(),
+                file_name="native-document-studio-page.pdf",
+            )
+            self.assertEqual(imported["page_count"], 1)
+            elements = imported["pages"][0]["elements"]
+            self.assertTrue(any(element["type"] == "text" for element in elements))
+            element = next(element for element in elements if element["type"] == "text")
+            self.assertEqual(element["content"], "Native Document Studio Test")
+            self.assertEqual(element["font_size"], 18.0)
+        finally:
+            page_file.unlink(missing_ok=True)
+            pdf_file.unlink(missing_ok=True)
 
     def test_round_trip_does_not_modify_imported_source_document(self):
         original_fitz = sys.modules.get("fitz")

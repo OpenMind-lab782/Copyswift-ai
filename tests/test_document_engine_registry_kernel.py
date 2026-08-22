@@ -33,6 +33,12 @@ class DocumentEngineRegistryKernelTests(unittest.TestCase):
         result = kernel.document_parser.parse(b"sample", "document.pdf")
         self.assertEqual(result["name"], "document.pdf")
 
+    def test_kernel_can_register_native_mupdf_adapter(self):
+        from ecosystem_core.document_adapters import NativeMuPDFAdapter
+        kernel = EcosystemKernel()
+        adapter = NativeMuPDFAdapter()
+        kernel.register_document_adapter("pdf", adapter)
+        self.assertIs(kernel.document_parser.adapters["pdf"], adapter)
     def test_kernel_parser_registry_starts_without_optional_engines(self):
         kernel = EcosystemKernel()
 
