@@ -261,6 +261,19 @@
   </div>
 
   <div class="section">
+    {% if seo_content %}
+    <div class="section">
+      <div class="section-label">Industry playbook</div>
+      <h2>How to market {{ variant.label }}</h2>
+      <p>{{ seo_content.intro }}</p>
+      <h3>Ad angles worth testing</h3>
+      <ul>{% for item in seo_content.angles %}<li>{{ item }}</li>{% endfor %}</ul>
+      <h3>Customer objections to address</h3>
+      <ul>{% for item in seo_content.objections %}<li>{{ item }}</li>{% endfor %}</ul>
+      <h3>Copy tips for this industry</h3>
+      <ul>{% for item in seo_content.tips %}<li>{{ item }}</li>{% endfor %}</ul>
+    </div>
+    {% endif %}
     <div class="section-label">Hook formulas</div>
     <h2>5 hooks that stop the scroll on African feeds</h2>
     <div class="hook-row"><div class="hook-name">The Price Reveal</div><div class="hook-example">"Ankara dresses from P250 — this weekend only"</div></div>

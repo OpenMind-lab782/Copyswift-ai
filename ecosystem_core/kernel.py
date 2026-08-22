@@ -20,6 +20,7 @@ from ecosystem_core.document_parser import DocumentParser
 from ecosystem_core.document_renderer import DocumentRenderer
 from ecosystem_core.document_renderers.pymupdf_renderer import PyMuPDFRenderer
 from ecosystem_core.document_adapters import DocumentAdapterRegistry
+from ecosystem_core.document_adapters.pymupdf_adapter import PyMuPDFAdapter
 
 
 class EcosystemKernel:

@@ -1,6 +1,4 @@
-"""
-CopySwiftAI™ Document Adapter Registry.
-"""
+"""CopySwiftAI™ Document Adapter Registry."""
 
 
 class DocumentAdapterRegistry:
@@ -13,18 +11,12 @@ class DocumentAdapterRegistry:
 
     def register(self, file_format, adapter):
         normalized_format = str(file_format or "").strip().lower()
-
         if normalized_format not in self._SUPPORTED_FORMATS:
             raise ValueError(
-                f"Unsupported document format: "
-                f"{normalized_format or 'unknown'}"
+                f"Unsupported document format: {normalized_format or 'unknown'}"
             )
-
         if not hasattr(adapter, "parse") or not callable(adapter.parse):
-            raise TypeError(
-                "Document adapter must expose a callable parse() method."
-            )
-
+            raise TypeError("Document adapter must expose a callable parse() method.")
         self._adapters[normalized_format] = adapter
 
     def get(self, file_format):

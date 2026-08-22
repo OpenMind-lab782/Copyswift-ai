@@ -33,6 +33,7 @@ import re as _re
 from bs4 import BeautifulSoup as _BeautifulSoup
 from email_service import send_email
 from notifications.email import send_notification_email
+from ecosystem_core.seo_industry_content import get_seo_industry_content
 from payment_engine.engine import PaymentEngine
 from payment_engine.models import PaymentRequest
 from payment_engine.deployment import ProductionValidator
@@ -2966,6 +2967,7 @@ def ad_copy_variant(industry):
         variant=variant,
         remaining_uses=_ad_copy_remaining_uses(),
         canonical_path=f"/tools/ad-copy/{industry}",
+        seo_content=get_seo_industry_content(industry),
     )
 
 
