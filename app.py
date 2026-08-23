@@ -115,6 +115,17 @@ client = _GroqHTTPClient()
 
 app = Flask(__name__)
 
+# --- CopySwiftAI Document Studio MVP ---
+from ecosystem_core.kernel import EcosystemKernel
+from ecosystem_core.document_adapters.native_mupdf_adapter import NativeMuPDFAdapter
+
+document_kernel = EcosystemKernel()
+if document_kernel.document_renderer.engine._engine is None:
+    from ecosystem_core.document_renderers.native_pdf_renderer import NativePDFRenderer
+    document_kernel.document_renderer.engine = NativePDFRenderer()
+document_kernel.register_document_adapter("pdf", NativeMuPDFAdapter())
+
+
 app.register_blueprint(merchant_api, url_prefix="/api/v1")
 app.register_blueprint(payment_api, url_prefix="/api/v1")
 app.register_blueprint(openapi_api, url_prefix="/api/v1")
@@ -129,6 +140,39 @@ app.register_blueprint(frontend_api, url_prefix="/api/v1")
 app.register_blueprint(auth_api, url_prefix="/api/v1")
 app.register_blueprint(ai_services_api, url_prefix="/api/v1")
 app.register_blueprint(reconciliation_settlement_api, url_prefix="/api/v1")
+
+@app.route("/document-studio/import", methods=["POST"])
+def document_studio_import():
+    uploaded = request.files.get("file")
+    if uploaded is None or not uploaded.filename:
+        return jsonify({"error": "A PDF file is required."}), 400
+    if not uploaded.filename.lower().endswith(".pdf"):
+        return jsonify({"error": "Document Studio MVP currently accepts PDF files only."}), 400
+    try:
+        document = document_kernel.document_studio.import_binary_document(
+            uploaded.read(),
+            file_name=uploaded.filename,
+        )
+        return jsonify(document), 200
+    except Exception as exc:
+        logger.exception("Document Studio import failed")
+        return jsonify({"error": "Document import failed.", "detail": str(exc)}), 500
+
+
+
+@app.route("/document-studio/export", methods=["POST"])
+def document_studio_export():
+    payload = request.get_json(silent=True) or {}
+    document = payload.get("document")
+    if not isinstance(document, dict):
+        return jsonify({"error": "A canonical document is required."}), 400
+    try:
+        pdf_bytes = document_kernel.document_studio.export_document(document, output_name="document-studio-output.pdf")
+        from flask import Response
+        return Response(pdf_bytes, mimetype="application/pdf", headers={"Content-Disposition": "attachment; filename=document-studio-output.pdf"})
+    except Exception as exc:
+        logger.exception("Document Studio export failed")
+        return jsonify({"error": "Document Studio export failed.", "detail": str(exc)}), 500
 
 @app.route("/health")
 def health():
