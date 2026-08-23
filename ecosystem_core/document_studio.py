@@ -477,6 +477,31 @@ class DocumentStudio:
         )
 
 
+    def edit_text_style(self, document, element_id, font=None, font_size=None, color=None):
+        """Return an edited copy with selected text style metadata updated."""
+        updated_document = deepcopy(document)
+        if not isinstance(updated_document, dict):
+            raise TypeError("Document must be a dictionary.")
+        target_id = str(element_id)
+        for page in updated_document.get("pages") or []:
+            if not isinstance(page, dict):
+                continue
+            for element in page.get("elements") or []:
+                if not isinstance(element, dict):
+                    continue
+                if str(element.get("id")) != target_id:
+                    continue
+                if str(element.get("type", "")).lower() != "text":
+                    raise ValueError("Only text elements can be styled by edit_text_style().")
+                if font is not None:
+                    element["font"] = font
+                if font_size is not None:
+                    element["font_size"] = font_size
+                if color is not None:
+                    element["color"] = color
+                return updated_document
+        raise KeyError(f"Text element \{element_id}\ was not found.")
+
     def edit_image(self, document, element_id, image_data):
         """Return an edited copy with replacement image binary data."""
 
