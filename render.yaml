@@ -1,2 +1,2 @@
-build_command: pip install -r requirements.txt
+build_command: apt-get update && apt-get install -y mupdf-tools && pip install -r requirements.txt
 start_command: gunicorn app:app
