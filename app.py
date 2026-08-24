@@ -141,6 +141,10 @@ app.register_blueprint(auth_api, url_prefix="/api/v1")
 app.register_blueprint(ai_services_api, url_prefix="/api/v1")
 app.register_blueprint(reconciliation_settlement_api, url_prefix="/api/v1")
 
+@app.route("/document-studio", methods=["GET"])
+def document_studio():
+    return render_template("document_studio.html")
+
 @app.route("/document-studio/import", methods=["POST"])
 def document_studio_import():
     uploaded = request.files.get("file")
