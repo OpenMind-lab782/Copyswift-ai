@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+
 from payment_engine.database.sqlite import db
 
 
@@ -6,15 +8,27 @@ class TransactionManager:
     def __init__(self, database=None):
         self.database = database or db
 
-    def execute(self, operation, *args, **kwargs):
+    @contextmanager
+    def transaction(self, database=None):
+        database = database or self.database
 
-        self.database.begin()
+        if hasattr(database, "engine"):
+            with database.engine.begin() as connection:
+                yield connection
+            return
 
+        database.begin()
         try:
-            result = operation(*args, **kwargs)
-            self.database.commit()
-            return result
-
+            yield database.connection
+            database.commit()
         except Exception:
-            self.database.rollback()
+            database.rollback()
             raise
+
+    def execute(self, operation, *args, database=None, **kwargs):
+        with self.transaction(database=database) as connection:
+            return operation(
+                *args,
+                connection=connection,
+                **kwargs,
+            )

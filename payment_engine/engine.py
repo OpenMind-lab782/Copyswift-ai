@@ -15,6 +15,10 @@ from payment_engine.health_monitor import GatewayHealthMonitor
 from payment_engine.provider_mode import ProviderModeManager
 from payment_engine.gateway_config import GatewayConfig
 from payment_engine.gateway_factory import GatewayFactory
+from payment_engine.services.payment_event_service import (
+    PaymentEventService,
+)
+from payment_engine.services.payment_service import PaymentService
 
 from payment_engine.gateways.crypto import CryptoGateway
 from payment_engine.gateways.paystack import PaystackGateway
@@ -26,8 +30,9 @@ class PaymentEngine:
 
     VERSION = "1.2.0"
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, payment_service=None):
         self.config = config or EngineConfig()
+        self.payment_service = payment_service or PaymentService()
         self.metrics = MetricsCollector()
         self.latency = LatencyRecorder()
         self.gateway_health = GatewayHealthMonitor()
@@ -37,6 +42,7 @@ class PaymentEngine:
         self.gateway_config = GatewayConfig()
         self.health = HealthRegistry()
         self.idempotency = IdempotencyManager()
+        self.payment_event_service = PaymentEventService()
         self.events = EventBus()
         register_default_subscribers(self.events)
 
@@ -230,12 +236,19 @@ class PaymentEngine:
             "verify_payment",
             context,
         )
-        if self.idempotency.is_processed(reference):
+        if (
+            self.idempotency.is_processed(reference)
+            or self.payment_event_service.has_verified_event(
+                reference
+            )
+        ):
             duplicate = {
                 "status": "duplicate",
                 "gateway": gateway,
                 "reference": reference,
             }
+
+            self.idempotency.mark_processed(reference)
 
             self.events.publish(
                 "payment_duplicate_detected",
@@ -258,6 +271,20 @@ class PaymentEngine:
             and result.get("status") == "verified"
         ):
             self.idempotency.mark_processed(reference)
+
+            try:
+                persisted_payment = self.payment_service.update_status(
+                    reference,
+                    "verified",
+                )
+
+                if persisted_payment is None:
+                    raise RuntimeError(
+                        "Verified payment could not be persisted."
+                    )
+            except Exception:
+                self.idempotency.forget(reference)
+                raise
 
             self.events.publish(
                 "payment_verified",

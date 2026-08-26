@@ -10,6 +10,9 @@ class DecisionEngine:
     Converts strategist recommendations into standardized AI decisions.
     """
 
+    def __init__(self, provider=None):
+        self.provider = provider
+
     def decide(self, recommendation):
         confidence = recommendation.get("confidence", 0.0)
 

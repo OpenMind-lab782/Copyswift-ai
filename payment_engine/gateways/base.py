@@ -33,3 +33,10 @@ class BaseGateway(ABC):
     @abstractmethod
     def health_check(self):
         pass
+
+    def handle_webhook(self, payload):
+        return {
+            "status": "unsupported",
+            "gateway": self.name,
+            "message": "Webhook handling is not supported by this gateway.",
+        }

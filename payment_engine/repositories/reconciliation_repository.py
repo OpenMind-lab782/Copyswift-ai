@@ -1,26 +1,14 @@
-class ReconciliationRepository:
+from payment_engine.repositories.sqlite_reconciliation_repository import (
+    SQLiteReconciliationRepository,
+)
 
-    def __init__(self):
-        self._records = {}
 
-    def save(self, merchant_id, record):
+class ReconciliationRepository(SQLiteReconciliationRepository):
+    """
+    Default reconciliation repository.
 
-        self._records.setdefault(
-            merchant_id,
-            []
-        ).append(record)
+    Kept under the original public class name for backward
+    compatibility while delegating persistence to SQLite.
+    """
 
-        return record
-
-    def list(self, merchant_id):
-
-        return list(
-            self._records.get(
-                merchant_id,
-                []
-            )
-        )
-
-    def clear(self):
-
-        self._records.clear()
+    pass

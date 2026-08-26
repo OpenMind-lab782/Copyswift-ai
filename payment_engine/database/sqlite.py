@@ -73,6 +73,16 @@ class SQLiteDatabase:
         )
         """)
 
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS reconciliation_report_records (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            merchant_id TEXT NOT NULL,
+            reference TEXT NOT NULL,
+            amount REAL NOT NULL,
+            currency TEXT NOT NULL
+        )
+        """)
+
         self.connection.commit()
 
         MigrationManager(self).initialize()

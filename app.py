@@ -14,6 +14,7 @@ from payment_engine.api.openapi import openapi_api
 from payment_engine.api.webhooks import webhook_api
 from payment_engine.api.assistant import assistant_api
 from payment_engine.api.ai_services import ai_services_api
+from payment_engine.api.reconciliation_settlement import reconciliation_settlement_api
 from payment_engine.api.checkout import checkout_api
 from payment_engine.api.customer import customer_api
 from payment_engine.api.dashboard import dashboard_api
@@ -32,8 +33,13 @@ import re as _re
 from bs4 import BeautifulSoup as _BeautifulSoup
 from email_service import send_email
 from notifications.email import send_notification_email
+from ecosystem_core.seo_industry_content import get_seo_industry_content
 from payment_engine.engine import PaymentEngine
 from payment_engine.models import PaymentRequest
+from payment_engine.deployment import ProductionValidator
+from payment_engine.deployment.postgresql_readiness import (
+    PostgreSQLReadinessService,
+)
 
 load_dotenv()
 # --- Application logging ---------------------------------------------------
@@ -109,6 +115,17 @@ client = _GroqHTTPClient()
 
 app = Flask(__name__)
 
+# --- CopySwiftAI Document Studio MVP ---
+from ecosystem_core.kernel import EcosystemKernel
+from ecosystem_core.document_adapters.native_mupdf_adapter import NativeMuPDFAdapter
+
+document_kernel = EcosystemKernel()
+if document_kernel.document_renderer.engine._engine is None:
+    from ecosystem_core.document_renderers.native_pdf_renderer import NativePDFRenderer
+    document_kernel.document_renderer.engine = NativePDFRenderer()
+document_kernel.register_document_adapter("pdf", NativeMuPDFAdapter())
+
+
 app.register_blueprint(merchant_api, url_prefix="/api/v1")
 app.register_blueprint(payment_api, url_prefix="/api/v1")
 app.register_blueprint(openapi_api, url_prefix="/api/v1")
@@ -122,6 +139,44 @@ app.register_blueprint(index_api, url_prefix="/api/v1")
 app.register_blueprint(frontend_api, url_prefix="/api/v1")
 app.register_blueprint(auth_api, url_prefix="/api/v1")
 app.register_blueprint(ai_services_api, url_prefix="/api/v1")
+app.register_blueprint(reconciliation_settlement_api, url_prefix="/api/v1")
+
+@app.route("/document-studio", methods=["GET"])
+def document_studio():
+    return render_template("document_studio.html")
+
+@app.route("/document-studio/import", methods=["POST"])
+def document_studio_import():
+    uploaded = request.files.get("file")
+    if uploaded is None or not uploaded.filename:
+        return jsonify({"error": "A PDF file is required."}), 400
+    if not uploaded.filename.lower().endswith(".pdf"):
+        return jsonify({"error": "Document Studio MVP currently accepts PDF files only."}), 400
+    try:
+        document = document_kernel.document_studio.import_binary_document(
+            uploaded.read(),
+            file_name=uploaded.filename,
+        )
+        return jsonify(document), 200
+    except Exception as exc:
+        logger.exception("Document Studio import failed")
+        return jsonify({"error": "Document import failed.", "detail": str(exc)}), 500
+
+
+
+@app.route("/document-studio/export", methods=["POST"])
+def document_studio_export():
+    payload = request.get_json(silent=True) or {}
+    document = payload.get("document")
+    if not isinstance(document, dict):
+        return jsonify({"error": "A canonical document is required."}), 400
+    try:
+        pdf_bytes = document_kernel.document_studio.export_document(document, output_name="document-studio-output.pdf")
+        from flask import Response
+        return Response(pdf_bytes, mimetype="application/pdf", headers={"Content-Disposition": "attachment; filename=document-studio-output.pdf"})
+    except Exception as exc:
+        logger.exception("Document Studio export failed")
+        return jsonify({"error": "Document Studio export failed.", "detail": str(exc)}), 500
 
 @app.route("/health")
 def health():
@@ -131,24 +186,91 @@ def health():
         "timestamp": datetime.now(UTC).isoformat()
     }), 200
 
+
+def _production_environment():
+    return os.getenv(
+        "RENDER_ENV",
+        "development",
+    ).strip().lower() in {"production", "prod"}
+
+
+def _postgresql_readiness_report():
+    return PostgreSQLReadinessService().report()
+
+
 @app.route("/ready")
 def ready():
+    # Local development continues to support the existing SQLite workflow.
+    if not _production_environment():
+        return jsonify({
+            "status": "ready",
+            "database": "ok",
+            "backend": "sqlite",
+            "version": "5.0.0"
+        }), 200
+
+    # Production readiness is based on the actual PostgreSQL service.
+    report = _postgresql_readiness_report()
+
+    if report["ready"]:
+        return jsonify({
+            "status": "ready",
+            "database": "ok",
+            "backend": report["backend"],
+            "driver": report["driver"],
+            "version": "5.0.0"
+        }), 200
+
     return jsonify({
-        "status": "ready",
-        "database": "ok",
-        "version": "5.0.0"
-    }), 200
+        "status": "not_ready",
+        "database": "unavailable",
+        "backend": report["backend"],
+        "driver": report["driver"],
+        "version": "5.0.0",
+        "errors": report.get("configuration", {}).get(
+            "errors",
+            []
+        ) + report.get("connection", {}).get(
+            "errors",
+            []
+        ) + report.get("schema", {}).get(
+            "errors",
+            []
+        ),
+    }), 503
+
 
 @app.route("/diagnostics")
 def diagnostics():
+    if not _production_environment():
+        return jsonify({
+            "status": "ok",
+            "version": "5.0.0",
+            "environment": "development",
+            "services": {
+                "payment_engine": "ok",
+                "database": "ok",
+                "api": "ok"
+            }
+        }), 200
+
+    report = _postgresql_readiness_report()
+
     return jsonify({
-        "status": "ok",
+        "status": "ok" if report["ready"] else "degraded",
         "version": "5.0.0",
+        "environment": "production",
         "services": {
             "payment_engine": "ok",
-            "database": "ok",
+            "database": (
+                "ok"
+                if report["ready"]
+                else "not_ready"
+            ),
             "api": "ok"
-        }
+        },
+        "postgresql": report,
+        "production_validator": ProductionValidator.report(),
     }), 200
 
 
@@ -764,7 +886,14 @@ HTML = """<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CopySwift AI</title>
+<link rel="canonical" href="https://copyswiftai.com/">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebSite","name":"CopySwiftAI","url":"https://copyswiftai.com/"}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"CopySwiftAI","url":"https://copyswiftai.com/","applicationCategory":"BusinessApplication","operatingSystem":"Web"}
+</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#060912;--surface:#0d1424;--surface2:#111827;--border:#1e2d45;--accent:#00d4ff;--accent2:#7c3aed;--gold:#f59e0b;--text:#e2e8f0;--muted:#64748b;--success:#10b981;--danger:#ef4444}
@@ -2849,6 +2978,21 @@ def _ad_copy_ip_increment():
         db.commit()
 
 
+@app.route('/robots.txt')
+def robots_txt():
+    return "User-agent: *\nAllow: /\nSitemap: https://copyswiftai.com/sitemap.xml\n", 200, {"Content-Type": "text/plain; charset=utf-8"}
+
+
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    urls = ["/", "/tools/ad-copy"] + [f"/tools/ad-copy/{slug}" for slug in INDUSTRY_VARIANTS]
+    xml = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for path in urls:
+        xml.append(f"  <url><loc>https://copyswiftai.com{path}</loc></url>")
+    xml.append("</urlset>")
+    return chr(10).join(xml) + chr(10), 200, {"Content-Type": "application/xml; charset=utf-8"}
+
 @app.route('/tools/ad-copy')
 def ad_copy_default():
     return render_template(
@@ -2871,6 +3015,7 @@ def ad_copy_variant(industry):
         variant=variant,
         remaining_uses=_ad_copy_remaining_uses(),
         canonical_path=f"/tools/ad-copy/{industry}",
+        seo_content=get_seo_industry_content(industry),
     )
 
 

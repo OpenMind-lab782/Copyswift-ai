@@ -35,9 +35,61 @@ def initialize_payment():
 
     idempotency_key = request.headers.get("Idempotency-Key")
 
-    existing = payment_service.find_by_idempotency_key(
-        idempotency_key
+    existing = None
+
+    merchant = getattr(g, "merchant", None)
+    merchant_id = (
+        merchant.get("merchant_id")
+        if merchant is not None
+        else None
     )
+
+    idempotency_fingerprint = None
+
+    if idempotency_key and merchant_id:
+        import hashlib
+        import json
+
+        fingerprint_payload = {
+            "gateway": data.get("gateway"),
+            "amount": data.get("amount"),
+            "currency": data.get("currency"),
+            "customer": data.get("customer"),
+        }
+
+        canonical_payload = json.dumps(
+            fingerprint_payload,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+
+        idempotency_fingerprint = hashlib.sha256(
+            canonical_payload.encode("utf-8")
+        ).hexdigest()
+
+        existing = payment_service.find_by_idempotency_key(
+            merchant_id,
+            idempotency_key,
+        )
+
+        if existing is not None:
+            existing_fingerprint = existing.get(
+                "idempotency_fingerprint"
+            )
+
+            if (
+                existing_fingerprint
+                and existing_fingerprint != idempotency_fingerprint
+            ):
+                return jsonify({
+                    "error": (
+                        "Idempotency-Key has already been used "
+                        "with a different payment request"
+                    ),
+                    "reference": existing.get("reference"),
+                }), 409
+
+            return jsonify(existing), 200
 
     if existing is not None:
         return jsonify(existing), 200
@@ -49,13 +101,12 @@ def initialize_payment():
         customer=data["customer"],
     )
 
-    merchant = getattr(g, "merchant", None)
-
     if merchant is not None and isinstance(result, dict):
-        result["merchant_id"] = merchant["merchant_id"]
+        result["merchant_id"] = merchant_id
 
     if idempotency_key:
         result["idempotency_key"] = idempotency_key
+        result["idempotency_fingerprint"] = idempotency_fingerprint
 
     print("=" * 60)
     print("PAYMENT BEFORE SAVE")
