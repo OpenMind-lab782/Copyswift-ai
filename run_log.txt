@@ -1,0 +1,688 @@
+test	UNKNOWN STEP	﻿2026-08-04T00:09:24.5845657Z Current runner version: '2.336.0'
+test	UNKNOWN STEP	2026-08-04T00:09:24.5872392Z ##[group]Runner Image Provisioner
+test	UNKNOWN STEP	2026-08-04T00:09:24.5873431Z Hosted Compute Agent
+test	UNKNOWN STEP	2026-08-04T00:09:24.5874032Z Version: 20260707.563
+test	UNKNOWN STEP	2026-08-04T00:09:24.5874809Z Commit: 02667638d2b423fbc733a8e32a88b44996a3ba6e
+test	UNKNOWN STEP	2026-08-04T00:09:24.5875575Z Build Date: 2026-07-07T19:33:50Z
+test	UNKNOWN STEP	2026-08-04T00:09:24.5876274Z Worker ID: {aa762da4-580a-4e40-9684-e6606896c3e7}
+test	UNKNOWN STEP	2026-08-04T00:09:24.5877101Z Azure Region: centralus
+test	UNKNOWN STEP	2026-08-04T00:09:24.5877697Z ##[endgroup]
+test	UNKNOWN STEP	2026-08-04T00:09:24.5879169Z ##[group]Operating System
+test	UNKNOWN STEP	2026-08-04T00:09:24.5880284Z Ubuntu
+test	UNKNOWN STEP	2026-08-04T00:09:24.5880838Z 24.04.4
+test	UNKNOWN STEP	2026-08-04T00:09:24.5881429Z LTS
+test	UNKNOWN STEP	2026-08-04T00:09:24.5881970Z ##[endgroup]
+test	UNKNOWN STEP	2026-08-04T00:09:24.5882526Z ##[group]Runner Image
+test	UNKNOWN STEP	2026-08-04T00:09:24.5883176Z Image: ubuntu-24.04
+test	UNKNOWN STEP	2026-08-04T00:09:24.5883757Z Version: 20260720.247.2
+test	UNKNOWN STEP	2026-08-04T00:09:24.5885075Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260720.247/images/ubuntu/Ubuntu2404-Readme.md
+test	UNKNOWN STEP	2026-08-04T00:09:24.5886566Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260720.247
+test	UNKNOWN STEP	2026-08-04T00:09:24.5887561Z ##[endgroup]
+test	UNKNOWN STEP	2026-08-04T00:09:24.5888822Z ##[group]GITHUB_TOKEN Permissions
+test	UNKNOWN STEP	2026-08-04T00:09:24.5891399Z Contents: read
+test	UNKNOWN STEP	2026-08-04T00:09:24.5892080Z Metadata: read
+test	UNKNOWN STEP	2026-08-04T00:09:24.5892666Z Packages: read
+test	UNKNOWN STEP	2026-08-04T00:09:24.5893290Z ##[endgroup]
+test	UNKNOWN STEP	2026-08-04T00:09:24.5895611Z Secret source: Actions
+test	UNKNOWN STEP	2026-08-04T00:09:24.5897464Z Prepare workflow directory
+test	UNKNOWN STEP	2026-08-04T00:09:24.6242647Z Prepare all required actions
+test	UNKNOWN STEP	2026-08-04T00:09:24.6291851Z Getting action download info
+test	UNKNOWN STEP	2026-08-04T00:09:24.8810653Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+test	UNKNOWN STEP	2026-08-04T00:09:25.3090266Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+test	UNKNOWN STEP	2026-08-04T00:09:25.4910870Z Complete job name: test
+test	UNKNOWN STEP	2026-08-04T00:09:25.5681870Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+test	UNKNOWN STEP	2026-08-04T00:09:25.5690943Z ##[group]Run actions/checkout@v4
+test	UNKNOWN STEP	2026-08-04T00:09:25.5691681Z with:
+test	UNKNOWN STEP	2026-08-04T00:09:25.5692146Z   repository: OpenMind-lab782/Copyswift-ai
+test	UNKNOWN STEP	2026-08-04T00:09:25.5695891Z   token: ***
+test	UNKNOWN STEP	2026-08-04T00:09:25.5696324Z   ssh-strict: true
+test	UNKNOWN STEP	2026-08-04T00:09:25.5696751Z   ssh-user: git
+test	UNKNOWN STEP	2026-08-04T00:09:25.5697179Z   persist-credentials: true
+test	UNKNOWN STEP	2026-08-04T00:09:25.5697652Z   clean: true
+test	UNKNOWN STEP	2026-08-04T00:09:25.5698090Z   sparse-checkout-cone-mode: true
+test	UNKNOWN STEP	2026-08-04T00:09:25.5698607Z   fetch-depth: 1
+test	UNKNOWN STEP	2026-08-04T00:09:25.5699025Z   fetch-tags: false
+test	UNKNOWN STEP	2026-08-04T00:09:25.5699652Z   show-progress: true
+test	UNKNOWN STEP	2026-08-04T00:09:25.5700114Z   lfs: false
+test	UNKNOWN STEP	2026-08-04T00:09:25.5700557Z   submodules: false
+test	UNKNOWN STEP	2026-08-04T00:09:25.5701009Z   set-safe-directory: true
+test	UNKNOWN STEP	2026-08-04T00:09:25.5701510Z   allow-unsafe-pr-checkout: false
+test	UNKNOWN STEP	2026-08-04T00:09:25.5702272Z ##[endgroup]
+test	UNKNOWN STEP	2026-08-04T00:09:25.6805708Z Syncing repository: OpenMind-lab782/Copyswift-ai
+test	UNKNOWN STEP	2026-08-04T00:09:25.6807718Z ##[group]Getting Git version info
+test	UNKNOWN STEP	2026-08-04T00:09:25.6808504Z Working directory is '/home/runner/work/Copyswift-ai/Copyswift-ai'
+test	UNKNOWN STEP	2026-08-04T00:09:25.6809988Z [command]/usr/bin/git version
+test	UNKNOWN STEP	2026-08-04T00:09:25.6904725Z git version 2.54.0
+test	UNKNOWN STEP	2026-08-04T00:09:25.6927924Z ##[endgroup]
+test	UNKNOWN STEP	2026-08-04T00:09:25.6945332Z Temporarily overriding HOME='/home/runner/work/_temp/7a0f1e81-32ff-4431-babc-dd6c62134646' before making global git config changes
+test	UNKNOWN STEP	2026-08-04T00:09:25.6948008Z Adding repository directory to the temporary git global config as a safe directory
+test	UNKNOWN STEP	2026-08-04T00:09:25.6951615Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Copyswift-ai/Copyswift-ai
+test	UNKNOWN STEP	2026-08-04T00:09:25.7002519Z Deleting the contents of '/home/runner/work/Copyswift-ai/Copyswift-ai'
+test	UNKNOWN STEP	2026-08-04T00:09:25.7006897Z ##[group]Initializing the repository
+test	UNKNOWN STEP	2026-08-04T00:09:25.7012346Z [command]/usr/bin/git init /home/runner/work/Copyswift-ai/Copyswift-ai
+test	UNKNOWN STEP	2026-08-04T00:09:25.7149376Z hint: Using 'master' as the name for the initial branch. This default branch name
+test	UNKNOWN STEP	2026-08-04T00:09:25.7151207Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+test	UNKNOWN STEP	2026-08-04T00:09:25.7152357Z hint: to use in all of your new repositories, which will suppress this warning,
+test	UNKNOWN STEP	2026-08-04T00:09:25.7153114Z hint: call:
+test	UNKNOWN STEP	2026-08-04T00:09:25.7153829Z hint:
+test	UNKNOWN STEP	2026-08-04T00:09:25.7154753Z hint: 	git config --global init.defaultBranch <name>
+test	UNKNOWN STEP	2026-08-04T00:09:25.7155561Z hint:
+test	UNKNOWN STEP	2026-08-04T00:09:25.7156608Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+test	UNKNOWN STEP	2026-08-04T00:09:25.7158344Z hint: 'development'. The just-created branch can be renamed via this command:
+test	UNKNOWN STEP	2026-08-04T00:09:25.7160101Z hint:
+test	UNKNOWN STEP	2026-08-04T00:09:25.7160948Z hint: 	git branch -m <name>
+test	UNKNOWN STEP	2026-08-04T00:09:25.7161809Z hint:
+test	UNKNOWN STEP	2026-08-04T00:09:25.7162969Z hint: Disable this message with "git config set advice.defaultBranchName false"
+test	UNKNOWN STEP	2026-08-04T00:09:25.7165098Z Initialized empty Git repository in /home/runner/work/Copyswift-ai/Copyswift-ai/.git/
+test	UNKNOWN STEP	2026-08-04T00:09:25.7170159Z [command]/usr/bin/git remote add origin https://github.com/OpenMind-lab782/Copyswift-ai
+test	UNKNOWN STEP	2026-08-04T00:09:25.7228469Z ##[endgroup]
+test	UNKNOWN STEP	2026-08-04T00:09:25.7230517Z ##[group]Disabling automatic garbage collection
+test	UNKNOWN STEP	2026-08-04T00:09:25.7231968Z [command]/usr/bin/git config --local gc.auto 0
+test	UNKNOWN STEP	2026-08-04T00:09:25.7263033Z ##[endgroup]
+test	UNKNOWN STEP	2026-08-04T00:09:25.7264214Z ##[group]Setting up auth
+test	UNKNOWN STEP	2026-08-04T00:09:25.7270852Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+test	UNKNOWN STEP	2026-08-04T00:09:25.7313323Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+test	UNKNOWN STEP	2026-08-04T00:09:25.7771510Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+test	UNKNOWN STEP	2026-08-04T00:09:25.7806064Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+test	UNKNOWN STEP	2026-08-04T00:09:25.8042381Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+test	UNKNOWN STEP	2026-08-04T00:09:25.8081679Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+test	UNKNOWN STEP	2026-08-04T00:09:25.8313653Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+test	UNKNOWN STEP	2026-08-04T00:09:25.8354448Z ##[endgroup]
+test	UNKNOWN STEP	2026-08-04T00:09:25.8355505Z ##[group]Fetching the repository
+test	UNKNOWN STEP	2026-08-04T00:09:25.8364944Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +40eea68ab4738056fafddb501a004ab386d494c2:refs/remotes/origin/main
+test	UNKNOWN STEP	2026-08-04T00:09:26.2915143Z From https://github.com/OpenMind-lab782/Copyswift-ai
+test	UNKNOWN STEP	2026-08-04T00:09:26.2917883Z  * [new ref]         40eea68ab4738056fafddb501a004ab386d494c2 -> origin/main
+test	UNKNOWN STEP	2026-08-04T00:09:26.2955545Z ##[endgroup]
+test	UNKNOWN STEP	2026-08-04T00:09:26.2956721Z ##[group]Determining the checkout info
+test	UNKNOWN STEP	2026-08-04T00:09:26.2958304Z ##[endgroup]
+test	UNKNOWN STEP	2026-08-04T00:09:26.2963726Z [command]/usr/bin/git sparse-checkout disable
+test	UNKNOWN STEP	2026-08-04T00:09:26.3015264Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+test	UNKNOWN STEP	2026-08-04T00:09:26.3049134Z ##[group]Checking out the ref
+test	UNKNOWN STEP	2026-08-04T00:09:26.3054517Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+test	UNKNOWN STEP	2026-08-04T00:09:26.3295060Z Switched to a new branch 'main'
+test	UNKNOWN STEP	2026-08-04T00:09:26.3298614Z branch 'main' set up to track 'origin/main'.
+test	UNKNOWN STEP	2026-08-04T00:09:26.3306044Z ##[endgroup]
+test	UNKNOWN STEP	2026-08-04T00:09:26.3346530Z [command]/usr/bin/git log -1 --format=%H
+test	UNKNOWN STEP	2026-08-04T00:09:26.3374880Z 40eea68ab4738056fafddb501a004ab386d494c2
+test	UNKNOWN STEP	2026-08-04T00:09:26.3762007Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+test	UNKNOWN STEP	2026-08-04T00:09:26.3768458Z ##[group]Run actions/setup-python@v5
+test	UNKNOWN STEP	2026-08-04T00:09:26.3769964Z with:
+test	UNKNOWN STEP	2026-08-04T00:09:26.3770877Z   python-version: 3.13
+test	UNKNOWN STEP	2026-08-04T00:09:26.3771905Z   check-latest: false
+test	UNKNOWN STEP	2026-08-04T00:09:26.3782002Z   token: ***
+test	UNKNOWN STEP	2026-08-04T00:09:26.3782954Z   update-environment: true
+test	UNKNOWN STEP	2026-08-04T00:09:26.3784065Z   allow-prereleases: false
+test	UNKNOWN STEP	2026-08-04T00:09:26.3785150Z   freethreaded: false
+test	UNKNOWN STEP	2026-08-04T00:09:26.3786140Z ##[endgroup]
+test	UNKNOWN STEP	2026-08-04T00:09:26.5101820Z ##[group]Installed versions
+test	UNKNOWN STEP	2026-08-04T00:09:26.5184304Z (node:2173) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+test	UNKNOWN STEP	2026-08-04T00:09:26.5186061Z (Use `node --trace-deprecation ...` to show where the warning was created)
+test	UNKNOWN STEP	2026-08-04T00:09:26.5200080Z Successfully set up CPython (3.13.14)
+test	UNKNOWN STEP	2026-08-04T00:09:26.5201194Z ##[endgroup]
+test	UNKNOWN STEP	2026-08-04T00:09:26.5374150Z ##[group]Run python -m pip install --upgrade pip
+test	UNKNOWN STEP	2026-08-04T00:09:26.5374792Z ^[[36;1mpython -m pip install --upgrade pip^[[0m
+test	UNKNOWN STEP	2026-08-04T00:09:26.5375197Z ^[[36;1m^[[0m
+test	UNKNOWN STEP	2026-08-04T00:09:26.5375486Z ^[[36;1mif [ -f requirements.txt ]; then^[[0m
+test	UNKNOWN STEP	2026-08-04T00:09:26.5375895Z ^[[36;1m  pip install -r requirements.txt^[[0m
+test	UNKNOWN STEP	2026-08-04T00:09:26.5376259Z ^[[36;1mfi^[[0m
+test	UNKNOWN STEP	2026-08-04T00:09:26.5526017Z shell: /usr/bin/bash -e {0}
+test	UNKNOWN STEP	2026-08-04T00:09:26.5526454Z env:
+test	UNKNOWN STEP	2026-08-04T00:09:26.5527113Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.14/x64
+test	UNKNOWN STEP	2026-08-04T00:09:26.5528057Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.14/x64/lib/pkgconfig
+test	UNKNOWN STEP	2026-08-04T00:09:26.5528980Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.14/x64
+test	UNKNOWN STEP	2026-08-04T00:09:26.5530094Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.14/x64
+test	UNKNOWN STEP	2026-08-04T00:09:26.5531001Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.14/x64
+test	UNKNOWN STEP	2026-08-04T00:09:26.5531922Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.14/x64/lib
+test	UNKNOWN STEP	2026-08-04T00:09:26.5532775Z ##[endgroup]
+test	UNKNOWN STEP	2026-08-04T00:09:28.7586348Z Requirement already satisfied: pip in /opt/hostedtoolcache/Python/3.13.14/x64/lib/python3.13/site-packages (26.1.2)
+test	UNKNOWN STEP	2026-08-04T00:09:28.8861854Z Collecting pip
+test	UNKNOWN STEP	2026-08-04T00:09:28.9664645Z   Downloading pip-26.2-py3-none-any.whl.metadata (4.6 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:28.9903844Z Downloading pip-26.2-py3-none-any.whl (1.8 MB)
+test	UNKNOWN STEP	2026-08-04T00:09:29.1941519Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 10.1 MB/s  0:00:00
+test	UNKNOWN STEP	2026-08-04T00:09:29.2410216Z Installing collected packages: pip
+test	UNKNOWN STEP	2026-08-04T00:09:29.2412045Z   Attempting uninstall: pip
+test	UNKNOWN STEP	2026-08-04T00:09:29.2440966Z     Found existing installation: pip 26.1.2
+test	UNKNOWN STEP	2026-08-04T00:09:29.3060912Z     Uninstalling pip-26.1.2:
+test	UNKNOWN STEP	2026-08-04T00:09:29.3117445Z       Successfully uninstalled pip-26.1.2
+test	UNKNOWN STEP	2026-08-04T00:09:30.2143319Z Successfully installed pip-26.2
+test	UNKNOWN STEP	2026-08-04T00:09:30.7301312Z Collecting flask==3.0.3 (from -r requirements.txt (line 1))
+test	UNKNOWN STEP	2026-08-04T00:09:30.8046077Z   Downloading flask-3.0.3-py3-none-any.whl.metadata (3.2 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:30.8385176Z Collecting groq>=0.30.0 (from -r requirements.txt (line 2))
+test	UNKNOWN STEP	2026-08-04T00:09:30.8518186Z   Downloading groq-1.6.0-py3-none-any.whl.metadata (16 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:30.8902216Z Collecting gunicorn==22.0.0 (from -r requirements.txt (line 3))
+test	UNKNOWN STEP	2026-08-04T00:09:30.9037520Z   Downloading gunicorn-22.0.0-py3-none-any.whl.metadata (4.4 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:30.9429168Z Collecting requests==2.31.0 (from -r requirements.txt (line 4))
+test	UNKNOWN STEP	2026-08-04T00:09:30.9563640Z   Downloading requests-2.31.0-py3-none-any.whl.metadata (4.6 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:30.9880785Z Collecting httpx==0.27.0 (from -r requirements.txt (line 5))
+test	UNKNOWN STEP	2026-08-04T00:09:31.0012244Z   Downloading httpx-0.27.0-py3-none-any.whl.metadata (7.2 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:31.0592257Z Collecting python-dotenv==1.0.1 (from -r requirements.txt (line 6))
+test	UNKNOWN STEP	2026-08-04T00:09:31.0725199Z   Downloading python_dotenv-1.0.1-py3-none-any.whl.metadata (23 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:31.2460491Z Collecting cloudinary==1.44.2 (from -r requirements.txt (line 7))
+test	UNKNOWN STEP	2026-08-04T00:09:31.2593099Z   Downloading cloudinary-1.44.2-py3-none-any.whl.metadata (8.0 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:31.2983717Z Collecting together==2.16.1 (from -r requirements.txt (line 8))
+test	UNKNOWN STEP	2026-08-04T00:09:31.3131162Z   Downloading together-2.16.1-py3-none-any.whl.metadata (22 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:31.3458850Z Collecting beautifulsoup4==4.12.3 (from -r requirements.txt (line 9))
+test	UNKNOWN STEP	2026-08-04T00:09:31.3589938Z   Downloading beautifulsoup4-4.12.3-py3-none-any.whl.metadata (3.8 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:31.6701283Z Collecting SQLAlchemy>=2.0.0 (from -r requirements.txt (line 10))
+test	UNKNOWN STEP	2026-08-04T00:09:31.6843357Z   Downloading sqlalchemy-2.0.51-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (9.5 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:31.7261250Z Collecting Werkzeug>=3.0.0 (from flask==3.0.3->-r requirements.txt (line 1))
+test	UNKNOWN STEP	2026-08-04T00:09:31.7391574Z   Downloading werkzeug-3.1.8-py3-none-any.whl.metadata (4.0 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:31.7649002Z Collecting Jinja2>=3.1.2 (from flask==3.0.3->-r requirements.txt (line 1))
+test	UNKNOWN STEP	2026-08-04T00:09:31.7784247Z   Downloading jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:31.8018215Z Collecting itsdangerous>=2.1.2 (from flask==3.0.3->-r requirements.txt (line 1))
+test	UNKNOWN STEP	2026-08-04T00:09:31.8147987Z   Downloading itsdangerous-2.2.0-py3-none-any.whl.metadata (1.9 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:31.8423703Z Collecting click>=8.1.3 (from flask==3.0.3->-r requirements.txt (line 1))
+test	UNKNOWN STEP	2026-08-04T00:09:31.8555242Z   Downloading click-8.4.2-py3-none-any.whl.metadata (2.6 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:31.8785971Z Collecting blinker>=1.6.2 (from flask==3.0.3->-r requirements.txt (line 1))
+test	UNKNOWN STEP	2026-08-04T00:09:31.8917077Z   Downloading blinker-1.9.0-py3-none-any.whl.metadata (1.6 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:31.9199043Z Collecting packaging (from gunicorn==22.0.0->-r requirements.txt (line 3))
+test	UNKNOWN STEP	2026-08-04T00:09:31.9328810Z   Downloading packaging-26.2-py3-none-any.whl.metadata (3.5 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:32.0419125Z Collecting charset-normalizer<4,>=2 (from requests==2.31.0->-r requirements.txt (line 4))
+test	UNKNOWN STEP	2026-08-04T00:09:32.0549229Z   Downloading charset_normalizer-3.4.9-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (41 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:32.0921226Z Collecting idna<4,>=2.5 (from requests==2.31.0->-r requirements.txt (line 4))
+test	UNKNOWN STEP	2026-08-04T00:09:32.1050549Z   Downloading idna-3.18-py3-none-any.whl.metadata (6.1 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:32.1383110Z Collecting urllib3<3,>=1.21.1 (from requests==2.31.0->-r requirements.txt (line 4))
+test	UNKNOWN STEP	2026-08-04T00:09:32.1514694Z   Downloading urllib3-2.7.0-py3-none-any.whl.metadata (6.9 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:32.1817949Z Collecting certifi>=2017.4.17 (from requests==2.31.0->-r requirements.txt (line 4))
+test	UNKNOWN STEP	2026-08-04T00:09:32.1948738Z   Downloading certifi-2026.7.22-py3-none-any.whl.metadata (2.5 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:32.2248360Z Collecting anyio (from httpx==0.27.0->-r requirements.txt (line 5))
+test	UNKNOWN STEP	2026-08-04T00:09:32.2378842Z   Downloading anyio-4.14.2-py3-none-any.whl.metadata (4.6 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:32.2653182Z Collecting httpcore==1.* (from httpx==0.27.0->-r requirements.txt (line 5))
+test	UNKNOWN STEP	2026-08-04T00:09:32.2786017Z   Downloading httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:32.3027068Z Collecting sniffio (from httpx==0.27.0->-r requirements.txt (line 5))
+test	UNKNOWN STEP	2026-08-04T00:09:32.3155566Z   Downloading sniffio-1.3.1-py3-none-any.whl.metadata (3.9 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:32.3409934Z Collecting six (from cloudinary==1.44.2->-r requirements.txt (line 7))
+test	UNKNOWN STEP	2026-08-04T00:09:32.3539519Z   Downloading six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:32.3952924Z Collecting cyclopts>=4.6.0 (from together==2.16.1->-r requirements.txt (line 8))
+test	UNKNOWN STEP	2026-08-04T00:09:32.4085753Z   Downloading cyclopts-4.22.4-py3-none-any.whl.metadata (12 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:32.4371446Z Collecting detect-agent>=0.2.0 (from together==2.16.1->-r requirements.txt (line 8))
+test	UNKNOWN STEP	2026-08-04T00:09:32.4506749Z   Downloading detect_agent-0.5.0-py3-none-any.whl.metadata (4.6 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:32.4770126Z Collecting distro<2,>=1.7.0 (from together==2.16.1->-r requirements.txt (line 8))
+test	UNKNOWN STEP	2026-08-04T00:09:32.4899003Z   Downloading distro-1.9.0-py3-none-any.whl.metadata (6.8 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:32.5242118Z Collecting filelock>=3.13.1 (from together==2.16.1->-r requirements.txt (line 8))
+test	UNKNOWN STEP	2026-08-04T00:09:32.5371687Z   Downloading filelock-3.32.2-py3-none-any.whl.metadata (2.0 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:32.6985408Z Collecting pillow>=10.4.0 (from together==2.16.1->-r requirements.txt (line 8))
+test	UNKNOWN STEP	2026-08-04T00:09:32.7136369Z   Downloading pillow-12.3.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (9.1 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:32.8234724Z Collecting pydantic<3,>=1.9.0 (from together==2.16.1->-r requirements.txt (line 8))
+test	UNKNOWN STEP	2026-08-04T00:09:32.8369394Z   Downloading pydantic-2.13.4-py3-none-any.whl.metadata (109 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:32.8919044Z Collecting rich>=13.7.1 (from together==2.16.1->-r requirements.txt (line 8))
+test	UNKNOWN STEP	2026-08-04T00:09:32.9058275Z   Downloading rich-15.0.0-py3-none-any.whl.metadata (18 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:32.9301216Z Collecting tabulate>=0.9.0 (from together==2.16.1->-r requirements.txt (line 8))
+test	UNKNOWN STEP	2026-08-04T00:09:32.9430548Z   Downloading tabulate-0.10.0-py3-none-any.whl.metadata (40 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:32.9823669Z Collecting tqdm>=4.67.1 (from together==2.16.1->-r requirements.txt (line 8))
+test	UNKNOWN STEP	2026-08-04T00:09:32.9954576Z   Downloading tqdm-4.70.0-py3-none-any.whl.metadata (57 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:33.0271477Z Collecting types-pyyaml>=6.0.12.20250915 (from together==2.16.1->-r requirements.txt (line 8))
+test	UNKNOWN STEP	2026-08-04T00:09:33.0399284Z   Downloading types_pyyaml-6.0.12.20260724-py3-none-any.whl.metadata (1.7 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:33.0659261Z Collecting types-tabulate>=0.9.0.20240106 (from together==2.16.1->-r requirements.txt (line 8))
+test	UNKNOWN STEP	2026-08-04T00:09:33.0788426Z   Downloading types_tabulate-0.10.0.20260508-py3-none-any.whl.metadata (1.7 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:33.1125318Z Collecting types-tqdm>=4.67.0.20250516 (from together==2.16.1->-r requirements.txt (line 8))
+test	UNKNOWN STEP	2026-08-04T00:09:33.1269133Z   Downloading types_tqdm-4.70.0.20260731-py3-none-any.whl.metadata (2.0 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:33.1545523Z Collecting typing-extensions<5,>=4.14 (from together==2.16.1->-r requirements.txt (line 8))
+test	UNKNOWN STEP	2026-08-04T00:09:33.1676116Z   Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:33.1961857Z Collecting soupsieve>1.2 (from beautifulsoup4==4.12.3->-r requirements.txt (line 9))
+test	UNKNOWN STEP	2026-08-04T00:09:33.2090493Z   Downloading soupsieve-2.9.1-py3-none-any.whl.metadata (4.6 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:33.2352310Z Collecting h11>=0.16 (from httpcore==1.*->httpx==0.27.0->-r requirements.txt (line 5))
+test	UNKNOWN STEP	2026-08-04T00:09:33.2481794Z   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:33.2726827Z Collecting annotated-types>=0.6.0 (from pydantic<3,>=1.9.0->together==2.16.1->-r requirements.txt (line 8))
+test	UNKNOWN STEP	2026-08-04T00:09:33.2858520Z   Downloading annotated_types-0.8.0-py3-none-any.whl.metadata (15 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:33.9231647Z Collecting pydantic-core==2.46.4 (from pydantic<3,>=1.9.0->together==2.16.1->-r requirements.txt (line 8))
+test	UNKNOWN STEP	2026-08-04T00:09:33.9366826Z   Downloading pydantic_core-2.46.4-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.6 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:33.9617532Z Collecting typing-inspection>=0.4.2 (from pydantic<3,>=1.9.0->together==2.16.1->-r requirements.txt (line 8))
+test	UNKNOWN STEP	2026-08-04T00:09:33.9751877Z   Downloading typing_inspection-0.4.2-py3-none-any.whl.metadata (2.6 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.1238273Z Collecting greenlet>=1 (from SQLAlchemy>=2.0.0->-r requirements.txt (line 10))
+test	UNKNOWN STEP	2026-08-04T00:09:34.1371211Z   Downloading greenlet-3.5.4-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (3.8 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.1664249Z Collecting attrs>=23.1.0 (from cyclopts>=4.6.0->together==2.16.1->-r requirements.txt (line 8))
+test	UNKNOWN STEP	2026-08-04T00:09:34.1794146Z   Downloading attrs-26.1.0-py3-none-any.whl.metadata (8.8 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.2047770Z Collecting docstring-parser<4.0,>=0.15 (from cyclopts>=4.6.0->together==2.16.1->-r requirements.txt (line 8))
+test	UNKNOWN STEP	2026-08-04T00:09:34.2179218Z   Downloading docstring_parser-0.18.0-py3-none-any.whl.metadata (3.5 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.2436247Z Collecting rich-rst<3.0.0,>=1.3.1 (from cyclopts>=4.6.0->together==2.16.1->-r requirements.txt (line 8))
+test	UNKNOWN STEP	2026-08-04T00:09:34.2573393Z   Downloading rich_rst-2.1.0-py3-none-any.whl.metadata (4.7 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.2927041Z Collecting pygments>=2.0.0 (from rich-rst<3.0.0,>=1.3.1->cyclopts>=4.6.0->together==2.16.1->-r requirements.txt (line 8))
+test	UNKNOWN STEP	2026-08-04T00:09:34.3058448Z   Downloading pygments-2.20.0-py3-none-any.whl.metadata (2.5 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.3730204Z Collecting MarkupSafe>=2.0 (from Jinja2>=3.1.2->flask==3.0.3->-r requirements.txt (line 1))
+test	UNKNOWN STEP	2026-08-04T00:09:34.3865606Z   Downloading markupsafe-3.0.3-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.7 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.4160837Z Collecting markdown-it-py>=2.2.0 (from rich>=13.7.1->together==2.16.1->-r requirements.txt (line 8))
+test	UNKNOWN STEP	2026-08-04T00:09:34.4291735Z   Downloading markdown_it_py-4.2.0-py3-none-any.whl.metadata (7.4 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.4562782Z Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich>=13.7.1->together==2.16.1->-r requirements.txt (line 8))
+test	UNKNOWN STEP	2026-08-04T00:09:34.4698487Z   Downloading mdurl-0.1.2-py3-none-any.whl.metadata (1.6 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.4954440Z Downloading flask-3.0.3-py3-none-any.whl (101 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.5127833Z Downloading gunicorn-22.0.0-py3-none-any.whl (84 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.5295226Z Downloading requests-2.31.0-py3-none-any.whl (62 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.5449910Z Downloading httpx-0.27.0-py3-none-any.whl (75 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.5609052Z Downloading python_dotenv-1.0.1-py3-none-any.whl (19 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.5762944Z Downloading cloudinary-1.44.2-py3-none-any.whl (147 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.5953479Z Downloading together-2.16.1-py3-none-any.whl (405 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.6243753Z Downloading beautifulsoup4-4.12.3-py3-none-any.whl (147 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.6403483Z Downloading anyio-4.14.2-py3-none-any.whl (125 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.6562744Z Downloading charset_normalizer-3.4.9-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (223 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.6729142Z Downloading distro-1.9.0-py3-none-any.whl (20 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.6881517Z Downloading httpcore-1.0.9-py3-none-any.whl (78 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.7039565Z Downloading idna-3.18-py3-none-any.whl (65 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.7199003Z Downloading pydantic-2.13.4-py3-none-any.whl (472 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.7494664Z Downloading pydantic_core-2.46.4-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.1 MB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.7796039Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.1/2.1 MB 67.4 MB/s  0:00:00
+test	UNKNOWN STEP	2026-08-04T00:09:34.7924965Z Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.8081277Z Downloading urllib3-2.7.0-py3-none-any.whl (131 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.8235668Z Downloading groq-1.6.0-py3-none-any.whl (143 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.8398973Z Downloading sqlalchemy-2.0.51-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (3.3 MB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.8696090Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.3/3.3 MB 112.5 MB/s  0:00:00
+test	UNKNOWN STEP	2026-08-04T00:09:34.8841889Z Downloading annotated_types-0.8.0-py3-none-any.whl (13 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.8992966Z Downloading blinker-1.9.0-py3-none-any.whl (8.5 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.9144329Z Downloading certifi-2026.7.22-py3-none-any.whl (136 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.9298703Z Downloading click-8.4.2-py3-none-any.whl (119 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.9454253Z Downloading cyclopts-4.22.4-py3-none-any.whl (234 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.9612770Z Downloading docstring_parser-0.18.0-py3-none-any.whl (22 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.9765643Z Downloading rich_rst-2.1.0-py3-none-any.whl (272 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:34.9925216Z Downloading attrs-26.1.0-py3-none-any.whl (67 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:35.0083168Z Downloading detect_agent-0.5.0-py3-none-any.whl (11 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:35.0234047Z Downloading filelock-3.32.2-py3-none-any.whl (98 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:35.0395555Z Downloading greenlet-3.5.4-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (624 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:35.0448969Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 624.0/624.0 kB 116.2 MB/s  0:00:00
+test	UNKNOWN STEP	2026-08-04T00:09:35.0578725Z Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:35.0729966Z Downloading itsdangerous-2.2.0-py3-none-any.whl (16 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:35.0885861Z Downloading jinja2-3.1.6-py3-none-any.whl (134 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:35.1041167Z Downloading markupsafe-3.0.3-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (22 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:35.1201439Z Downloading pillow-12.3.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (6.9 MB)
+test	UNKNOWN STEP	2026-08-04T00:09:35.1568541Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.9/6.9 MB 200.0 MB/s  0:00:00
+test	UNKNOWN STEP	2026-08-04T00:09:35.1706099Z Downloading pygments-2.20.0-py3-none-any.whl (1.2 MB)
+test	UNKNOWN STEP	2026-08-04T00:09:35.1769926Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 227.5 MB/s  0:00:00
+test	UNKNOWN STEP	2026-08-04T00:09:35.1900368Z Downloading rich-15.0.0-py3-none-any.whl (310 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:35.2061333Z Downloading markdown_it_py-4.2.0-py3-none-any.whl (91 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:35.2217390Z Downloading mdurl-0.1.2-py3-none-any.whl (10.0 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:35.2367474Z Downloading soupsieve-2.9.1-py3-none-any.whl (37 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:35.2518792Z Downloading tabulate-0.10.0-py3-none-any.whl (39 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:35.2671203Z Downloading tqdm-4.70.0-py3-none-any.whl (80 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:35.2825297Z Downloading types_pyyaml-6.0.12.20260724-py3-none-any.whl (20 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:35.2977931Z Downloading types_tabulate-0.10.0.20260508-py3-none-any.whl (8.1 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:35.3148943Z Downloading types_tqdm-4.70.0.20260731-py3-none-any.whl (25 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:35.3304086Z Downloading typing_inspection-0.4.2-py3-none-any.whl (14 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:35.3458938Z Downloading werkzeug-3.1.8-py3-none-any.whl (226 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:35.3616948Z Downloading packaging-26.2-py3-none-any.whl (100 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:35.3784073Z Downloading six-1.17.0-py2.py3-none-any.whl (11 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:35.3937810Z Downloading sniffio-1.3.1-py3-none-any.whl (10 kB)
+test	UNKNOWN STEP	2026-08-04T00:09:35.6270385Z Installing collected packages: urllib3, typing-extensions, types-tqdm, types-tabulate, types-pyyaml, tqdm, tabulate, soupsieve, sniffio, six, python-dotenv, pygments, pillow, packaging, mdurl, MarkupSafe, itsdangerous, idna, h11, greenlet, filelock, docstring-parser, distro, detect-agent, click, charset-normalizer, certifi, blinker, attrs, annotated-types, Werkzeug, typing-inspection, SQLAlchemy, requests, pydantic-core, markdown-it-py, Jinja2, httpcore, gunicorn, cloudinary, beautifulsoup4, anyio, rich, pydantic, httpx, flask, rich-rst, groq, cyclopts, together
+test	UNKNOWN STEP	2026-08-04T00:09:42.1200657Z 
+test	UNKNOWN STEP	2026-08-04T00:09:42.1255993Z Successfully installed Jinja2-3.1.6 MarkupSafe-3.0.3 SQLAlchemy-2.0.51 Werkzeug-3.1.8 annotated-types-0.8.0 anyio-4.14.2 attrs-26.1.0 beautifulsoup4-4.12.3 blinker-1.9.0 certifi-2026.7.22 charset-normalizer-3.4.9 click-8.4.2 cloudinary-1.44.2 cyclopts-4.22.4 detect-agent-0.5.0 distro-1.9.0 docstring-parser-0.18.0 filelock-3.32.2 flask-3.0.3 greenlet-3.5.4 groq-1.6.0 gunicorn-22.0.0 h11-0.16.0 httpcore-1.0.9 httpx-0.27.0 idna-3.18 itsdangerous-2.2.0 markdown-it-py-4.2.0 mdurl-0.1.2 packaging-26.2 pillow-12.3.0 pydantic-2.13.4 pydantic-core-2.46.4 pygments-2.20.0 python-dotenv-1.0.1 requests-2.31.0 rich-15.0.0 rich-rst-2.1.0 six-1.17.0 sniffio-1.3.1 soupsieve-2.9.1 tabulate-0.10.0 together-2.16.1 tqdm-4.70.0 types-pyyaml-6.0.12.20260724 types-tabulate-0.10.0.20260508 types-tqdm-4.70.0.20260731 typing-extensions-4.16.0 typing-inspection-0.4.2 urllib3-2.7.0
+test	UNKNOWN STEP	2026-08-04T00:09:42.2447557Z ##[group]Run python -m compileall payment_engine
+test	UNKNOWN STEP	2026-08-04T00:09:42.2447954Z ^[[36;1mpython -m compileall payment_engine^[[0m
+test	UNKNOWN STEP	2026-08-04T00:09:42.2495901Z shell: /usr/bin/bash -e {0}
+test	UNKNOWN STEP	2026-08-04T00:09:42.2496319Z env:
+test	UNKNOWN STEP	2026-08-04T00:09:42.2496589Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.14/x64
+test	UNKNOWN STEP	2026-08-04T00:09:42.2497023Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.14/x64/lib/pkgconfig
+test	UNKNOWN STEP	2026-08-04T00:09:42.2497447Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.14/x64
+test	UNKNOWN STEP	2026-08-04T00:09:42.2497818Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.14/x64
+test	UNKNOWN STEP	2026-08-04T00:09:42.2498196Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.14/x64
+test	UNKNOWN STEP	2026-08-04T00:09:42.2498574Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.14/x64/lib
+test	UNKNOWN STEP	2026-08-04T00:09:42.2498887Z ##[endgroup]
+test	UNKNOWN STEP	2026-08-04T00:09:42.3447698Z Listing 'payment_engine'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3448383Z Compiling 'payment_engine/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3448921Z Listing 'payment_engine/api'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3449810Z Compiling 'payment_engine/api/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3450450Z Compiling 'payment_engine/api/app.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3451017Z Compiling 'payment_engine/api/auth.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3451642Z Compiling 'payment_engine/api/error_handler.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3452309Z Compiling 'payment_engine/api/merchants.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3452936Z Compiling 'payment_engine/api/openapi.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3453522Z Compiling 'payment_engine/api/payments.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3454109Z Compiling 'payment_engine/api/routes.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3454712Z Compiling 'payment_engine/api/transactions.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3455354Z Compiling 'payment_engine/api/webhooks.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3455907Z Listing 'payment_engine/auth'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3456438Z Compiling 'payment_engine/auth/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3457043Z Compiling 'payment_engine/auth/api_key.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3457675Z Compiling 'payment_engine/auth/middleware.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3458275Z Compiling 'payment_engine/base.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3458842Z Compiling 'payment_engine/circuit_breaker.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3459696Z Listing 'payment_engine/config'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3460283Z Compiling 'payment_engine/config/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3460899Z Compiling 'payment_engine/config/settings.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3461534Z Compiling 'payment_engine/config/validator.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3462134Z Compiling 'payment_engine/config.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3462646Z Listing 'payment_engine/core'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3463164Z Compiling 'payment_engine/core/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3463805Z Compiling 'payment_engine/core/dead_letter_queue.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3464490Z Compiling 'payment_engine/core/orchestrator.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3465192Z Compiling 'payment_engine/core/retry_manager.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3465802Z Compiling 'payment_engine/country.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3466386Z Compiling 'payment_engine/currency.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3466923Z Listing 'payment_engine/database'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3467484Z Compiling 'payment_engine/database/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3468154Z Compiling 'payment_engine/database/api_key_model.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3468925Z Compiling 'payment_engine/database/api_key_repository.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3470007Z Compiling 'payment_engine/database/create_merchant_table.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3470770Z Compiling 'payment_engine/database/database.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3471450Z Compiling 'payment_engine/database/merchant_model.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3472210Z Compiling 'payment_engine/database/merchant_repository.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3472955Z Compiling 'payment_engine/database/migrations.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3473591Z Compiling 'payment_engine/database/models.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3474249Z Compiling 'payment_engine/database/postgres_config.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3475303Z Compiling 'payment_engine/database/repository.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3476019Z Compiling 'payment_engine/database/sqlite.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3476623Z Listing 'payment_engine/deployment'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3477233Z Compiling 'payment_engine/deployment/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3478268Z Compiling 'payment_engine/deployment/production_validator.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3479024Z Compiling 'payment_engine/deployment/render.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3480004Z Compiling 'payment_engine/engine.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3480548Z Compiling 'payment_engine/events.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3481085Z Listing 'payment_engine/exceptions'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3481664Z Compiling 'payment_engine/exceptions/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3482288Z Compiling 'payment_engine/exceptions/base.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3482926Z Compiling 'payment_engine/exceptions/gateway.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3483636Z Compiling 'payment_engine/exceptions/merchant.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3484299Z Compiling 'payment_engine/exceptions/payment.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3484985Z Compiling 'payment_engine/exceptions/repository.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3485683Z Compiling 'payment_engine/exceptions/transaction.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3486394Z Compiling 'payment_engine/exceptions/validation.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3487073Z Compiling 'payment_engine/exceptions.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3487626Z Listing 'payment_engine/factory'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3488179Z Compiling 'payment_engine/factory/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3488868Z Compiling 'payment_engine/factory/repository_factory.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3489794Z Listing 'payment_engine/gateway'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3490370Z Compiling 'payment_engine/gateway/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3490997Z Compiling 'payment_engine/gateway/adapter.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3491651Z Compiling 'payment_engine/gateway/adaptive_engine.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3492378Z Compiling 'payment_engine/gateway/capability_registry.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3493091Z Compiling 'payment_engine/gateway/crypto.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3493788Z Compiling 'payment_engine/gateway/engine.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3494414Z Compiling 'payment_engine/gateway/failover.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3495078Z Compiling 'payment_engine/gateway/flutterwave.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3495750Z Compiling 'payment_engine/gateway/health.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3496411Z Compiling 'payment_engine/gateway/merchant_policy.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3497073Z Compiling 'payment_engine/gateway/metrics.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3497698Z Compiling 'payment_engine/gateway/paystack.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3498336Z Compiling 'payment_engine/gateway/registry.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3498961Z Compiling 'payment_engine/gateway/router.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3499799Z Compiling 'payment_engine/gateway/routing.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3500428Z Compiling 'payment_engine/gateway/stripe.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3501115Z Compiling 'payment_engine/gateway/webhook_signature.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3501876Z Compiling 'payment_engine/gateway/weighted_routing.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3502590Z Compiling 'payment_engine/gateway_capabilities.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3503241Z Compiling 'payment_engine/gateway_config.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3503845Z Compiling 'payment_engine/gateway_factory.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3504416Z Compiling 'payment_engine/gateway_registry.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3504967Z Compiling 'payment_engine/gateway_selector.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3505506Z Listing 'payment_engine/gateways'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3506018Z Compiling 'payment_engine/gateways/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3506569Z Listing 'payment_engine/gateways/adapters'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3507162Z Compiling 'payment_engine/gateways/adapters/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3507885Z Compiling 'payment_engine/gateways/adapters/paystack_mock.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3508549Z Compiling 'payment_engine/gateways/base.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3509124Z Compiling 'payment_engine/gateways/crypto.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3510169Z Compiling 'payment_engine/gateways/dpo.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3510788Z Compiling 'payment_engine/gateways/flutterwave.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3511398Z Compiling 'payment_engine/gateways/mock.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3511974Z Compiling 'payment_engine/gateways/paypal.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3512745Z Compiling 'payment_engine/gateways/paystack.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3513346Z Compiling 'payment_engine/gateways/registry.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3513946Z Compiling 'payment_engine/gateways/stripe.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3514487Z Compiling 'payment_engine/health.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3515014Z Compiling 'payment_engine/health_monitor.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3515568Z Compiling 'payment_engine/idempotency.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3516085Z Listing 'payment_engine/integration'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3516627Z Compiling 'payment_engine/integration/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3517177Z Compiling 'payment_engine/integration/copyswift.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3517719Z Compiling 'payment_engine/latency.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3518228Z Compiling 'payment_engine/logger.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3518696Z Listing 'payment_engine/logging'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3519192Z Compiling 'payment_engine/logging/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3520041Z Compiling 'payment_engine/logging/audit.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3520594Z Compiling 'payment_engine/metrics.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3521100Z Listing 'payment_engine/middleware'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3521655Z Compiling 'payment_engine/middleware/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3522313Z Compiling 'payment_engine/middleware/idempotency.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3522924Z Compiling 'payment_engine/middleware.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3523459Z Compiling 'payment_engine/models.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3523943Z Listing 'payment_engine/openapi'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3524462Z Compiling 'payment_engine/openapi/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3525069Z Compiling 'payment_engine/openapi/metadata.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3525652Z Compiling 'payment_engine/provider_mode.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3526142Z Listing 'payment_engine/rate_limit'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3526657Z Compiling 'payment_engine/rate_limit/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3527289Z Compiling 'payment_engine/rate_limit/limiter.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3527834Z Compiling 'payment_engine/registry.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3528322Z Listing 'payment_engine/repositories'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3528905Z Compiling 'payment_engine/repositories/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3530043Z Compiling 'payment_engine/repositories/payment_event_repository.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3530876Z Compiling 'payment_engine/repositories/payment_repository.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3531629Z Compiling 'payment_engine/repositories/postgres_payment_repository.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3532451Z Compiling 'payment_engine/repositories/reconciliation_repository.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3533316Z Compiling 'payment_engine/repositories/settlement_repository.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3534205Z Compiling 'payment_engine/repositories/sqlite_payment_event_repository.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3535123Z Compiling 'payment_engine/repositories/sqlite_payment_repository.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3536038Z Compiling 'payment_engine/repositories/sqlite_reconciliation_repository.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3536983Z Compiling 'payment_engine/repositories/sqlite_settlement_repository.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3537722Z Listing 'payment_engine/request'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3538241Z Compiling 'payment_engine/request/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3538838Z Compiling 'payment_engine/request/request_id.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3539609Z Compiling 'payment_engine/retry.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3540114Z Compiling 'payment_engine/router.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3540606Z Listing 'payment_engine/security'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3541116Z Compiling 'payment_engine/security/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3541727Z Compiling 'payment_engine/security/hmac_signer.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3542569Z Compiling 'payment_engine/security/idempotency.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3543225Z Compiling 'payment_engine/security/rate_limiter.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3543787Z Listing 'payment_engine/services'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3544299Z Compiling 'payment_engine/services/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3545137Z Compiling 'payment_engine/services/crypto_payment_service.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3545886Z Compiling 'payment_engine/services/merchant_service.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3546635Z Compiling 'payment_engine/services/payment_event_service.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3547374Z Compiling 'payment_engine/services/payment_service.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3548180Z Compiling 'payment_engine/services/reconciliation_report_service.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3548994Z Compiling 'payment_engine/services/reconciliation_service.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3550005Z Compiling 'payment_engine/services/settlement_service.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3550734Z Compiling 'payment_engine/services/transaction_service.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3551363Z Compiling 'payment_engine/subscribers.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3551908Z Compiling 'payment_engine/timeout.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3552429Z Compiling 'payment_engine/tracing.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3552939Z Compiling 'payment_engine/transaction.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3553463Z Listing 'payment_engine/transactions'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3554033Z Compiling 'payment_engine/transactions/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3554676Z Compiling 'payment_engine/transactions/manager.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3555236Z Listing 'payment_engine/utils'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3555725Z Compiling 'payment_engine/utils/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3556282Z Compiling 'payment_engine/utils/errors.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3556828Z Compiling 'payment_engine/utils/logger.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3557384Z Compiling 'payment_engine/utils/reference.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3557967Z Compiling 'payment_engine/utils/validator.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3558522Z Listing 'payment_engine/validation'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3559063Z Compiling 'payment_engine/validation/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3559909Z Compiling 'payment_engine/validation/validators.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3560462Z Compiling 'payment_engine/version.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3560947Z Compiling 'payment_engine/webhook.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3561401Z Listing 'payment_engine/webhooks'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3561891Z Compiling 'payment_engine/webhooks/__init__.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3562461Z Compiling 'payment_engine/webhooks/handler.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3563039Z Compiling 'payment_engine/webhooks/idempotency.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3563621Z Compiling 'payment_engine/webhooks/security.py'...
+test	UNKNOWN STEP	2026-08-04T00:09:42.3600147Z ##[group]Run python -m unittest discover tests
+test	UNKNOWN STEP	2026-08-04T00:09:42.3600548Z ^[[36;1mpython -m unittest discover tests^[[0m
+test	UNKNOWN STEP	2026-08-04T00:09:42.3646249Z shell: /usr/bin/bash -e {0}
+test	UNKNOWN STEP	2026-08-04T00:09:42.3646487Z env:
+test	UNKNOWN STEP	2026-08-04T00:09:42.3646744Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.14/x64
+test	UNKNOWN STEP	2026-08-04T00:09:42.3647167Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.14/x64/lib/pkgconfig
+test	UNKNOWN STEP	2026-08-04T00:09:42.3647609Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.14/x64
+test	UNKNOWN STEP	2026-08-04T00:09:42.3647989Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.14/x64
+test	UNKNOWN STEP	2026-08-04T00:09:42.3648380Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.14/x64
+test	UNKNOWN STEP	2026-08-04T00:09:42.3648751Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.14/x64/lib
+test	UNKNOWN STEP	2026-08-04T00:09:42.3649063Z ##[endgroup]
+test	UNKNOWN STEP	2026-08-04T00:09:43.5995018Z ........................2026-08-04 00:09:43,599 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | reference=CID-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.5997234Z 2026-08-04 00:09:43,599 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | reference=CID-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6010903Z 2026-08-04 00:09:43,599 | INFO | audit | status=verified | gateway=paystack | mode=mock | reference=CID-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6027681Z 2026-08-04 00:09:43,599 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | reference=CID-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6030237Z ..........2026-08-04 00:09:43,600 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | reference=TEST-REFERENCE-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6032467Z 2026-08-04 00:09:43,600 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | reference=TEST-REFERENCE-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6034606Z 2026-08-04 00:09:43,600 | INFO | audit | status=verified | gateway=paystack | mode=mock | reference=TEST-REFERENCE-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6036735Z 2026-08-04 00:09:43,600 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | reference=TEST-REFERENCE-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6217760Z .....................................................2026-08-04 00:09:43,621 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-3CD082FA | reference=SWIFT-20260804000943-3CD082FA | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6220931Z 2026-08-04 00:09:43,621 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-3CD082FA | reference=SWIFT-20260804000943-3CD082FA | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6223739Z 2026-08-04 00:09:43,621 | INFO | audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-3CD082FA | reference=SWIFT-20260804000943-3CD082FA | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6226302Z 2026-08-04 00:09:43,621 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-3CD082FA | reference=SWIFT-20260804000943-3CD082FA | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6265901Z .2026-08-04 00:09:43,626 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-9AB1FB2F | reference=SWIFT-20260804000943-9AB1FB2F | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6267752Z 2026-08-04 00:09:43,626 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-9AB1FB2F | reference=SWIFT-20260804000943-9AB1FB2F | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6270005Z 2026-08-04 00:09:43,626 | INFO | audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-9AB1FB2F | reference=SWIFT-20260804000943-9AB1FB2F | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6272322Z 2026-08-04 00:09:43,626 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-9AB1FB2F | reference=SWIFT-20260804000943-9AB1FB2F | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6310421Z .2026-08-04 00:09:43,630 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-E2DE165C | reference=SWIFT-20260804000943-E2DE165C | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6312495Z 2026-08-04 00:09:43,630 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-E2DE165C | reference=SWIFT-20260804000943-E2DE165C | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6314468Z 2026-08-04 00:09:43,630 | INFO | audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-E2DE165C | reference=SWIFT-20260804000943-E2DE165C | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6316493Z 2026-08-04 00:09:43,630 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-E2DE165C | reference=SWIFT-20260804000943-E2DE165C | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6475822Z ........E......2026-08-04 00:09:43,647 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-1322BB58 | reference=SWIFT-20260804000943-1322BB58 | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6478219Z 2026-08-04 00:09:43,647 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-1322BB58 | reference=SWIFT-20260804000943-1322BB58 | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6481185Z 2026-08-04 00:09:43,647 | INFO | audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-1322BB58 | reference=SWIFT-20260804000943-1322BB58 | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6483379Z 2026-08-04 00:09:43,647 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-1322BB58 | reference=SWIFT-20260804000943-1322BB58 | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6520042Z ....2026-08-04 00:09:43,651 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | reference=EVENT-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6521780Z 2026-08-04 00:09:43,651 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | reference=EVENT-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6524365Z 2026-08-04 00:09:43,651 | INFO | audit | status=verified | gateway=paystack | mode=mock | reference=EVENT-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6526399Z 2026-08-04 00:09:43,651 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | reference=EVENT-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6529041Z .2026-08-04 00:09:43,652 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | reference=INTEGRATION-DUP-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6531142Z 2026-08-04 00:09:43,652 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | reference=INTEGRATION-DUP-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6533949Z 2026-08-04 00:09:43,652 | INFO | audit | status=verified | gateway=paystack | mode=mock | reference=INTEGRATION-DUP-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6536786Z 2026-08-04 00:09:43,652 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | reference=INTEGRATION-DUP-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6539852Z .2026-08-04 00:09:43,652 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | reference=paystack-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6542670Z 2026-08-04 00:09:43,652 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | reference=paystack-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6544193Z 2026-08-04 00:09:43,652 | INFO | audit | status=verified | gateway=paystack | mode=mock | reference=paystack-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6545667Z 2026-08-04 00:09:43,652 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | reference=paystack-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6547175Z 2026-08-04 00:09:43,652 | INFO | event_bus | status=verified | gateway=flutterwave | mode=mock | reference=flutterwave-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6548854Z 2026-08-04 00:09:43,652 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=flutterwave | mode=mock | reference=flutterwave-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6551415Z 2026-08-04 00:09:43,652 | INFO | audit | status=verified | gateway=flutterwave | mode=mock | reference=flutterwave-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6553281Z 2026-08-04 00:09:43,652 INFO SwiftPaymentEngine: audit | status=verified | gateway=flutterwave | mode=mock | reference=flutterwave-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6555266Z .2026-08-04 00:09:43,653 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | reference=INTEGRATION-REF-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6557275Z 2026-08-04 00:09:43,653 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | reference=INTEGRATION-REF-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6558848Z 2026-08-04 00:09:43,653 | INFO | audit | status=verified | gateway=paystack | mode=mock | reference=INTEGRATION-REF-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6560811Z 2026-08-04 00:09:43,653 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | reference=INTEGRATION-REF-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6562690Z .2026-08-04 00:09:43,653 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | reference=METRIC-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6564176Z 2026-08-04 00:09:43,653 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | reference=METRIC-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6566179Z 2026-08-04 00:09:43,653 | INFO | audit | status=verified | gateway=paystack | mode=mock | reference=METRIC-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6567900Z 2026-08-04 00:09:43,653 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | reference=METRIC-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6570029Z .2026-08-04 00:09:43,653 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | reference=METRIC-002 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6571559Z 2026-08-04 00:09:43,653 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | reference=METRIC-002 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6573054Z 2026-08-04 00:09:43,653 | INFO | audit | status=verified | gateway=paystack | mode=mock | reference=METRIC-002 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6574537Z 2026-08-04 00:09:43,653 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | reference=METRIC-002 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+test	UNKNOWN STEP	2026-08-04T00:09:43.6611111Z .....2026-08-04 00:09:43,660 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-D0320B40 | reference=SWIFT-20260804000943-D0320B40 | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6614137Z 2026-08-04 00:09:43,660 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-D0320B40 | reference=SWIFT-20260804000943-D0320B40 | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6616306Z 2026-08-04 00:09:43,660 | INFO | audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-D0320B40 | reference=SWIFT-20260804000943-D0320B40 | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6618390Z 2026-08-04 00:09:43,660 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-D0320B40 | reference=SWIFT-20260804000943-D0320B40 | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6655971Z ..2026-08-04 00:09:43,665 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-6A829040 | reference=SWIFT-20260804000943-6A829040 | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6658908Z 2026-08-04 00:09:43,665 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-6A829040 | reference=SWIFT-20260804000943-6A829040 | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6661569Z 2026-08-04 00:09:43,665 | INFO | audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-6A829040 | reference=SWIFT-20260804000943-6A829040 | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6663370Z 2026-08-04 00:09:43,665 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-6A829040 | reference=SWIFT-20260804000943-6A829040 | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6742119Z ....2026-08-04 00:09:43,673 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-35AA29C2 | reference=SWIFT-20260804000943-35AA29C2 | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6745157Z 2026-08-04 00:09:43,673 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-35AA29C2 | reference=SWIFT-20260804000943-35AA29C2 | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6747313Z 2026-08-04 00:09:43,674 | INFO | audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-35AA29C2 | reference=SWIFT-20260804000943-35AA29C2 | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6750080Z 2026-08-04 00:09:43,674 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-35AA29C2 | reference=SWIFT-20260804000943-35AA29C2 | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6835640Z ...2026-08-04 00:09:43,683 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-BED15A9A | reference=SWIFT-20260804000943-BED15A9A | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6838056Z 2026-08-04 00:09:43,683 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-BED15A9A | reference=SWIFT-20260804000943-BED15A9A | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6840656Z 2026-08-04 00:09:43,683 | INFO | audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-BED15A9A | reference=SWIFT-20260804000943-BED15A9A | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6842435Z 2026-08-04 00:09:43,683 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-BED15A9A | reference=SWIFT-20260804000943-BED15A9A | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6883200Z .2026-08-04 00:09:43,688 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-22E50120 | reference=SWIFT-20260804000943-22E50120 | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6886398Z 2026-08-04 00:09:43,688 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-22E50120 | reference=SWIFT-20260804000943-22E50120 | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6889989Z 2026-08-04 00:09:43,688 | INFO | audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-22E50120 | reference=SWIFT-20260804000943-22E50120 | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6891951Z 2026-08-04 00:09:43,688 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-22E50120 | reference=SWIFT-20260804000943-22E50120 | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6962903Z ..2026-08-04 00:09:43,696 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-0CF05528 | reference=SWIFT-20260804000943-0CF05528 | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6965903Z 2026-08-04 00:09:43,696 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-0CF05528 | reference=SWIFT-20260804000943-0CF05528 | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6967824Z 2026-08-04 00:09:43,696 | INFO | audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-0CF05528 | reference=SWIFT-20260804000943-0CF05528 | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.6970421Z 2026-08-04 00:09:43,696 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260804000943-0CF05528 | reference=SWIFT-20260804000943-0CF05528 | amount=5000 | currency=NGN
+test	UNKNOWN STEP	2026-08-04T00:09:43.8494561Z ................................EEE.....................................
+test	UNKNOWN STEP	2026-08-04T00:09:43.8495436Z ======================================================================
+test	UNKNOWN STEP	2026-08-04T00:09:43.8496826Z ERROR: test_middleware (unittest.loader._FailedTest.test_middleware)
+test	UNKNOWN STEP	2026-08-04T00:09:43.8497761Z ----------------------------------------------------------------------
+test	UNKNOWN STEP	2026-08-04T00:09:43.8498640Z ImportError: Failed to import test module: test_middleware
+test	UNKNOWN STEP	2026-08-04T00:09:43.8499665Z Traceback (most recent call last):
+test	UNKNOWN STEP	2026-08-04T00:09:43.8508485Z   File "/opt/hostedtoolcache/Python/3.13.14/x64/lib/python3.13/unittest/loader.py", line 396, in _find_test_path
+test	UNKNOWN STEP	2026-08-04T00:09:43.8527718Z     module = self._get_module_from_name(name)
+test	UNKNOWN STEP	2026-08-04T00:09:43.8528638Z   File "/opt/hostedtoolcache/Python/3.13.14/x64/lib/python3.13/unittest/loader.py", line 339, in _get_module_from_name
+test	UNKNOWN STEP	2026-08-04T00:09:43.8529201Z     __import__(name)
+test	UNKNOWN STEP	2026-08-04T00:09:43.8529655Z     ~~~~~~~~~~^^^^^^
+test	UNKNOWN STEP	2026-08-04T00:09:43.8530170Z   File "/home/runner/work/Copyswift-ai/Copyswift-ai/tests/test_middleware.py", line 3, in <module>
+test	UNKNOWN STEP	2026-08-04T00:09:43.8530765Z     from payment_engine.middleware import Middleware, MiddlewareManager
+test	UNKNOWN STEP	2026-08-04T00:09:43.8531676Z ImportError: cannot import name 'Middleware' from 'payment_engine.middleware' (/home/runner/work/Copyswift-ai/Copyswift-ai/payment_engine/middleware/__init__.py). Did you mean: 'middleware'?
+test	UNKNOWN STEP	2026-08-04T00:09:43.8532376Z 
+test	UNKNOWN STEP	2026-08-04T00:09:43.8532380Z 
+test	UNKNOWN STEP	2026-08-04T00:09:43.8532508Z ======================================================================
+test	UNKNOWN STEP	2026-08-04T00:09:43.8532936Z ERROR: test_database_exists (test_settings.SettingsTests.test_database_exists)
+test	UNKNOWN STEP	2026-08-04T00:09:43.8533387Z ----------------------------------------------------------------------
+test	UNKNOWN STEP	2026-08-04T00:09:43.8533720Z Traceback (most recent call last):
+test	UNKNOWN STEP	2026-08-04T00:09:43.8534250Z   File "/home/runner/work/Copyswift-ai/Copyswift-ai/tests/test_settings.py", line 11, in test_database_exists
+test	UNKNOWN STEP	2026-08-04T00:09:43.8534808Z     self.assertTrue(settings.database.endswith(".db"))
+test	UNKNOWN STEP	2026-08-04T00:09:43.8535112Z                     ^^^^^^^^^^^^^^^^^
+test	UNKNOWN STEP	2026-08-04T00:09:43.8535513Z AttributeError: module 'payment_engine.config.settings' has no attribute 'database'
+test	UNKNOWN STEP	2026-08-04T00:09:43.8535850Z 
+test	UNKNOWN STEP	2026-08-04T00:09:43.8535956Z ======================================================================
+test	UNKNOWN STEP	2026-08-04T00:09:43.8536391Z ERROR: test_environment_exists (test_settings.SettingsTests.test_environment_exists)
+test	UNKNOWN STEP	2026-08-04T00:09:43.8537105Z ----------------------------------------------------------------------
+test	UNKNOWN STEP	2026-08-04T00:09:43.8537459Z Traceback (most recent call last):
+test	UNKNOWN STEP	2026-08-04T00:09:43.8537996Z   File "/home/runner/work/Copyswift-ai/Copyswift-ai/tests/test_settings.py", line 8, in test_environment_exists
+test	UNKNOWN STEP	2026-08-04T00:09:43.8538549Z     self.assertIsNotNone(settings.environment)
+test	UNKNOWN STEP	2026-08-04T00:09:43.8538841Z                          ^^^^^^^^^^^^^^^^^^^^
+test	UNKNOWN STEP	2026-08-04T00:09:43.8539254Z AttributeError: module 'payment_engine.config.settings' has no attribute 'environment'
+test	UNKNOWN STEP	2026-08-04T00:09:43.8539902Z 
+test	UNKNOWN STEP	2026-08-04T00:09:43.8540023Z ======================================================================
+test	UNKNOWN STEP	2026-08-04T00:09:43.8540470Z ERROR: test_gateway_mode_exists (test_settings.SettingsTests.test_gateway_mode_exists)
+test	UNKNOWN STEP	2026-08-04T00:09:43.8540938Z ----------------------------------------------------------------------
+test	UNKNOWN STEP	2026-08-04T00:09:43.8541269Z Traceback (most recent call last):
+test	UNKNOWN STEP	2026-08-04T00:09:43.8541803Z   File "/home/runner/work/Copyswift-ai/Copyswift-ai/tests/test_settings.py", line 15, in test_gateway_mode_exists
+test	UNKNOWN STEP	2026-08-04T00:09:43.8542343Z     settings.gateway_mode,
+test	UNKNOWN STEP	2026-08-04T00:09:43.8542566Z     ^^^^^^^^^^^^^^^^^^^^^
+test	UNKNOWN STEP	2026-08-04T00:09:43.8542948Z AttributeError: module 'payment_engine.config.settings' has no attribute 'gateway_mode'
+test	UNKNOWN STEP	2026-08-04T00:09:43.8543296Z 
+test	UNKNOWN STEP	2026-08-04T00:09:43.8543439Z ----------------------------------------------------------------------
+test	UNKNOWN STEP	2026-08-04T00:09:43.8543754Z Ran 202 tests in 0.368s
+test	UNKNOWN STEP	2026-08-04T00:09:43.8543886Z 
+test	UNKNOWN STEP	2026-08-04T00:09:43.8543971Z FAILED (errors=4)
+test	UNKNOWN STEP	2026-08-04T00:09:43.8544237Z ============================================================
+test	UNKNOWN STEP	2026-08-04T00:09:43.8544686Z PAYMENT BEFORE SAVE
+test	UNKNOWN STEP	2026-08-04T00:09:43.8544907Z ============================================================
+test	UNKNOWN STEP	2026-08-04T00:09:43.8545942Z {'status': 'verified', 'gateway': 'paystack', 'mode': 'mock', 'authorization_url': 'https://mock.paystack.local/pay/SWIFT-20260804000943-3CD082FA', 'reference': 'SWIFT-20260804000943-3CD082FA', 'amount': 5000, 'currency': 'NGN', 'merchant_id': '377160bf-7193-4170-a488-b56c280d46c5'}
+test	UNKNOWN STEP	2026-08-04T00:09:43.8546988Z ============================================================
+test	UNKNOWN STEP	2026-08-04T00:09:43.8547254Z PAYMENT BEFORE SAVE
+test	UNKNOWN STEP	2026-08-04T00:09:43.8547467Z ============================================================
+test	UNKNOWN STEP	2026-08-04T00:09:43.8548485Z {'status': 'verified', 'gateway': 'paystack', 'mode': 'mock', 'authorization_url': 'https://mock.paystack.local/pay/SWIFT-20260804000943-9AB1FB2F', 'reference': 'SWIFT-20260804000943-9AB1FB2F', 'amount': 5000, 'currency': 'NGN', 'merchant_id': '8296da3f-dc2d-45ea-a523-67e991502b26'}
+test	UNKNOWN STEP	2026-08-04T00:09:43.8549744Z ============================================================
+test	UNKNOWN STEP	2026-08-04T00:09:43.8550028Z PAYMENT BEFORE SAVE
+test	UNKNOWN STEP	2026-08-04T00:09:43.8550242Z ============================================================
+test	UNKNOWN STEP	2026-08-04T00:09:43.8551261Z {'status': 'verified', 'gateway': 'paystack', 'mode': 'mock', 'authorization_url': 'https://mock.paystack.local/pay/SWIFT-20260804000943-E2DE165C', 'reference': 'SWIFT-20260804000943-E2DE165C', 'amount': 5000, 'currency': 'NGN', 'merchant_id': 'c23d927a-987d-47d8-ac8a-806926466b80'}
+test	UNKNOWN STEP	2026-08-04T00:09:43.8552285Z ============================================================
+test	UNKNOWN STEP	2026-08-04T00:09:43.8552550Z PAYMENT BEFORE SAVE
+test	UNKNOWN STEP	2026-08-04T00:09:43.8552765Z ============================================================
+test	UNKNOWN STEP	2026-08-04T00:09:43.8553770Z {'status': 'verified', 'gateway': 'paystack', 'mode': 'mock', 'authorization_url': 'https://mock.paystack.local/pay/SWIFT-20260804000943-1322BB58', 'reference': 'SWIFT-20260804000943-1322BB58', 'amount': 5000, 'currency': 'NGN', 'merchant_id': 'c76df5d8-339f-4b3c-8e32-a43a30ec9dc8'}
+test	UNKNOWN STEP	2026-08-04T00:09:43.8554785Z ============================================================
+test	UNKNOWN STEP	2026-08-04T00:09:43.8555053Z PAYMENT BEFORE SAVE
+test	UNKNOWN STEP	2026-08-04T00:09:43.8555266Z ============================================================
+test	UNKNOWN STEP	2026-08-04T00:09:43.8556420Z {'status': 'verified', 'gateway': 'paystack', 'mode': 'mock', 'authorization_url': 'https://mock.paystack.local/pay/SWIFT-20260804000943-D0320B40', 'reference': 'SWIFT-20260804000943-D0320B40', 'amount': 5000, 'currency': 'NGN', 'merchant_id': '2a8e2f54-ea76-4104-b619-9d21190f395d'}
+test	UNKNOWN STEP	2026-08-04T00:09:43.8557469Z ============================================================
+test	UNKNOWN STEP	2026-08-04T00:09:43.8557741Z PAYMENT BEFORE SAVE
+test	UNKNOWN STEP	2026-08-04T00:09:43.8557953Z ============================================================
+test	UNKNOWN STEP	2026-08-04T00:09:43.8559130Z {'status': 'verified', 'gateway': 'paystack', 'mode': 'mock', 'authorization_url': 'https://mock.paystack.local/pay/SWIFT-20260804000943-6A829040', 'reference': 'SWIFT-20260804000943-6A829040', 'amount': 5000, 'currency': 'NGN', 'merchant_id': 'd5b2229b-fe08-4424-848a-8cb5f1c237a9', 'idempotency_key': 'TEST-IDEMPOTENCY-001'}
+test	UNKNOWN STEP	2026-08-04T00:09:43.8560581Z ============================================================
+test	UNKNOWN STEP	2026-08-04T00:09:43.8560850Z PAYMENT BEFORE SAVE
+test	UNKNOWN STEP	2026-08-04T00:09:43.8561057Z ============================================================
+test	UNKNOWN STEP	2026-08-04T00:09:43.8562065Z {'status': 'verified', 'gateway': 'paystack', 'mode': 'mock', 'authorization_url': 'https://mock.paystack.local/pay/SWIFT-20260804000943-35AA29C2', 'reference': 'SWIFT-20260804000943-35AA29C2', 'amount': 5000, 'currency': 'NGN', 'merchant_id': '47ae9578-0dd2-4100-9031-8fef87329b85'}
+test	UNKNOWN STEP	2026-08-04T00:09:43.8563086Z ============================================================
+test	UNKNOWN STEP	2026-08-04T00:09:43.8563351Z PAYMENT BEFORE SAVE
+test	UNKNOWN STEP	2026-08-04T00:09:43.8563556Z ============================================================
+test	UNKNOWN STEP	2026-08-04T00:09:43.8564562Z {'status': 'verified', 'gateway': 'paystack', 'mode': 'mock', 'authorization_url': 'https://mock.paystack.local/pay/SWIFT-20260804000943-BED15A9A', 'reference': 'SWIFT-20260804000943-BED15A9A', 'amount': 5000, 'currency': 'NGN', 'merchant_id': 'd95841e1-388b-4d12-baac-60ede8805b87'}
+test	UNKNOWN STEP	2026-08-04T00:09:43.8565732Z ============================================================
+test	UNKNOWN STEP	2026-08-04T00:09:43.8565999Z PAYMENT BEFORE SAVE
+test	UNKNOWN STEP	2026-08-04T00:09:43.8566206Z ============================================================
+test	UNKNOWN STEP	2026-08-04T00:09:43.8567206Z {'status': 'verified', 'gateway': 'paystack', 'mode': 'mock', 'authorization_url': 'https://mock.paystack.local/pay/SWIFT-20260804000943-22E50120', 'reference': 'SWIFT-20260804000943-22E50120', 'amount': 5000, 'currency': 'NGN', 'merchant_id': 'd89f8522-6294-43c6-b491-89e1cdfba1c6'}
+test	UNKNOWN STEP	2026-08-04T00:09:43.8568218Z ============================================================
+test	UNKNOWN STEP	2026-08-04T00:09:43.8568485Z PAYMENT BEFORE SAVE
+test	UNKNOWN STEP	2026-08-04T00:09:43.8568751Z ============================================================
+test	UNKNOWN STEP	2026-08-04T00:09:43.8570184Z {'status': 'verified', 'gateway': 'paystack', 'mode': 'mock', 'authorization_url': 'https://mock.paystack.local/pay/SWIFT-20260804000943-0CF05528', 'reference': 'SWIFT-20260804000943-0CF05528', 'amount': 5000, 'currency': 'NGN', 'merchant_id': 'cea6ed29-6175-49e4-a510-719fceb1f733'}
+test	UNKNOWN STEP	2026-08-04T00:09:43.9343316Z ##[error]Process completed with exit code 1.
+test	UNKNOWN STEP	2026-08-04T00:09:43.9487268Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+test	UNKNOWN STEP	2026-08-04T00:09:43.9488514Z Post job cleanup.
+test	UNKNOWN STEP	2026-08-04T00:09:44.0328479Z [command]/usr/bin/git version
+test	UNKNOWN STEP	2026-08-04T00:09:44.0374570Z git version 2.54.0
+test	UNKNOWN STEP	2026-08-04T00:09:44.0418570Z Temporarily overriding HOME='/home/runner/work/_temp/004b7629-72ff-4010-a5e6-57768bb8c2dd' before making global git config changes
+test	UNKNOWN STEP	2026-08-04T00:09:44.0419906Z Adding repository directory to the temporary git global config as a safe directory
+test	UNKNOWN STEP	2026-08-04T00:09:44.0426380Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Copyswift-ai/Copyswift-ai
+test	UNKNOWN STEP	2026-08-04T00:09:44.0465926Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+test	UNKNOWN STEP	2026-08-04T00:09:44.0503016Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+test	UNKNOWN STEP	2026-08-04T00:09:44.0776342Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+test	UNKNOWN STEP	2026-08-04T00:09:44.0808387Z http.https://github.com/.extraheader
+test	UNKNOWN STEP	2026-08-04T00:09:44.0820671Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+test	UNKNOWN STEP	2026-08-04T00:09:44.0863957Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+test	UNKNOWN STEP	2026-08-04T00:09:44.1163653Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+test	UNKNOWN STEP	2026-08-04T00:09:44.1211672Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+test	UNKNOWN STEP	2026-08-04T00:09:44.1643522Z Cleaning up orphan processes
+test	UNKNOWN STEP	2026-08-04T00:09:44.1944333Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

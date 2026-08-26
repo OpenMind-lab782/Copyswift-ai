@@ -1,0 +1,134 @@
+........................2026-08-26 13:29:57,778 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | reference=CID-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:29:57,778 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | reference=CID-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:29:57,780 | INFO | audit | status=verified | gateway=paystack | mode=mock | reference=CID-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:29:57,780 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | reference=CID-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+.....................................................................................................................................................................................2026-08-26 13:30:00,068 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | reference=TEST-REFERENCE-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:00,068 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | reference=TEST-REFERENCE-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:00,071 | INFO | audit | status=verified | gateway=paystack | mode=mock | reference=TEST-REFERENCE-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:00,071 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | reference=TEST-REFERENCE-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+......................................................................2026-08-26 13:30:00,252 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113000-2FA653E4 | reference=SWIFT-20260826113000-2FA653E4 | amount=5000 | currency=NGN
+2026-08-26 13:30:00,252 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113000-2FA653E4 | reference=SWIFT-20260826113000-2FA653E4 | amount=5000 | currency=NGN
+2026-08-26 13:30:00,254 | INFO | audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113000-2FA653E4 | reference=SWIFT-20260826113000-2FA653E4 | amount=5000 | currency=NGN
+2026-08-26 13:30:00,254 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113000-2FA653E4 | reference=SWIFT-20260826113000-2FA653E4 | amount=5000 | currency=NGN
+.2026-08-26 13:30:00,316 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113000-F20DF31A | reference=SWIFT-20260826113000-F20DF31A | amount=5000 | currency=NGN
+2026-08-26 13:30:00,316 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113000-F20DF31A | reference=SWIFT-20260826113000-F20DF31A | amount=5000 | currency=NGN
+2026-08-26 13:30:00,317 | INFO | audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113000-F20DF31A | reference=SWIFT-20260826113000-F20DF31A | amount=5000 | currency=NGN
+2026-08-26 13:30:00,317 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113000-F20DF31A | reference=SWIFT-20260826113000-F20DF31A | amount=5000 | currency=NGN
+.2026-08-26 13:30:00,367 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113000-47E1A554 | reference=SWIFT-20260826113000-47E1A554 | amount=5000 | currency=NGN
+2026-08-26 13:30:00,367 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113000-47E1A554 | reference=SWIFT-20260826113000-47E1A554 | amount=5000 | currency=NGN
+2026-08-26 13:30:00,368 | INFO | audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113000-47E1A554 | reference=SWIFT-20260826113000-47E1A554 | amount=5000 | currency=NGN
+2026-08-26 13:30:00,368 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113000-47E1A554 | reference=SWIFT-20260826113000-47E1A554 | amount=5000 | currency=NGN
+.....................2026-08-26 13:30:05,181 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113005-3BB090F0 | reference=SWIFT-20260826113005-3BB090F0 | amount=5000 | currency=NGN
+2026-08-26 13:30:05,181 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113005-3BB090F0 | reference=SWIFT-20260826113005-3BB090F0 | amount=5000 | currency=NGN
+2026-08-26 13:30:05,182 | INFO | audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113005-3BB090F0 | reference=SWIFT-20260826113005-3BB090F0 | amount=5000 | currency=NGN
+2026-08-26 13:30:05,182 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113005-3BB090F0 | reference=SWIFT-20260826113005-3BB090F0 | amount=5000 | currency=NGN
+.......2026-08-26 13:30:05,271 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | reference=EVENT-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,271 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | reference=EVENT-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,273 | INFO | audit | status=verified | gateway=paystack | mode=mock | reference=EVENT-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,273 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | reference=EVENT-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+.2026-08-26 13:30:05,366 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | reference=INTEGRATION-DUP-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,366 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | reference=INTEGRATION-DUP-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,368 | INFO | audit | status=verified | gateway=paystack | mode=mock | reference=INTEGRATION-DUP-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,368 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | reference=INTEGRATION-DUP-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+.2026-08-26 13:30:05,437 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | reference=INTEGRATION-PAYSTACK-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,437 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | reference=INTEGRATION-PAYSTACK-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,439 | INFO | audit | status=verified | gateway=paystack | mode=mock | reference=INTEGRATION-PAYSTACK-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,439 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | reference=INTEGRATION-PAYSTACK-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,478 | INFO | event_bus | status=verified | gateway=flutterwave | mode=mock | reference=INTEGRATION-FLUTTERWAVE-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,478 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=flutterwave | mode=mock | reference=INTEGRATION-FLUTTERWAVE-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,480 | INFO | audit | status=verified | gateway=flutterwave | mode=mock | reference=INTEGRATION-FLUTTERWAVE-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,480 INFO SwiftPaymentEngine: audit | status=verified | gateway=flutterwave | mode=mock | reference=INTEGRATION-FLUTTERWAVE-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+.2026-08-26 13:30:05,542 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | reference=INTEGRATION-PERSISTENT-VERIFY-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,542 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | reference=INTEGRATION-PERSISTENT-VERIFY-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,544 | INFO | audit | status=verified | gateway=paystack | mode=mock | reference=INTEGRATION-PERSISTENT-VERIFY-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,544 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | reference=INTEGRATION-PERSISTENT-VERIFY-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+.2026-08-26 13:30:05,608 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | reference=INTEGRATION-REF-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,608 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | reference=INTEGRATION-REF-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,611 | INFO | audit | status=verified | gateway=paystack | mode=mock | reference=INTEGRATION-REF-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,611 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | reference=INTEGRATION-REF-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+.2026-08-26 13:30:05,666 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | reference=METRIC-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,666 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | reference=METRIC-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,667 | INFO | audit | status=verified | gateway=paystack | mode=mock | reference=METRIC-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,667 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | reference=METRIC-001 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+.2026-08-26 13:30:05,715 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | reference=METRIC-002 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,715 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | reference=METRIC-002 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,717 | INFO | audit | status=verified | gateway=paystack | mode=mock | reference=METRIC-002 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+2026-08-26 13:30:05,717 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | reference=METRIC-002 | paid=True | amount=100 | currency=NGN | customer=mock@copyswiftai.com | message=Mock payment verified successfully.
+.......2026-08-26 13:30:06,220 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113006-D049B873 | reference=SWIFT-20260826113006-D049B873 | amount=5000 | currency=NGN
+2026-08-26 13:30:06,220 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113006-D049B873 | reference=SWIFT-20260826113006-D049B873 | amount=5000 | currency=NGN
+2026-08-26 13:30:06,222 | INFO | audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113006-D049B873 | reference=SWIFT-20260826113006-D049B873 | amount=5000 | currency=NGN
+2026-08-26 13:30:06,222 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113006-D049B873 | reference=SWIFT-20260826113006-D049B873 | amount=5000 | currency=NGN
+..2026-08-26 13:30:06,285 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113006-FB29B571 | reference=SWIFT-20260826113006-FB29B571 | amount=5000 | currency=NGN
+2026-08-26 13:30:06,285 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113006-FB29B571 | reference=SWIFT-20260826113006-FB29B571 | amount=5000 | currency=NGN
+2026-08-26 13:30:06,287 | INFO | audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113006-FB29B571 | reference=SWIFT-20260826113006-FB29B571 | amount=5000 | currency=NGN
+2026-08-26 13:30:06,287 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113006-FB29B571 | reference=SWIFT-20260826113006-FB29B571 | amount=5000 | currency=NGN
+....2026-08-26 13:30:06,433 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113006-6F9EA750 | reference=SWIFT-20260826113006-6F9EA750 | amount=5000 | currency=NGN
+2026-08-26 13:30:06,433 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113006-6F9EA750 | reference=SWIFT-20260826113006-6F9EA750 | amount=5000 | currency=NGN
+2026-08-26 13:30:06,434 | INFO | audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113006-6F9EA750 | reference=SWIFT-20260826113006-6F9EA750 | amount=5000 | currency=NGN
+2026-08-26 13:30:06,434 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113006-6F9EA750 | reference=SWIFT-20260826113006-6F9EA750 | amount=5000 | currency=NGN
+...2026-08-26 13:30:06,579 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113006-C93AB0C8 | reference=SWIFT-20260826113006-C93AB0C8 | amount=5000 | currency=NGN
+2026-08-26 13:30:06,579 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113006-C93AB0C8 | reference=SWIFT-20260826113006-C93AB0C8 | amount=5000 | currency=NGN
+2026-08-26 13:30:06,580 | INFO | audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113006-C93AB0C8 | reference=SWIFT-20260826113006-C93AB0C8 | amount=5000 | currency=NGN
+2026-08-26 13:30:06,580 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113006-C93AB0C8 | reference=SWIFT-20260826113006-C93AB0C8 | amount=5000 | currency=NGN
+.2026-08-26 13:30:06,644 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113006-098B7AAF | reference=SWIFT-20260826113006-098B7AAF | amount=5000 | currency=NGN
+2026-08-26 13:30:06,644 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113006-098B7AAF | reference=SWIFT-20260826113006-098B7AAF | amount=5000 | currency=NGN
+2026-08-26 13:30:06,646 | INFO | audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113006-098B7AAF | reference=SWIFT-20260826113006-098B7AAF | amount=5000 | currency=NGN
+2026-08-26 13:30:06,646 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113006-098B7AAF | reference=SWIFT-20260826113006-098B7AAF | amount=5000 | currency=NGN
+..2026-08-26 13:30:06,754 | INFO | event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113006-72126951 | reference=SWIFT-20260826113006-72126951 | amount=5000 | currency=NGN
+2026-08-26 13:30:06,754 INFO SwiftPaymentEngine: event_bus | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113006-72126951 | reference=SWIFT-20260826113006-72126951 | amount=5000 | currency=NGN
+2026-08-26 13:30:06,756 | INFO | audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113006-72126951 | reference=SWIFT-20260826113006-72126951 | amount=5000 | currency=NGN
+2026-08-26 13:30:06,756 INFO SwiftPaymentEngine: audit | status=verified | gateway=paystack | mode=mock | authorization_url=https://mock.paystack.local/pay/SWIFT-20260826113006-72126951 | reference=SWIFT-20260826113006-72126951 | amount=5000 | currency=NGN
+..................s............................................../data/data/com.termux/files/usr/lib/python3.13/unittest/mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0xab9fe828>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/data/com.termux/files/usr/lib/python3.13/unittest/mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0xab9fe328>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/data/data/com.termux/files/usr/lib/python3.13/unittest/mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0xab9feb28>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+........................ss..........sss.........................................................................................................................
+----------------------------------------------------------------------
+Ran 554 tests in 18.383s
+
+OK (skipped=6)
+============================================================
+PAYMENT BEFORE SAVE
+============================================================
+{'status': 'verified', 'gateway': 'paystack', 'mode': 'mock', 'authorization_url': 'https://mock.paystack.local/pay/SWIFT-20260826113000-2FA653E4', 'reference': 'SWIFT-20260826113000-2FA653E4', 'amount': 5000, 'currency': 'NGN', 'merchant_id': 'e2b0e9f3-3a8d-4299-9e22-acec5b0b796f'}
+============================================================
+PAYMENT BEFORE SAVE
+============================================================
+{'status': 'verified', 'gateway': 'paystack', 'mode': 'mock', 'authorization_url': 'https://mock.paystack.local/pay/SWIFT-20260826113000-F20DF31A', 'reference': 'SWIFT-20260826113000-F20DF31A', 'amount': 5000, 'currency': 'NGN', 'merchant_id': 'd2ac624f-945d-41d1-989a-78db3f68feff'}
+============================================================
+PAYMENT BEFORE SAVE
+============================================================
+{'status': 'verified', 'gateway': 'paystack', 'mode': 'mock', 'authorization_url': 'https://mock.paystack.local/pay/SWIFT-20260826113000-47E1A554', 'reference': 'SWIFT-20260826113000-47E1A554', 'amount': 5000, 'currency': 'NGN', 'merchant_id': '855d61f1-9229-482f-b9ca-c235dd673d44'}
+============================================================
+PAYMENT BEFORE SAVE
+============================================================
+{'status': 'verified', 'gateway': 'paystack', 'mode': 'mock', 'authorization_url': 'https://mock.paystack.local/pay/SWIFT-20260826113005-3BB090F0', 'reference': 'SWIFT-20260826113005-3BB090F0', 'amount': 5000, 'currency': 'NGN', 'merchant_id': '5e745150-0b3f-4850-a321-5d3e5257246f'}
+============================================================
+PAYMENT BEFORE SAVE
+============================================================
+{'status': 'verified', 'gateway': 'paystack', 'mode': 'mock', 'authorization_url': 'https://mock.paystack.local/pay/SWIFT-20260826113006-D049B873', 'reference': 'SWIFT-20260826113006-D049B873', 'amount': 5000, 'currency': 'NGN', 'merchant_id': 'ed8f6062-842f-4358-bd8c-b346ea3189d0'}
+============================================================
+PAYMENT BEFORE SAVE
+============================================================
+{'status': 'verified', 'gateway': 'paystack', 'mode': 'mock', 'authorization_url': 'https://mock.paystack.local/pay/SWIFT-20260826113006-FB29B571', 'reference': 'SWIFT-20260826113006-FB29B571', 'amount': 5000, 'currency': 'NGN', 'merchant_id': '388de437-51b6-494b-8b68-0a2381eeb7f8', 'idempotency_key': 'TEST-IDEMPOTENCY-001', 'idempotency_fingerprint': 'bdca13eb31e2bd3188588e7b6f96ab3f382a375501f385d37c48ab9201c41774'}
+============================================================
+PAYMENT BEFORE SAVE
+============================================================
+{'status': 'verified', 'gateway': 'paystack', 'mode': 'mock', 'authorization_url': 'https://mock.paystack.local/pay/SWIFT-20260826113006-6F9EA750', 'reference': 'SWIFT-20260826113006-6F9EA750', 'amount': 5000, 'currency': 'NGN', 'merchant_id': 'f0e6b0fe-ecb7-4057-a486-25c599570f71'}
+============================================================
+PAYMENT BEFORE SAVE
+============================================================
+{'status': 'verified', 'gateway': 'paystack', 'mode': 'mock', 'authorization_url': 'https://mock.paystack.local/pay/SWIFT-20260826113006-C93AB0C8', 'reference': 'SWIFT-20260826113006-C93AB0C8', 'amount': 5000, 'currency': 'NGN', 'merchant_id': '1ac7fb74-ffa8-4ba9-9b9e-64045f00c884'}
+============================================================
+PAYMENT BEFORE SAVE
+============================================================
+{'status': 'verified', 'gateway': 'paystack', 'mode': 'mock', 'authorization_url': 'https://mock.paystack.local/pay/SWIFT-20260826113006-098B7AAF', 'reference': 'SWIFT-20260826113006-098B7AAF', 'amount': 5000, 'currency': 'NGN', 'merchant_id': '6b74c087-7805-4586-b8f1-bf39aef0136f'}
+============================================================
+PAYMENT BEFORE SAVE
+============================================================
+{'status': 'verified', 'gateway': 'paystack', 'mode': 'mock', 'authorization_url': 'https://mock.paystack.local/pay/SWIFT-20260826113006-72126951', 'reference': 'SWIFT-20260826113006-72126951', 'amount': 5000, 'currency': 'NGN', 'merchant_id': '782ac939-d4c4-40a2-9a08-b794b8f3e090'}

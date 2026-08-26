@@ -20,7 +20,6 @@ from ecosystem_core.document_parser import DocumentParser
 from ecosystem_core.document_renderer import DocumentRenderer
 from ecosystem_core.document_renderers.pymupdf_renderer import PyMuPDFRenderer
 from ecosystem_core.document_adapters import DocumentAdapterRegistry
-from ecosystem_core.document_adapters.native_mupdf_adapter import NativeMuPDFAdapter
 
 
 class EcosystemKernel:
@@ -62,10 +61,6 @@ class EcosystemKernel:
         self.document_adapter_registry = DocumentAdapterRegistry()
         self.document_parser = DocumentParser(
             adapter_registry=self.document_adapter_registry
-        )
-        self.document_adapter_registry.register(
-            "pdf",
-            NativeMuPDFAdapter(),
         )
         self.document_renderer = DocumentRenderer(
             engine=PyMuPDFRenderer()
