@@ -32,3 +32,8 @@ verify_learning_persistence.py
 .env.backup*
 .env.corrupted_backup
 backups/
+run_log.txt
+test_output.txt
+*.pdf
+pycache/
+*.pyc
