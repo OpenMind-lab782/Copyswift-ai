@@ -142,5 +142,18 @@ for (var i = 0; i < ops.pages.length; i++) {
     }
 }
 
+// Step 4: embed the immutability audit trail into document metadata.
+// This travels with the file as inspectable proof of when it was
+// generated and what original-content hash it was verified against.
+if (ops.audit) {
+    try {
+        doc.setMetaData("info:CopySwiftAIOriginalSHA256", ops.audit.original_sha256 || "")
+        doc.setMetaData("info:CopySwiftAIGeneratedAt", ops.audit.generated_at || "")
+        doc.setMetaData("info:CopySwiftAIEngine", "CopySwiftAI Document Studio - mutool overlay v1")
+    } catch (e) {
+        // Metadata embedding is best-effort; must not block the render.
+    }
+}
+
 doc.save(output_path, "")
 print("RENDER_OK")

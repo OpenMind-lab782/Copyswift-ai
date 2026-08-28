@@ -118,11 +118,10 @@ app = Flask(__name__)
 # --- CopySwiftAI Document Studio MVP ---
 from ecosystem_core.kernel import EcosystemKernel
 from ecosystem_core.document_adapters.native_mupdf_adapter import NativeMuPDFAdapter
+from ecosystem_core.document_renderers.mutool_overlay_renderer import MutoolOverlayRenderer
 
 document_kernel = EcosystemKernel()
-if document_kernel.document_renderer.engine._engine is None:
-    from ecosystem_core.document_renderers.native_pdf_renderer import NativePDFRenderer
-    document_kernel.document_renderer.engine = NativePDFRenderer()
+document_kernel.document_renderer.engine = MutoolOverlayRenderer()
 document_kernel.register_document_adapter("pdf", NativeMuPDFAdapter())
 
 

@@ -1,4 +1,5 @@
 import copy
+import hashlib
 import json
 import shutil
 import subprocess
@@ -112,5 +113,6 @@ class NativeMuPDFAdapter:
             "pages": pages,
             "original_pages": copy.deepcopy(pages),
             "original_bytes": data,
+            "original_sha256": hashlib.sha256(data).hexdigest(),
             "metadata": {"source_format": "pdf", "parser_engine": "native-mupdf"},
         }

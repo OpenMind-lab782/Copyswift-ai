@@ -8,10 +8,12 @@ unless deleted) and redrawn; everything else in the source PDF is
 left byte-for-byte untouched.
 """
 
+import hashlib
 import json
 import shutil
 import subprocess
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -37,10 +39,24 @@ class MutoolOverlayRenderer:
                 "without a source PDF to preserve."
             )
 
+        computed_hash = hashlib.sha256(original_bytes).hexdigest()
+        stored_hash = document.get("original_sha256")
+        if stored_hash and stored_hash != computed_hash:
+            raise RuntimeError(
+                "Integrity check failed: original_bytes no longer "
+                "matches the hash recorded at import time. Refusing "
+                "to render, since the immutability guarantee cannot "
+                "be confirmed."
+            )
+
         current_pages = document.get("pages") or []
         baseline_pages = document.get("original_pages") or []
 
         ops = self._build_ops(current_pages, baseline_pages)
+        ops["audit"] = {
+            "original_sha256": computed_hash,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+        }
 
         with tempfile.TemporaryDirectory() as tmp:
             input_path = Path(tmp) / "input.pdf"
