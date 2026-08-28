@@ -1,3 +1,4 @@
+import copy
 """
 CopySwiftAI™ PyMuPDF PDF Adapter.
 """
@@ -136,6 +137,8 @@ class PyMuPDFAdapter:
             return {
                 "name": str(file_name or "").strip(),
                 "pages": pages,
+                "original_pages": copy.deepcopy(pages),
+                "original_bytes": data,
                 "metadata": {
                     "source_format": "pdf",
                     "parser_engine": "pymupdf",

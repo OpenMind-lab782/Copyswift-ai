@@ -72,6 +72,8 @@ class DocumentImporter:
             "name": name,
             "page_count": len(canonical_pages),
             "pages": canonical_pages,
+            "original_pages": normalized.get("original_pages"),
+            "original_bytes": normalized.get("original_bytes"),
             "metadata": {
                 "source_format": self._detect_format(name),
                 "normalized": True,
