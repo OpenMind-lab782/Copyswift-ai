@@ -2,11 +2,16 @@
 Prompt Builder
 """
 
-from brain.memory import load_business_memory
+from ecosystem_core.market_intelligence.engines import MemoryEngine
+from ecosystem_core.market_intelligence.domains.marketing import (
+    MARKETING_MEMORY_SCHEMA,
+)
+
+_memory_engine = MemoryEngine(schema=MARKETING_MEMORY_SCHEMA)
 
 
 def build_prompt(profile, offer, customer, hesitation, platform, tone):
-    memory = load_business_memory(profile)
+    memory = _memory_engine.format_context(profile)
 
     return f"""{memory}
 

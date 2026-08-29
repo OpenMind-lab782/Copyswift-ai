@@ -3,7 +3,6 @@ from dotenv import load_dotenv
 from brain.memory import load_business_memory
 from brain.prompt_builder import build_prompt
 from brain.scoring import score_campaign
-from brain.evaluation_service import evaluate_campaign
 from brain.campaign_learning import learning_summary
 from brain.campaign_learning import persist_learning
 
@@ -117,11 +116,10 @@ app = Flask(__name__)
 # --- CopySwiftAI Document Studio MVP ---
 from ecosystem_core.kernel import EcosystemKernel
 from ecosystem_core.document_adapters.native_mupdf_adapter import NativeMuPDFAdapter
+from ecosystem_core.document_renderers.mutool_overlay_renderer import MutoolOverlayRenderer
 
 document_kernel = EcosystemKernel()
-if document_kernel.document_renderer.engine._engine is None:
-    from ecosystem_core.document_renderers.native_pdf_renderer import NativePDFRenderer
-    document_kernel.document_renderer.engine = NativePDFRenderer()
+document_kernel.document_renderer.engine = MutoolOverlayRenderer()
 document_kernel.register_document_adapter("pdf", NativeMuPDFAdapter())
 
 
@@ -3071,30 +3069,47 @@ def ad_copy_generate():
 
         variations = [v.strip() for v in ad_text.split('---') if v.strip()]
 
-        strategist = {
-            "objective": "",
-            "recommended_platform": platform,
-            "recommended_audience": customer or "General African small business customers",
-            "best_posting_time": "",
-            "marketing_tip": "",
-            "follow_up": "",
-            "ab_test": "",
-            "ai_strategy": strategy_text.strip(),
-        }
-
-        campaign_score = evaluate_campaign(
-            client,
-            MODEL,
-            "\n\n".join(variations)
+        evaluation_result = document_kernel.marketing_manager.evaluate_many(
+            variations,
+            model=MODEL,
         )
-        learning = learning_summary(campaign_score)
+        best_item = evaluation_result["best"] or {"content": "", "score": {}}
+        campaign_score = best_item["score"]
 
+        campaign_context = (
+            "Offer: " + offer + "\n"
+            "Target customer: " + (customer or "General African small business customers") + "\n"
+            "Main hesitation: " + (hesitation or "None specified") + "\n"
+            "Platform: " + platform + "\n"
+            "Tone: " + tone + "\n"
+            "Best-performing variation:\n" + best_item["content"]
+        )
+        strategist = document_kernel.marketing_strategist.generate(
+            context=campaign_context,
+            model=MODEL,
+            evaluation=campaign_score,
+        )
+        if not strategist.get("recommended_platform"):
+            strategist["recommended_platform"] = platform
+        if not strategist.get("recommended_audience"):
+            strategist["recommended_audience"] = (
+                customer or "General African small business customers"
+            )
+        strategist["ai_strategy"] = strategy_text.strip()
+
+        learning = learning_summary(campaign_score)
         if profile:
             with get_db() as db:
+                learned_summary = (
+                    "[Score " + str(campaign_score.get("overall", 0)) + "] "
+                    + best_item["content"]
+                )
+                if strategist.get("marketing_tip"):
+                    learned_summary += " | Tip: " + strategist["marketing_tip"]
                 persist_learning(
                     db,
                     profile["id"],
-                    "\n\n".join(variations),
+                    learned_summary,
                     campaign_score,
                 )
                 db.commit()
@@ -3111,6 +3126,8 @@ def ad_copy_generate():
 
     return jsonify({
         "variations": variations,
+        "variation_scores": [item["score"] for item in evaluation_result["items"]],
+        "best_variation_index": evaluation_result["best_index"],
         "strategist": strategist,
         "campaign_score": campaign_score,
         "learning": learning,
