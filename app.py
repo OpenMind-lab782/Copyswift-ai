@@ -27,7 +27,6 @@ import cloudinary
 import cloudinary.uploader
 from datetime import datetime, timedelta, UTC
 from functools import wraps
-from prompt_engine import build_prompt
 from datetime import date as _date
 import re as _re
 from bs4 import BeautifulSoup as _BeautifulSoup
