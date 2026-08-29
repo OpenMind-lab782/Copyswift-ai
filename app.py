@@ -3070,16 +3070,24 @@ def ad_copy_generate():
 
         variations = [v.strip() for v in ad_text.split('---') if v.strip()]
 
-        strategist = {
-            "objective": "",
-            "recommended_platform": platform,
-            "recommended_audience": customer or "General African small business customers",
-            "best_posting_time": "",
-            "marketing_tip": "",
-            "follow_up": "",
-            "ab_test": "",
-            "ai_strategy": strategy_text.strip(),
-        }
+        campaign_context = (
+            "Offer: " + offer + "\n"
+            "Target customer: " + (customer or "General African small business customers") + "\n"
+            "Main hesitation: " + (hesitation or "None specified") + "\n"
+            "Platform: " + platform + "\n"
+            "Tone: " + tone + "\n"
+            "Generated ad copy:\n" + ad_text.strip()
+        )
+        strategist = document_kernel.marketing_strategist.generate(
+            context=campaign_context,
+        )
+        if not strategist.get("recommended_platform"):
+            strategist["recommended_platform"] = platform
+        if not strategist.get("recommended_audience"):
+            strategist["recommended_audience"] = (
+                customer or "General African small business customers"
+            )
+        strategist["ai_strategy"] = strategy_text.strip()
 
         campaign_score = evaluate_campaign(
             client,
