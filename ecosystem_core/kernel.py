@@ -20,6 +20,16 @@ from ecosystem_core.document_parser import DocumentParser
 from ecosystem_core.document_renderer import DocumentRenderer
 from ecosystem_core.document_renderers.pymupdf_renderer import PyMuPDFRenderer
 from ecosystem_core.document_adapters import DocumentAdapterRegistry
+from ecosystem_core.market_intelligence.engines import (
+    MemoryEngine,
+    EvaluationEngine,
+    StrategyEngine,
+)
+from ecosystem_core.market_intelligence.domains.marketing import (
+    MARKETING_MEMORY_SCHEMA,
+    MARKETING_RUBRIC,
+    MARKETING_STRATEGY_SCHEMA,
+)
 
 
 class EcosystemKernel:
@@ -105,6 +115,38 @@ class EcosystemKernel:
             sales=self.sales_manager,
             brain=self.market_brain,
             strategist=self.market_strategist,
+        )
+
+        # Marketing-domain Market Intelligence services - distinct
+        # from payment_engine.core'''s trading-domain MarketBrain and
+        # MarketStrategist (self.market_brain / self.market_strategist
+        # below, unrelated). These are generic engines specialized
+        # for marketing via a schema, reusable by other ecosystem
+        # products via their own schemas in the future.
+        self.marketing_brain = MemoryEngine(
+            schema=MARKETING_MEMORY_SCHEMA,
+            provider=self.ai_provider,
+        )
+        self.marketing_manager = EvaluationEngine(
+            rubric=MARKETING_RUBRIC,
+            provider=self.ai_provider,
+        )
+        self.marketing_strategist = StrategyEngine(
+            schema=MARKETING_STRATEGY_SCHEMA,
+            provider=self.ai_provider,
+        )
+
+        self.ai_services.register_service(
+            "marketing_brain",
+            self.marketing_brain,
+        )
+        self.ai_services.register_service(
+            "marketing_manager",
+            self.marketing_manager,
+        )
+        self.ai_services.register_service(
+            "marketing_strategist",
+            self.marketing_strategist,
         )
 
         self.payment_engine = PaymentEngine()
