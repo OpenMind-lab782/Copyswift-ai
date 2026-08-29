@@ -46,6 +46,28 @@ class MemoryEngine:
 
         return "\n".join(sections)
 
+    def format_learned_patterns(self, records, max_records=3):
+        """Format a list of past structured outcomes into a
+        memory-block string, so future prompts can be informed by
+        what has actually worked before, not just static profile
+        fields.
+
+        Each record's shape is domain-defined (e.g. a past
+        high-scoring campaign with its winning variation, score
+        breakdown, and generated strategy) - this formatter is
+        intentionally simple and generic; it does not assume any
+        particular record structure beyond being displayable.
+        """
+
+        if not records:
+            return ""
+
+        lines = ["Learned Patterns From Past High Performers:"]
+        for record in records[:max_records]:
+            lines.append(f"- {record}")
+
+        return "\n".join(lines)
+
 
 class EvaluationEngine:
     """Generic AI-first evaluator with heuristic fallback.
@@ -83,6 +105,33 @@ class EvaluationEngine:
         fallback = self.heuristic_score(content)
         fallback["evaluation_source"] = "heuristic"
         return fallback
+
+    def evaluate_many(self, items, model=None):
+        """Evaluate multiple candidate items individually (e.g. ad
+        copy variations, alternative driver-response drafts, etc.),
+        returning a per-item score plus identification of the
+        strongest candidate. Generic across any domain that needs
+        to compare several outputs rather than treat them as one
+        blob."""
+
+        results = []
+        for item in items:
+            score = self.evaluate(item, model=model)
+            results.append({"content": item, "score": score})
+
+        if not results:
+            return {"items": [], "best_index": None, "best": None}
+
+        best_index = max(
+            range(len(results)),
+            key=lambda i: results[i]["score"].get("overall", 0),
+        )
+
+        return {
+            "items": results,
+            "best_index": best_index,
+            "best": results[best_index],
+        }
 
     def heuristic_score(self, content):
         """Rule-based fallback scoring using the rubric's keyword
@@ -174,14 +223,30 @@ class StrategyEngine:
 
         return {field: "" for field in self.schema.get("fields", [])}
 
-    def generate(self, context, model=None):
+    def generate(self, context, model=None, evaluation=None):
         """Generate a structured strategy via AI, falling back to
-        the schema's empty default if generation fails."""
+        the schema's empty default if generation fails.
+
+        If `evaluation` is supplied (e.g. the output of an
+        EvaluationEngine's evaluate() or evaluate_many()), its
+        findings are woven into the prompt so the strategy is
+        grounded in actually-detected strengths/weaknesses rather
+        than generated blind from content alone.
+        """
 
         if self.provider is not None:
             try:
+                full_context = context
+                if evaluation:
+                    full_context = (
+                        context
+                        + "\n\nEvaluation findings (use these to "
+                        + "ground your recommendations):\n"
+                        + json.dumps(evaluation)
+                    )
+
                 prompt = self.schema["ai_prompt_template"].format(
-                    context=context
+                    context=full_context
                 )
                 result = self.provider.generate_json(
                     prompt, model=model
