@@ -3055,10 +3055,11 @@ def ad_copy_generate():
         tone,
     )
 
+    MODEL = "openai/gpt-oss-20b"
     try:
         cc = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
-            model="openai/gpt-oss-20b",
+            model=MODEL,
             reasoning_effort="low",
         )
         result = cc.choices[0].message.content
