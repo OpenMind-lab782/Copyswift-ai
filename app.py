@@ -3,7 +3,6 @@ from dotenv import load_dotenv
 from brain.memory import load_business_memory
 from brain.prompt_builder import build_prompt
 from brain.scoring import score_campaign
-from brain.evaluation_service import evaluate_campaign
 from brain.campaign_learning import learning_summary
 from brain.campaign_learning import persist_learning
 
@@ -3089,10 +3088,9 @@ def ad_copy_generate():
             )
         strategist["ai_strategy"] = strategy_text.strip()
 
-        campaign_score = evaluate_campaign(
-            client,
-            MODEL,
-            "\n\n".join(variations)
+        campaign_score = document_kernel.marketing_manager.evaluate(
+            "\n\n".join(variations),
+            model=MODEL,
         )
         learning = learning_summary(campaign_score)
 
