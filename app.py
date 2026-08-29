@@ -3069,16 +3069,25 @@ def ad_copy_generate():
 
         variations = [v.strip() for v in ad_text.split('---') if v.strip()]
 
+        evaluation_result = document_kernel.marketing_manager.evaluate_many(
+            variations,
+            model=MODEL,
+        )
+        best_item = evaluation_result["best"] or {"content": "", "score": {}}
+        campaign_score = best_item["score"]
+
         campaign_context = (
             "Offer: " + offer + "\n"
             "Target customer: " + (customer or "General African small business customers") + "\n"
             "Main hesitation: " + (hesitation or "None specified") + "\n"
             "Platform: " + platform + "\n"
             "Tone: " + tone + "\n"
-            "Generated ad copy:\n" + ad_text.strip()
+            "Best-performing variation:\n" + best_item["content"]
         )
         strategist = document_kernel.marketing_strategist.generate(
             context=campaign_context,
+            model=MODEL,
+            evaluation=campaign_score,
         )
         if not strategist.get("recommended_platform"):
             strategist["recommended_platform"] = platform
@@ -3088,18 +3097,19 @@ def ad_copy_generate():
             )
         strategist["ai_strategy"] = strategy_text.strip()
 
-        campaign_score = document_kernel.marketing_manager.evaluate(
-            "\n\n".join(variations),
-            model=MODEL,
-        )
         learning = learning_summary(campaign_score)
-
         if profile:
             with get_db() as db:
+                learned_summary = (
+                    "[Score " + str(campaign_score.get("overall", 0)) + "] "
+                    + best_item["content"]
+                )
+                if strategist.get("marketing_tip"):
+                    learned_summary += " | Tip: " + strategist["marketing_tip"]
                 persist_learning(
                     db,
                     profile["id"],
-                    "\n\n".join(variations),
+                    learned_summary,
                     campaign_score,
                 )
                 db.commit()
@@ -3116,6 +3126,8 @@ def ad_copy_generate():
 
     return jsonify({
         "variations": variations,
+        "variation_scores": [item["score"] for item in evaluation_result["items"]],
+        "best_variation_index": evaluation_result["best_index"],
         "strategist": strategist,
         "campaign_score": campaign_score,
         "learning": learning,
