@@ -2509,8 +2509,6 @@ def handle_internal_server_error(error):
         "message": "Something went wrong while processing your request. Please try again. If the problem continues, contact CopySwift AI support."
     }), 500
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
 # === APPEND THIS BLOCK TO THE END OF app.py (before any if __name__ == '__main__') ===
 # Reuses your existing `client` (Groq) and session-based patterns already in app.py.
 # Does NOT touch your credits table — free tool uses its own daily session counter.
@@ -3228,3 +3226,6 @@ def ad_copy_scrape_url():
     })
 
 # === END BLOCK ===
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8080)

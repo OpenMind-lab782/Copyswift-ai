@@ -121,6 +121,81 @@
     color:#FCA5A5; border-radius:8px; padding:12px 14px; font-size:0.88rem; margin-bottom:16px; display:none;
   }
   .result-box{display:none; white-space:pre-wrap; background:#0F1524; border:1px solid var(--card-border); border-radius:8px; padding:16px; margin-top:16px; font-size:0.95rem;}
+  .variations-list{display:flex; flex-direction:column; gap:12px;}
+  .variation-card{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:10px;
+    padding:14px 16px;
+  }
+  .variation-card.best{
+    border-color:var(--green);
+    box-shadow:0 0 0 1px var(--green) inset;
+  }
+  .variation-header{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:8px;
+    flex-wrap:wrap;
+  }
+  .variation-label{
+    font-weight:700;
+    font-size:0.85rem;
+    color:var(--muted);
+  }
+  .best-badge{
+    background:rgba(34,197,94,0.15);
+    color:var(--green);
+    font-size:0.75rem;
+    font-weight:700;
+    padding:2px 8px;
+    border-radius:999px;
+  }
+  .score-badge{
+    font-size:0.75rem;
+    font-weight:700;
+    padding:2px 8px;
+    border-radius:999px;
+    margin-left:auto;
+  }
+  .score-badge.score-high{background:rgba(34,197,94,0.15); color:var(--green);}
+  .score-badge.score-mid{background:rgba(245,158,11,0.15); color:var(--amber);}
+  .score-badge.score-low{background:rgba(239,68,68,0.15); color:var(--red);}
+  .variation-text{
+    white-space:pre-wrap;
+    font-size:0.95rem;
+    line-height:1.5;
+  }
+  .strategy-section{
+    margin-top:16px;
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:10px;
+    padding:16px;
+  }
+  .strategy-title{
+    font-weight:700;
+    font-size:0.95rem;
+    margin-bottom:12px;
+    background:linear-gradient(90deg,var(--grad-a),var(--grad-b));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .strategy-grid{display:flex; flex-direction:column; gap:10px;}
+  .strategy-label{
+    font-size:0.75rem;
+    font-weight:700;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    margin-bottom:2px;
+  }
+  .strategy-value{
+    font-size:0.9rem;
+    line-height:1.5;
+  }
 
   .section{margin:44px 0;}
   .section-label{font-size:0.75rem; letter-spacing:0.06em; text-transform:uppercase; color:var(--grad-a); font-weight:700; margin-bottom:8px;}
@@ -386,11 +461,86 @@
     });
   });
 
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+  }
+
+  function scoreClass(score){
+    if(score >= 80) return 'score-high';
+    if(score >= 60) return 'score-mid';
+    return 'score-low';
+  }
+
+  function renderResults(data){
+    const resultBox = document.getElementById('resultBox');
+    const variations = data.variations || [];
+    const variationScores = data.variation_scores || [];
+    const bestIndex = data.best_variation_index;
+    const strategist = data.strategist || {};
+
+    if(variations.length === 0){
+      resultBox.textContent = 'No copy returned.';
+      return;
+    }
+
+    let html = '<div class="variations-list">';
+
+    variations.forEach((text, i)=>{
+      const score = variationScores[i] ? variationScores[i].overall : null;
+      const isBest = (i === bestIndex);
+      const cls = isBest ? 'variation-card best' : 'variation-card';
+
+      html += '<div class="' + cls + '">';
+      html += '<div class="variation-header">';
+      html += '<span class="variation-label">Variation ' + (i+1) + '</span>';
+      if(isBest){
+        html += '<span class="best-badge">&#10003; Best</span>';
+      }
+      if(score !== null){
+        html += '<span class="score-badge ' + scoreClass(score) + '">' + score + '/100</span>';
+      }
+      html += '</div>';
+      html += '<div class="variation-text">' + escapeHtml(text) + '</div>';
+      html += '</div>';
+    });
+
+    html += '</div>';
+
+    const strategyFields = [
+      ['objective', 'Objective'],
+      ['recommended_platform', 'Best Platform'],
+      ['recommended_audience', 'Target Audience'],
+      ['best_posting_time', 'Best Posting Time'],
+      ['marketing_tip', 'Marketing Tip'],
+      ['follow_up', 'Follow-up'],
+      ['ab_test', 'A/B Test Idea'],
+    ];
+
+    const filledFields = strategyFields.filter(([key]) => strategist[key]);
+
+    if(filledFields.length > 0){
+      html += '<div class="strategy-section">';
+      html += '<div class="strategy-title">Recommended Strategy</div>';
+      html += '<div class="strategy-grid">';
+      filledFields.forEach(([key, label])=>{
+        html += '<div class="strategy-item">';
+        html += '<div class="strategy-label">' + escapeHtml(label) + '</div>';
+        html += '<div class="strategy-value">' + escapeHtml(strategist[key]) + '</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+      html += '</div>';
+    }
+
+    resultBox.innerHTML = html;
+  }
+
   document.getElementById('generateBtn').addEventListener('click', async ()=>{
     const errorBox = document.getElementById('errorBox');
     const resultBox = document.getElementById('resultBox');
     errorBox.style.display='none'; resultBox.style.display='none';
-
     const offer = document.getElementById('offer').value.trim();
     if(!offer){
       errorBox.textContent = "Tell us what you're selling first.";
@@ -401,10 +551,8 @@
     const tone = document.querySelector('#toneChips .chip.active').dataset.value;
     const customer = document.getElementById('customer').value.trim();
     const hesitation = document.getElementById('hesitation').value.trim();
-
     const btn = document.getElementById('generateBtn');
     btn.disabled = true; btn.textContent = 'Generating...';
-
     try{
       const data = await API.adCopyGenerate({
         offer,
@@ -413,12 +561,11 @@
         platform,
         tone,
       });
-
       if(data.error){
         errorBox.textContent = data.message || 'Something went wrong. Try again.';
         errorBox.style.display='block';
       } else {
-        resultBox.textContent = (data.variations || []).join('\n\n---\n\n') || 'No copy returned.';
+        renderResults(data);
         resultBox.style.display='block';
         const usesCountEl = document.getElementById('usesCount');
         if(usesCountEl) usesCountEl.textContent = data.remaining_uses;
