@@ -161,14 +161,25 @@ def document_studio_import():
 
 
 
+DOCUMENT_STUDIO_EXPORT_COST = 60
+
 @app.route("/document-studio/export", methods=["POST"])
 def document_studio_export():
+    user_email = session.get("user_email")
+    if not user_email:
+        return jsonify({"error": "login_required", "message": "Please log in to export documents."}), 401
+    if get_credit_balance(user_email) < DOCUMENT_STUDIO_EXPORT_COST:
+        return jsonify({
+            "error": "insufficient_credits",
+            "message": "Document Studio export requires " + str(DOCUMENT_STUDIO_EXPORT_COST) + " credits. Please top up your credits.",
+        }), 402
     payload = request.get_json(silent=True) or {}
     document = payload.get("document")
     if not isinstance(document, dict):
         return jsonify({"error": "A canonical document is required."}), 400
     try:
         pdf_bytes = document_kernel.document_studio.export_document(document, output_name="document-studio-output.pdf")
+        deduct_credit(user_email, amount=DOCUMENT_STUDIO_EXPORT_COST)
         from flask import Response
         return Response(pdf_bytes, mimetype="application/pdf", headers={"Content-Disposition": "attachment; filename=document-studio-output.pdf"})
     except Exception as exc:
@@ -761,12 +772,12 @@ def update_streak(email):
     return {"current_streak": current_streak, "longest_streak": longest_streak, "milestone_hit": milestone_hit, "bonus_credits": bonus_credits}
 
 
-def deduct_credit(email):
+def deduct_credit(email, amount=1):
     with get_db() as db:
         row = db.execute("SELECT balance FROM credits WHERE email=?", (email,)).fetchone()
-        if not row or row["balance"] <= 0:
+        if not row or row["balance"] < amount:
             return False
-        db.execute("UPDATE credits SET balance = balance - 1 WHERE email=?", (email,))
+        db.execute("UPDATE credits SET balance = balance - ? WHERE email=?", (amount, email))
         db.commit()
     update_streak(email)
     return True
@@ -2946,7 +2957,7 @@ def _ad_copy_increment_uses():
     key = _ad_copy_usage_key()
     session[key] = session.get(key, 0) + 1
 
-IP_DAILY_LIMIT = 10
+IP_DAILY_LIMIT = 5
 
 def _get_client_ip():
     fwd = request.headers.get("X-Forwarded-For", "")
