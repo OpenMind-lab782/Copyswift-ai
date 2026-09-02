@@ -9,6 +9,7 @@ def check(overrides, action, code):
     values = BASE.copy(); values.update(overrides)
     decision = engine.evaluate(RiskInput(**values))
     assert decision.action == action, (decision, action)
+    assert decision.allowed is (action == "ALLOW"), (decision, action)
     assert decision.reason_code == code, (decision, code)
     assert decision.validate() is True
 
