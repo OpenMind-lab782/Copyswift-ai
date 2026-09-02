@@ -33,5 +33,17 @@ class TradingOrchestrator:
             duplicate = current_time - state.recent_order_keys[order_key] < self.risk_engine.policy.duplicate_window_seconds
         return RiskInput(equity=state.equity, starting_daily_equity=state.starting_daily_equity, peak_equity=state.peak_equity, proposed_risk_fraction=proposed_risk_fraction, proposed_notional=proposed_notional, open_risk_fraction=state.open_risk / state.equity, open_notional_fraction=state.open_notional / state.equity, trades_last_minute=trades_last_minute, duplicate=duplicate, kill_switch=state.kill_switch)
 
+    def execute_order(self, broker, order, decision):
+        from trading.execution.broker import BrokerAdapter, OrderRequest
+        if not isinstance(broker, BrokerAdapter):
+            raise ValueError("broker must be a BrokerAdapter")
+        if not isinstance(order, OrderRequest):
+            raise ValueError("order must be an OrderRequest")
+        decision.validate()
+        if decision.action.upper() != "ALLOW" or not decision.allowed:
+            raise ValueError("risk decision does not allow execution")
+        order.validate()
+        return broker.place_order(order)
+
     def build_order_key(self, symbol, side, quantity, entry_price):
         return f"{symbol}|{side.upper()}|{quantity}|{entry_price}"
