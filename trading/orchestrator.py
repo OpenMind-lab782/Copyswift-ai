@@ -33,6 +33,19 @@ class TradingOrchestrator:
             duplicate = current_time - state.recent_order_keys[order_key] < self.risk_engine.policy.duplicate_window_seconds
         return RiskInput(equity=state.equity, starting_daily_equity=state.starting_daily_equity, peak_equity=state.peak_equity, proposed_risk_fraction=proposed_risk_fraction, proposed_notional=proposed_notional, open_risk_fraction=state.open_risk / state.equity, open_notional_fraction=state.open_notional / state.equity, trades_last_minute=trades_last_minute, duplicate=duplicate, kill_switch=state.kill_switch)
 
+    def build_order(self, signal, sizing, stop_loss=None, take_profit=None):
+        validated_signal = self.evaluate_signal(signal)
+        if validated_signal is None:
+            return None
+        if not isinstance(sizing, dict):
+            raise ValueError("sizing must be a dict")
+        if "quantity" not in sizing:
+            raise ValueError("sizing quantity is required")
+        from trading.execution.broker import OrderRequest
+        order = OrderRequest(symbol=validated_signal.symbol, side=validated_signal.action.upper(), quantity=sizing["quantity"], order_type="MARKET", stop_loss=stop_loss, take_profit=take_profit)
+        order.validate()
+        return order
+
     def execute_order(self, broker, order, decision):
         from trading.execution.broker import BrokerAdapter, OrderRequest
         if not isinstance(broker, BrokerAdapter):
