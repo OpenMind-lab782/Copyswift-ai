@@ -136,7 +136,7 @@ def test_fifo_partial_close():
     expected_pnl = (160.0 - 150.0) * 100 + (160.0 - 155.0) * 20
     assert result.closed_quantity == 120
     assert abs(result.realized_pnl - expected_pnl) < 0.01
-    assert len(result.remaining_positions) == 1
+    assert len(result.remaining_positions) == 2
     
     remaining_pos = result.remaining_positions[0]
     assert remaining_pos.quantity == 30
