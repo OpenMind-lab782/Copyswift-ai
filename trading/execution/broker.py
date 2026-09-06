@@ -1,3 +1,4 @@
+from trading.portfolio.intent import PositionIntent
 from dataclasses import dataclass
 
 from typing import Any
@@ -11,6 +12,7 @@ class OrderRequest:
     limit_price: float | None = None
     stop_loss: float | None = None
     take_profit: float | None = None
+    intent: PositionIntent | None = None
 
     def validate(self):
         if not self.symbol.strip():
@@ -19,6 +21,8 @@ class OrderRequest:
             raise ValueError("side must be BUY or SELL")
         if self.quantity <= 0:
             raise ValueError("quantity must be positive")
+        if self.intent is not None and not isinstance(self.intent, PositionIntent):
+            raise ValueError("intent must be a PositionIntent")
         if self.order_type.upper() not in {"MARKET", "LIMIT"}:
             raise ValueError("unsupported order type")
         if self.order_type.upper() == "LIMIT" and (self.limit_price is None or self.limit_price <= 0):

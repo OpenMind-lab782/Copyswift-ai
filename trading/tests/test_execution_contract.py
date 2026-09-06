@@ -26,3 +26,12 @@ else:
     raise AssertionError("base broker must remain unconfigured")
 
 print("EXECUTION_CONTRACT_TESTS: PASS")
+
+from trading.portfolio.intent import PositionIntent
+
+assert OrderRequest("TEST", "BUY", 10, intent=PositionIntent.OPEN_LONG).validate() is True
+assert OrderRequest("TEST", "SELL", 10, intent=PositionIntent.CLOSE_LONG).validate() is True
+assert OrderRequest("TEST", "SELL", 10, intent=PositionIntent.OPEN_SHORT).validate() is True
+assert OrderRequest("TEST", "BUY", 10, intent=PositionIntent.CLOSE_SHORT).validate() is True
+assert expect_rejection(OrderRequest("TEST", "BUY", 10, intent="BAD_INTENT"))
+print("EXPLICIT_POSITION_INTENT_TESTS: PASS")

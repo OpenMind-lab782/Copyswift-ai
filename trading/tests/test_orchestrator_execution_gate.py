@@ -27,4 +27,18 @@ for decision in (reject, reduce):
         raise AssertionError("non-ALLOW decision must block execution")
 
 assert len(broker.orders) == 0
+from trading.portfolio.accounting import PortfolioAccounting
+from trading.portfolio.intent import PositionIntent
+accounting = PortfolioAccounting()
+accounting_order = OrderRequest("BLOCKED", "BUY", 2.0, intent=PositionIntent.OPEN_LONG)
+for decision in (reject, reduce):
+    try:
+        orchestrator.execute_order(broker, accounting_order, decision, accounting)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("rejected decision must block accounting path")
+assert len(broker.orders) == 0
+assert accounting.ledger.get_inventory("BLOCKED", "LONG") == 0.0
 print("EXECUTION_GATE_REJECTION: PASS")
+print("ACCOUNTING_REJECTION_SAFETY: PASS")

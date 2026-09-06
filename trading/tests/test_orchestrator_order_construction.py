@@ -26,3 +26,8 @@ assert sell_order.quantity == 5.0
 assert sell_order.stop_loss == 101.0
 assert hold_order is None
 print("ORCHESTRATOR_ORDER_CONSTRUCTION: PASS")
+from trading.portfolio.intent import PositionIntent
+explicit = TradingSignal("TEST", "SELL", 0.9, 100.0, "close long", PositionIntent.CLOSE_LONG)
+explicit_order = orchestrator.build_order(explicit, sizing, stop_loss=101.0)
+assert explicit_order.intent == PositionIntent.CLOSE_LONG
+print("EXPLICIT_SIGNAL_INTENT_GATE: PASS")

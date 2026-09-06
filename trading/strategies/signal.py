@@ -1,3 +1,4 @@
+from trading.portfolio.intent import PositionIntent
 from dataclasses import dataclass
 
 @dataclass(frozen=True)
@@ -7,6 +8,7 @@ class TradingSignal:
     confidence: float
     price: float
     reason: str
+    intent: PositionIntent | None = None
 
     def validate(self):
         if not self.symbol.strip():
@@ -19,4 +21,6 @@ class TradingSignal:
             raise ValueError("price must be positive")
         if not self.reason.strip():
             raise ValueError("reason is required")
+        if self.intent is not None and not isinstance(self.intent, PositionIntent):
+            raise ValueError("intent must be a PositionIntent")
         return True

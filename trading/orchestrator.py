@@ -42,11 +42,11 @@ class TradingOrchestrator:
         if "quantity" not in sizing:
             raise ValueError("sizing quantity is required")
         from trading.execution.broker import OrderRequest
-        order = OrderRequest(symbol=validated_signal.symbol, side=validated_signal.action.upper(), quantity=sizing["quantity"], order_type="MARKET", stop_loss=stop_loss, take_profit=take_profit)
+        order = OrderRequest(symbol=validated_signal.symbol, side=validated_signal.action.upper(), quantity=sizing["quantity"], order_type="MARKET", stop_loss=stop_loss, take_profit=take_profit, intent=validated_signal.intent)
         order.validate()
         return order
 
-    def execute_order(self, broker, order, decision):
+    def execute_order(self, broker, order, decision, accounting=None):
         from trading.execution.broker import BrokerAdapter, OrderRequest
         if not isinstance(broker, BrokerAdapter):
             raise ValueError("broker must be a BrokerAdapter")
@@ -56,7 +56,22 @@ class TradingOrchestrator:
         if decision.action.upper() != "ALLOW" or not decision.allowed:
             raise ValueError("risk decision does not allow execution")
         order.validate()
-        return broker.place_order(order)
+        from trading.portfolio.intent import PositionIntent
+        from trading.portfolio.accounting import PortfolioAccounting, account_submitted_order
+        if accounting is not None and not isinstance(accounting, PortfolioAccounting):
+            raise ValueError("accounting must be a PortfolioAccounting")
+        if order.intent in {PositionIntent.CLOSE_LONG, PositionIntent.CLOSE_SHORT}:
+            if accounting is None:
+                raise ValueError("accounting is required for close orders")
+            required_side = "LONG" if order.intent == PositionIntent.CLOSE_LONG else "SHORT"
+            available = accounting.ledger.get_inventory(order.symbol, required_side)
+            if order.quantity > available:
+                raise ValueError("close quantity exceeds available inventory")
+        result = broker.place_order(order)
+        if result.status.upper() == "FILLED" and accounting is not None:
+            from datetime import datetime, timezone
+            account_submitted_order(order, result, datetime.now(timezone.utc), accounting)
+        return result
 
     def build_order_key(self, symbol, side, quantity, entry_price):
         return f"{symbol}|{side.upper()}|{quantity}|{entry_price}"
