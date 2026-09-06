@@ -46,6 +46,7 @@ class PortfolioAccounting:
         if not isinstance(self.ledger, PositionLedger):
             raise ValueError("ledger must be a PositionLedger")
         self._applied_fill_keys = set()
+        self._submitted_order_filled_quantities = {}
 
     def apply_fill(self, fill):
         if not isinstance(fill, ExecutionFill):
@@ -107,7 +108,15 @@ def account_submitted_order(order_request, order_result, timestamp, accounting):
         raise ValueError("filled side does not match submitted order")
     if fill.quantity > order_request.quantity:
         raise ValueError("filled quantity exceeds submitted quantity")
-    return accounting.apply_fill(fill)
+    fill_key = ("FILL_ID", fill.broker_order_id, fill.fill_id) if fill.fill_id else ("LEGACY", fill.symbol, fill.side.upper(), fill.quantity, fill.fill_price, fill.broker_order_id, fill.intent, fill.timestamp)
+    if fill_key in accounting._applied_fill_keys:
+        raise ValueError("duplicate fill rejected")
+    previous_quantity = accounting._submitted_order_filled_quantities.get(fill.broker_order_id, 0.0)
+    if previous_quantity + fill.quantity > order_request.quantity:
+        raise ValueError("cumulative filled quantity exceeds submitted quantity")
+    result = accounting.apply_fill(fill)
+    accounting._submitted_order_filled_quantities[fill.broker_order_id] = previous_quantity + fill.quantity
+    return result
 
 
 def account_filled_order(order_result, intent, timestamp, accounting):

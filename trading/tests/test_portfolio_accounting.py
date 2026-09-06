@@ -254,6 +254,33 @@ def test_account_filled_order_preserves_explicit_close_intent():
     assert a.ledger.get_inventory("AAPL", "LONG") == 1
 
 
+def test_submitted_order_multiple_partial_fills_respect_total_quantity():
+    from trading.execution.broker import OrderRequest, OrderResult
+    from trading.portfolio.accounting import PortfolioAccounting, account_submitted_order
+    ts=datetime(2026, 1, 1, tzinfo=UTC)
+    a=PortfolioAccounting()
+    order=OrderRequest("AAPL", "BUY", 5, intent=PositionIntent.OPEN_LONG)
+    r1=OrderResult("ORDER-MULTI", "FILLED", {"symbol":"AAPL", "side":"BUY", "quantity":2, "fill_price":100.0, "fill_id":"FILL-A"})
+    r2=OrderResult("ORDER-MULTI", "FILLED", {"symbol":"AAPL", "side":"BUY", "quantity":3, "fill_price":101.0, "fill_id":"FILL-B"})
+    account_submitted_order(order, r1, ts, a)
+    account_submitted_order(order, r2, ts, a)
+    assert a.ledger.get_inventory("AAPL", "LONG") == 5
+
+
+def test_submitted_order_cumulative_overfill_is_rejected_without_ledger_mutation():
+    from trading.execution.broker import OrderRequest, OrderResult
+    from trading.portfolio.accounting import PortfolioAccounting, account_submitted_order
+    import pytest
+    ts=datetime(2026, 1, 1, tzinfo=UTC)
+    a=PortfolioAccounting()
+    order=OrderRequest("AAPL", "BUY", 5, intent=PositionIntent.OPEN_LONG)
+    r1=OrderResult("ORDER-OVER", "FILLED", {"symbol":"AAPL", "side":"BUY", "quantity":3, "fill_price":100.0, "fill_id":"FILL-A"})
+    r2=OrderResult("ORDER-OVER", "FILLED", {"symbol":"AAPL", "side":"BUY", "quantity":3, "fill_price":101.0, "fill_id":"FILL-B"})
+    account_submitted_order(order, r1, ts, a)
+    with pytest.raises(ValueError, match="cumulative filled quantity exceeds submitted quantity"):
+        account_submitted_order(order, r2, ts, a)
+    assert a.ledger.get_inventory("AAPL", "LONG") == 3
+
 def test_explicit_fill_id_replay_is_rejected():
     from trading.portfolio.accounting import ExecutionFill, PortfolioAccounting
     import pytest
