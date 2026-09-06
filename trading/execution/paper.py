@@ -43,7 +43,7 @@ class PaperBroker(BrokerAdapter):
         broker_order_id = f"PAPER-{self._next_order_id}"
         self._orders[broker_order_id] = {"status": "FILLED", "order": order, "fill_price": fill_price, "notional": notional}
         self._next_order_id += 1
-        return OrderResult(broker_order_id=broker_order_id, status="FILLED", raw={"symbol": order.symbol, "side": order.side.upper(), "quantity": order.quantity, "fill_price": fill_price, "notional": notional})
+        return OrderResult(broker_order_id=broker_order_id, status="FILLED", raw={"symbol": order.symbol, "side": order.side.upper(), "quantity": order.quantity, "fill_price": fill_price, "notional": notional, "fill_id": broker_order_id})
 
     def cancel_order(self, broker_order_id: str) -> OrderResult:
         if not self.connected:
