@@ -1,4 +1,5 @@
 from trading.portfolio.intent import PositionIntent
+import math
 from dataclasses import dataclass
 
 from typing import Any
@@ -15,17 +16,19 @@ class OrderRequest:
     intent: PositionIntent | None = None
 
     def validate(self):
-        if not self.symbol.strip():
+        if not isinstance(self.symbol, str) or not self.symbol.strip():
             raise ValueError("symbol is required")
-        if self.side.upper() not in {"BUY", "SELL"}:
+        if not isinstance(self.side, str) or self.side.upper() not in {"BUY", "SELL"}:
             raise ValueError("side must be BUY or SELL")
-        if self.quantity <= 0:
-            raise ValueError("quantity must be positive")
+        if not isinstance(self.quantity, (int, float)) or isinstance(self.quantity, bool) or not math.isfinite(self.quantity) or self.quantity <= 0:
+            raise ValueError("quantity must be positive and finite")
         if self.intent is not None and not isinstance(self.intent, PositionIntent):
             raise ValueError("intent must be a PositionIntent")
-        if self.order_type.upper() not in {"MARKET", "LIMIT"}:
+        if not isinstance(self.order_type, str) or self.order_type.upper() not in {"MARKET", "LIMIT"}:
             raise ValueError("unsupported order type")
-        if self.order_type.upper() == "LIMIT" and (self.limit_price is None or self.limit_price <= 0):
+        if self.limit_price is not None and (not isinstance(self.limit_price, (int, float)) or isinstance(self.limit_price, bool) or not math.isfinite(self.limit_price) or self.limit_price <= 0):
+            raise ValueError("limit_price must be positive and finite")
+        if self.order_type.upper() == "LIMIT" and self.limit_price is None:
             raise ValueError("limit orders require a positive limit_price")
         return True
 

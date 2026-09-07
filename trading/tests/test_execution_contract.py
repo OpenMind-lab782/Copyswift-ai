@@ -34,4 +34,15 @@ assert OrderRequest("TEST", "SELL", 10, intent=PositionIntent.CLOSE_LONG).valida
 assert OrderRequest("TEST", "SELL", 10, intent=PositionIntent.OPEN_SHORT).validate() is True
 assert OrderRequest("TEST", "BUY", 10, intent=PositionIntent.CLOSE_SHORT).validate() is True
 assert expect_rejection(OrderRequest("TEST", "BUY", 10, intent="BAD_INTENT"))
+assert expect_rejection(OrderRequest(123, "BUY", 1))
+assert expect_rejection(OrderRequest("BTC", 123, 1))
+assert expect_rejection(OrderRequest("BTC", "BUY", True))
+assert expect_rejection(OrderRequest("BTC", "BUY", float("nan")))
+assert expect_rejection(OrderRequest("BTC", "BUY", float("inf")))
+assert expect_rejection(OrderRequest("BTC", "BUY", 1, order_type=123))
+assert expect_rejection(OrderRequest("BTC", "BUY", 1, limit_price=True))
+assert expect_rejection(OrderRequest("BTC", "BUY", 1, limit_price=float("nan")))
+assert expect_rejection(OrderRequest("BTC", "BUY", 1, limit_price=float("inf")))
+assert expect_rejection(OrderRequest("BTC", "BUY", 1, order_type="LIMIT"))
+print("ORDER_REQUEST_MALFORMED_INPUT_TESTS: PASS")
 print("EXPLICIT_POSITION_INTENT_TESTS: PASS")
