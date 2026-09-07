@@ -19,6 +19,8 @@ class RiskState:
         validate_risk_number(self.peak_equity)
         validate_risk_number(self.open_risk)
         validate_risk_number(self.open_notional)
+        if not isinstance(self.kill_switch, bool):
+            raise ValueError("kill_switch must be a boolean")
         if self.equity <= 0:
             raise ValueError("equity must be positive")
         if self.starting_daily_equity <= 0:

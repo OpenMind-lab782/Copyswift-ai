@@ -13,6 +13,14 @@ class RiskDecision:
     def validate(self):
         validate_risk_number(self.risk_fraction)
         validate_risk_number(self.approved_notional)
+        if not isinstance(self.allowed, bool):
+            raise ValueError("allowed must be a boolean")
+        if not isinstance(self.action, str):
+            raise ValueError("action must be a string")
+        if not isinstance(self.reason_code, str):
+            raise ValueError("reason_code must be a string")
+        if not isinstance(self.reason, str):
+            raise ValueError("reason must be a string")
         if self.action.upper() not in {"ALLOW", "REDUCE", "REJECT"}:
             raise ValueError("action must be ALLOW, REDUCE or REJECT")
         if not self.reason_code.strip():

@@ -18,6 +18,8 @@ class RiskPolicy:
         validate_risk_number(self.max_open_risk)
         validate_risk_number(self.max_open_notional_fraction)
         validate_risk_number(self.duplicate_window_seconds)
+        if isinstance(self.max_trades_per_minute, bool) or not isinstance(self.max_trades_per_minute, int):
+            raise ValueError("max_trades_per_minute must be an integer")
         if not 0 < self.max_risk_per_trade <= 0.05:
             raise ValueError("max_risk_per_trade must be > 0 and <= 0.05")
         if not 0 < self.max_daily_loss <= 0.20:

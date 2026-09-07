@@ -25,6 +25,11 @@ class RiskInput:
         validate_risk_number(self.proposed_notional)
         validate_risk_number(self.open_risk_fraction)
         validate_risk_number(self.open_notional_fraction)
+        if isinstance(self.trades_last_minute, bool) or not isinstance(self.trades_last_minute, int):
+            raise ValueError("trades_last_minute must be an integer")
+        for flag in (self.duplicate, self.stale_market_data, self.price_valid, self.broker_state_known, self.kill_switch):
+            if not isinstance(flag, bool):
+                raise ValueError("risk flags must be boolean")
         if self.equity <= 0:
             raise ValueError("equity must be positive")
         if self.starting_daily_equity <= 0:
