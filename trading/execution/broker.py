@@ -35,6 +35,12 @@ class OrderResult:
     status: str
     raw: dict[str, Any]
 
+    def validate(self):
+        if not isinstance(self.broker_order_id, str) or not self.broker_order_id.strip(): raise ValueError("broker_order_id is required")
+        if not isinstance(self.status, str) or not self.status.strip(): raise ValueError("status is required")
+        if not isinstance(self.raw, dict): raise ValueError("raw must be a dict")
+        return True
+
 class BrokerAdapter:
     def connect(self) -> bool:
         raise NotImplementedError

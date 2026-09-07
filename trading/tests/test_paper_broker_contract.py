@@ -33,3 +33,23 @@ assert ok
 
 
 print("PAPER_BROKER_CONTRACT_TESTS: PASS")
+
+
+result_ok = broker.get_account()
+assert result_ok["cash"] == 9485.0
+assert buy.raw["fill_id"] == buy.broker_order_id
+assert sell.raw["fill_id"] == sell.broker_order_id
+assert buy.broker_order_id != sell.broker_order_id
+
+from trading.execution.broker import OrderResult
+assert OrderResult("ORDER-1", "FILLED", {}).validate() is True
+
+for bad_result in [OrderResult("", "FILLED", {}), OrderResult("ORDER-2", "", {}), OrderResult("ORDER-3", "FILLED", None)]:
+    try:
+        bad_result.validate()
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("invalid OrderResult accepted")
+
+print("ORDER_RESULT_CONTRACT_TESTS: PASS")
