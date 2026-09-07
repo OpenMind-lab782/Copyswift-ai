@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from trading.risk.numeric import validate_risk_number
 
 @dataclass
 class RiskState:
@@ -13,6 +14,11 @@ class RiskState:
     kill_switch: bool = False
 
     def validate(self):
+        validate_risk_number(self.equity)
+        validate_risk_number(self.starting_daily_equity)
+        validate_risk_number(self.peak_equity)
+        validate_risk_number(self.open_risk)
+        validate_risk_number(self.open_notional)
         if self.equity <= 0:
             raise ValueError("equity must be positive")
         if self.starting_daily_equity <= 0:

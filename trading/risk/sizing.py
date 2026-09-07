@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from trading.risk.numeric import validate_risk_number
 
 @dataclass(frozen=True)
 class PositionSizingInput:
@@ -12,6 +13,14 @@ class PositionSizingInput:
     max_notional: float = 0.0
 
     def validate(self):
+        validate_risk_number(self.equity)
+        validate_risk_number(self.risk_fraction)
+        validate_risk_number(self.entry_price)
+        validate_risk_number(self.stop_price)
+        validate_risk_number(self.contract_multiplier)
+        validate_risk_number(self.min_quantity)
+        validate_risk_number(self.quantity_step)
+        validate_risk_number(self.max_notional)
         if self.equity <= 0:
             raise ValueError("equity must be positive")
         if self.risk_fraction <= 0:

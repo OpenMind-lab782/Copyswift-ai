@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from trading.risk.numeric import validate_risk_number
 
 @dataclass(frozen=True)
 class RiskDecision:
@@ -10,6 +11,8 @@ class RiskDecision:
     approved_notional: float = 0.0
 
     def validate(self):
+        validate_risk_number(self.risk_fraction)
+        validate_risk_number(self.approved_notional)
         if self.action.upper() not in {"ALLOW", "REDUCE", "REJECT"}:
             raise ValueError("action must be ALLOW, REDUCE or REJECT")
         if not self.reason_code.strip():
