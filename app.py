@@ -278,10 +278,14 @@ payment_engine = PaymentEngine()
 
 
 app.secret_key = os.environ.get("SECRET_KEY", "copyswift-secret-2024")
+if os.environ.get("RENDER") and app.secret_key == "copyswift-secret-2024":
+    raise RuntimeError("SECRET_KEY must be configured in production")
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
 
 DB_PATH = "copyswift.db"
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")
+if os.environ.get("RENDER") and ADMIN_PASSWORD == "admin123":
+    raise RuntimeError("ADMIN_PASSWORD must be configured in production")
 
 PAYSTACK_SECRET = os.environ.get("PAYSTACK_SECRET_KEY", "")
 CASHAPP_TAG = os.environ.get("CASHAPP_TAG", "$YourCashTag")
