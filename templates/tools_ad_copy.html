@@ -244,7 +244,7 @@
 <body>
 <div class="wrap">
 
-  <div class="eyebrow">Free tool · {{ remaining_uses }} free generations left today</div>
+  <div class="eyebrow">Free tool · {{ remaining_uses }} of 3 free generations remaining today</div>
   <h1>
     {{ variant.headline[0] }} <span class="grad">{{ variant.headline[1] }}</span> {{ variant.headline[2] }}
   </h1>
@@ -278,7 +278,7 @@
 
 
 <div class="credits-pill">
-    <div class="left">✅ <span>Free uses today</span></div>
+    <div class="left">✅ <span>Free generations remaining today</span></div>
     <div><span class="count" id="usesCount">{{ remaining_uses }}</span> left &nbsp;·&nbsp; <a href="/#pricing" class="buy">Get more free →</a></div>
   </div>
 
@@ -532,6 +532,25 @@
       });
       html += '</div>';
       html += '</div>';
+    }
+
+    const ecosystemRecommendations = strategist.ecosystem_recommendations || [];
+    if(Array.isArray(ecosystemRecommendations) && ecosystemRecommendations.length){
+      html += '<div class="strategy-section">';
+      html += '<div class="strategy-title">Next with CopySwiftAI</div>';
+      html += '<div class="strategy-grid">';
+      ecosystemRecommendations.forEach(tool=>{
+        const title = escapeHtml(tool.title || 'CopySwiftAI tool');
+        const how = escapeHtml(tool.how || 'Use this CopySwiftAI feature with your campaign.');
+        const route = escapeHtml(tool.route || '/');
+        const cta = escapeHtml(tool.cta || 'Open CopySwiftAI tools');
+        html += '<div class="strategy-item">';
+        html += '<div class="strategy-label">' + title + '</div>';
+        html += '<div class="strategy-value">' + how + '</div>';
+        html += '<a href="' + route + '" style="display:inline-block;margin-top:8px;font-weight:700;color:var(--accent);text-decoration:none">' + cta + ' →</a>';
+        html += '</div>';
+      });
+      html += '</div></div>';
     }
 
     resultBox.innerHTML = html;

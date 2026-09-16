@@ -132,6 +132,7 @@ MARKETING_STRATEGY_SCHEMA = {
         "marketing_tip",
         "follow_up",
         "ab_test",
+        "ecosystem_recommendations",
     ],
     "ai_prompt_template": """
 You are an expert marketing strategist.
@@ -151,6 +152,8 @@ Return ONLY valid JSON using this schema:
 }}
 Rules:
 - Be concrete and specific, not generic.
+- Never invent a country, city, age range, income level, demographic, language group, or other customer fact that is not supplied in the context.
+- Treat posting times and marketing tactics as suggestions, not guaranteed outcomes.
 - Do not include markdown.
 - Output JSON only.
 """,

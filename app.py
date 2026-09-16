@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 
 from brain.memory import load_business_memory
 from brain.prompt_builder import build_prompt
+from ecosystem_core.market_intelligence.copy_swift_tools import recommend_copy_swift_tools
 from brain.scoring import score_campaign
 from brain.campaign_learning import learning_summary
 from brain.campaign_learning import persist_learning
@@ -979,7 +980,7 @@ input[type=hidden]{display:none}
   <a href="/tools/ad-copy" style="display:inline-block;margin-top:14px;font-size:13px;font-weight:600;color:var(--accent);text-decoration:none;border:1px solid rgba(0,212,255,.3);padding:8px 16px;border-radius:100px;background:rgba(0,212,255,.06)">🆓 Try the free Ad Copy Tool →</a>
 </div>
 <div class="usage-bar">
-  <span class="usage-label">{% if credits_balance > 0 %}✅ Credits available{% else %}No credits remaining{% endif %}</span>
+  <span class="usage-label">{% if credits_balance > 0 %}✅ Credits available{% else %}No paid credits remaining{% endif %}</span>
   <div class="usage-dots">
     <span style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:var(--accent)">{{ credits_balance }}</span>
     <span style="color:var(--muted);font-size:12px;margin-left:4px">ad{{ 's' if credits_balance != 1 else '' }} left</span>
@@ -3034,6 +3035,7 @@ def ad_copy_generate():
     hesitation = (data.get("hesitation") or "").strip()
     platform = data.get("platform", "WhatsApp Status")
     tone = data.get("tone", "Warm & Local")
+    product_url = (data.get("product_url") or "").strip()
 
     if not offer:
         return jsonify({"error": "missing_offer", "message": "Tell us what you're selling first."}), 400
@@ -3090,9 +3092,13 @@ def ad_copy_generate():
             strategist["recommended_platform"] = platform
         if not strategist.get("recommended_audience"):
             strategist["recommended_audience"] = (
-                customer or "General African small business customers"
+                "Audience not specified by customer"
             )
         strategist["ai_strategy"] = strategy_text.strip()
+        strategist["ecosystem_recommendations"] = recommend_copy_swift_tools(
+            offer=offer, customer=customer, hesitation=hesitation,
+            platform=platform, tone=tone, product_url=product_url,
+        )
 
         learning = learning_summary(campaign_score)
         if profile:
