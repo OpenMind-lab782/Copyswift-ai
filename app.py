@@ -278,10 +278,24 @@ def diagnostics():
 payment_engine = PaymentEngine()
 
 
+@app.after_request
+def _security_headers(response):
+    response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    response.headers.setdefault('X-Frame-Options', 'SAMEORIGIN')
+    response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+    response.headers.setdefault('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+    if request.is_secure or request.headers.get('X-Forwarded-Proto', '').lower() == 'https':
+        response.headers.setdefault('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+    return response
+
 app.secret_key = os.environ.get("SECRET_KEY", "copyswift-secret-2024")
 if os.environ.get("RENDER") and app.secret_key == "copyswift-secret-2024":
     raise RuntimeError("SECRET_KEY must be configured in production")
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
+app.config['SESSION_COOKIE_SECURE'] = bool(os.environ.get('RENDER'))
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
 
 DB_PATH = "copyswift.db"
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")
@@ -1327,6 +1341,7 @@ async function enhanceImage(){
   <div class="feature"><div class="feature-icon">🌍</div><div class="feature-title">Any Market</div><div class="feature-desc">African & global use</div></div>
 </div>
 <div style="text-align:center;font-size:13px;color:#888;margin:20px 0">Need help? Email <a href="mailto:supportcopyswiftai@gmail.com" style="color:#00d4ff">supportcopyswiftai@gmail.com</a></div>
+<div style="text-align:center;margin:18px auto;max-width:540px;font-size:12px;line-height:1.8"><a href="/privacy" style="color:#00d4ff;margin:0 7px">Privacy</a><a href="/terms" style="color:#00d4ff;margin:0 7px">Terms</a><a href="/refund" style="color:#00d4ff;margin:0 7px">Refunds</a><a href="/security" style="color:#00d4ff;margin:0 7px">Security</a><br><a href="https://www.scamadviser.com/check-website/copyswiftai.com" target="_blank" rel="noopener noreferrer"><img src="https://files.scamadviser.com/thumbs/scamadviser-logo-4ad94.jpg_900x.jpg" alt="Check CopySwiftAI on ScamAdviser.com" style="width:260px;height:50px;max-width:100%;object-fit:contain;margin-top:10px"></a></div>
 <script>
 function selectType(key,el){document.querySelectorAll('.copy-type-btn').forEach(b=>b.classList.remove('selected'));el.classList.add('selected');document.getElementById('copy_type_input').value=key}
 let bundleData = {};
@@ -1879,6 +1894,75 @@ p{color:#64748b;font-size:14px;line-height:1.7;margin-bottom:16px}
   <a href="/" class="home-btn">Back to CopySwift</a>
 </div></body></html>"""
 
+def _policy_page(title, body):
+    paragraphs = ''.join(f'<p style="line-height:1.75;color:#cbd5e1;margin:0 0 16px">{line}</p>' for line in body.split('\n') if line.strip())
+    return f'<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{title} ⚡ CopySwiftAI</title></head><body style="margin:0;background:#0b1020;color:#f8fafc;font-family:Arial,sans-serif"><main style="max-width:760px;margin:0 auto;padding:48px 22px"><a href="/" style="color:#00d4ff;text-decoration:none">⚡ CopySwiftAI</a><h1 style="font-size:34px;margin:28px 0 24px">{title}</h1><section>{paragraphs}</section><p style="margin-top:32px;font-size:13px;color:#888">Need help? Email <a href="mailto:supportcopyswiftai@gmail.com" style="color:#00d4ff">supportcopyswiftai@gmail.com</a></p></main></body></html>'
+
+@app.route('/privacy')
+def privacy():
+    return _policy_page('Privacy Policy', """CopySwiftAI Privacy Policy
+
+This page describes how CopySwiftAI handles information when you use the website and its services.
+
+Information we may receive
+We may receive information you provide when creating an account, purchasing credits, contacting support, using referral features, or interacting with our tools. Technical information such as browser, device, network, and usage information may also be processed to operate, secure, and improve the service.
+
+Use of information
+Information may be used to provide requested services, process transactions, maintain accounts and credits, prevent abuse and fraud, provide support, maintain security, and improve CopySwiftAI.
+
+Payments
+Payment information may be handled by the payment provider or payment method you choose. CopySwiftAI does not need your private payment credentials to provide the service.
+
+Contact
+For privacy questions, contact supportcopyswiftai@gmail.com.""")
+
+@app.route('/terms')
+def terms():
+    return _policy_page('Terms of Service', """CopySwiftAI Terms of Service
+
+By using CopySwiftAI, you agree to use the service lawfully and responsibly.
+
+Service use
+You are responsible for information and content submitted through your use of the service. You must not abuse, disrupt, reverse engineer, circumvent usage limits, or use the service for unlawful activity.
+
+Credits and purchases
+Credits and paid features are subject to the package and payment terms presented at the time of purchase. Account activity may be reviewed where necessary to prevent fraud, abuse, or unauthorized use.
+
+Availability
+CopySwiftAI may update, improve, suspend, or discontinue features as necessary for operation, security, maintenance, or product development.
+
+Contact
+For questions about these terms, contact supportcopyswiftai@gmail.com.""")
+
+@app.route('/refund')
+def refund():
+    return _policy_page('Refund Policy', """CopySwiftAI Refund Policy
+
+Refund requests are reviewed based on the purchase, payment status, service usage, and applicable payment-provider requirements.
+
+Unused purchases
+If you believe a purchase was made in error and the purchased credits or service have not been used, contact support as soon as possible with the relevant transaction details.
+
+Used credits and completed services
+Purchases involving credits or services that have already been consumed may not be eligible for a refund. Fraudulent, duplicate, or unauthorized transactions may be investigated separately.
+
+How to request help
+Email supportcopyswiftai@gmail.com with your transaction reference and the reason for your request. Do not send passwords, private keys, or other sensitive credentials.""")
+
+@app.route('/security')
+def security():
+    return _policy_page('Security', """CopySwiftAI Security
+
+CopySwiftAI uses security controls intended to protect the service, accounts, transactions, and application data.
+
+Security measures
+The application uses transport security, security response headers, authentication controls, access restrictions, and abuse-prevention measures appropriate to the service. Payment processing may involve third-party payment providers.
+
+Responsible disclosure
+If you identify a potential security issue affecting CopySwiftAI, please report it privately to supportcopyswiftai@gmail.com and include enough information to reproduce the issue. Please do not publicly disclose or exploit a suspected vulnerability before it can be reviewed.
+
+Contact
+Security reports and questions can be sent to supportcopyswiftai@gmail.com.""")
 @app.route('/', methods=['GET','POST'])
 def home():
     user_email = session.get('user_email', '')
