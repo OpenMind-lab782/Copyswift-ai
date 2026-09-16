@@ -293,11 +293,10 @@ CASHAPP_AMOUNT = 5
 
 # --- Pay-Per-Ad Credit Packages -------------------------------------------
 CREDIT_PACKAGES = {
-    "basic": {"label": "Basic",  "ads": 120, "usd": 18},
-    "elite": {"label": "Elite",  "ads": 180, "usd": 25},
-    "mini": {"label": "Mini", "ads": 10, "usd": 2},
     "starter": {"label": "Starter", "ads": 50, "usd": 8},
-    "pro": {"label": "Pro", "ads": 100, "usd": 15},
+    "basic": {"label": "Basic",  "ads": 100, "usd": 15},
+    "pro": {"label": "Pro", "ads": 120, "usd": 18},
+    "elite": {"label": "Elite",  "ads": 180, "usd": 25},
 }
 FALLBACK_USD_NGN_RATE = 1600.0  # used only if live rate fetch fails
 
@@ -791,7 +790,7 @@ def activate_credit_purchase(tx_ref):
             return None
         add_credits(row["email"], row["ads"])
         if row["ref_code"]:
-            commission = round(row["amount_usd"] * 0.4, 2)
+            commission = round(row["amount_usd"] * 0.25, 2)
             record_referral(row["ref_code"], row["email"], commission, tx_ref)
         db.execute("UPDATE credit_purchases SET status='activated', activated_at=datetime('now') WHERE id=?", (row["id"],))
         db.commit()
@@ -1006,29 +1005,23 @@ input[type=hidden]{display:none}
     <p>Pay once, generate ads as you go — no subscription needed.</p>
   </div>
   <div class="pay-grid">
-    <a href="/pay-paystack?package=mini" class="pay-method">
-      <div class="pay-icon">🔹</div><div class="pay-title">{{ credit_packages.mini.label }} Package</div>
-      <div class="pay-sub">{{ credit_packages.mini.ads }} ad generations</div>
-      <span class="pay-badge badge-green">${{ credit_packages.mini.usd }} · Card / Bank / MoMo PSB</span>
-      <span class="pay-badge badge-gold" style="margin-top:6px;cursor:pointer" onclick="event.preventDefault();event.stopPropagation();openCryptoModal('mini')">💎 Or pay with crypto</span>
-    </a>
     <a href="/pay-paystack?package=starter" class="pay-method">
       <div class="pay-icon">⭐</div><div class="pay-title">{{ credit_packages.starter.label }} Package</div>
       <div class="pay-sub">{{ credit_packages.starter.ads }} ad generations</div>
       <span class="pay-badge badge-green">${{ credit_packages.starter.usd }} · Card / Bank / MoMo PSB</span>
       <span class="pay-badge badge-gold" style="margin-top:6px;cursor:pointer" onclick="event.preventDefault();event.stopPropagation();openCryptoModal('starter')">💎 Or pay with crypto</span>
     </a>
-    <a href="/pay-paystack?package=pro" class="pay-method">
-      <div class="pay-icon">💎</div><div class="pay-title">{{ credit_packages.pro.label }} Package</div>
-      <div class="pay-sub">{{ credit_packages.pro.ads }} ad generations</div>
-      <span class="pay-badge badge-green">${{ credit_packages.pro.usd }} · Card / Bank / MoMo PSB</span>
-      <span class="pay-badge badge-gold" style="margin-top:6px;cursor:pointer" onclick="event.preventDefault();event.stopPropagation();openCryptoModal('pro')">💎 Or pay with crypto</span>
-    </a>
     <a href="/pay-paystack?package=basic" class="pay-method">
       <div class="pay-icon">⚡</div><div class="pay-title">{{ credit_packages.basic.label }} Package</div>
       <div class="pay-sub">{{ credit_packages.basic.ads }} ad generations</div>
       <span class="pay-badge badge-green">${{ credit_packages.basic.usd }} · Card / Bank / MoMo PSB</span>
       <span class="pay-badge badge-gold" style="margin-top:6px;cursor:pointer" onclick="event.preventDefault();event.stopPropagation();openCryptoModal('basic')">💎 Or pay with crypto</span>
+    </a>
+    <a href="/pay-paystack?package=pro" class="pay-method">
+      <div class="pay-icon">💎</div><div class="pay-title">{{ credit_packages.pro.label }} Package</div>
+      <div class="pay-sub">{{ credit_packages.pro.ads }} ad generations</div>
+      <span class="pay-badge badge-green">${{ credit_packages.pro.usd }} · Card / Bank / MoMo PSB</span>
+      <span class="pay-badge badge-gold" style="margin-top:6px;cursor:pointer" onclick="event.preventDefault();event.stopPropagation();openCryptoModal('pro')">💎 Or pay with crypto</span>
     </a>
     <a href="/pay-paystack?package=elite" class="pay-method">
       <div class="pay-icon">🚀</div><div class="pay-title">{{ credit_packages.elite.label }} Package</div>
@@ -1077,7 +1070,7 @@ input[type=hidden]{display:none}
       <label>Transaction Hash</label>
       <input type="text" name="tx_hash" placeholder="0xabc123..." required>
       <input type="hidden" name="coin" id="selected_coin_input" value="{{ crypto_wallets.keys()|list|first }}">
-      <input type="hidden" name="package" id="selected_package_input" value="mini">
+      <input type="hidden" name="package" id="selected_package_input" value="starter">
       <button type="submit" class="confirm-btn" id="cryptoConfirmBtn">✅ I've Sent Payment</button>
     </form>
   </div>
@@ -1535,7 +1528,7 @@ document.getElementById('copyForm')?.addEventListener('submit',function(){const 
 const PACKAGES = {{ credit_packages|tojson }};
 function openCryptoModal(pkgId){
   if(pkgId && PACKAGES[pkgId]) window.currentCryptoPackage = pkgId;
-  if(!window.currentCryptoPackage) window.currentCryptoPackage = 'mini';
+  if(!window.currentCryptoPackage) window.currentCryptoPackage = 'starter';
   const pkg = PACKAGES[window.currentCryptoPackage];
   document.getElementById('selected_package_input').value = window.currentCryptoPackage;
   document.getElementById('cryptoPkgLabel').textContent = 'Paying for ' + pkg.label + ' Package ($' + pkg.usd + ') — choose a coin, send the exact amount, then submit your TX hash below.';
@@ -1712,16 +1705,18 @@ tr:last-child td{border-bottom:none}
     </div>
     <a name="manual"></a>
     <div class="manual-card">
-      <h3>➕ Activate Pro Manually</h3>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Enter customer email to grant Pro access instantly.</p>
+      <h3>➕ Activate Package Manually</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Enter customer email to grant the selected package access instantly.</p>
       <form method="POST" action="/admin/activate-manual">
         <select name="package" style="width:100%;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;margin-bottom:10px">
-          <option value="basic">Basic — 120 ads ($18)</option>
+          <option value="starter">Starter — 50 ads ($8)</option>
+          <option value="basic">Basic — 100 ads ($15)</option>
+          <option value="pro">Pro — 120 ads ($18)</option>
           <option value="elite">Elite — 180 ads ($25)</option>
         </select>
         <div class="input-row">
           <input type="email" name="email" placeholder="customer@email.com" required>
-          <button type="submit" class="btn-primary">✅ Activate Pro</button>
+          <button type="submit" class="btn-primary">✅ Activate Package</button>
         </div>
       </form>
     </div>
@@ -1943,7 +1938,7 @@ def pay_paystack():
     error = email = None
     package = request.args.get('package') or request.form.get('package') or 'basic'
     if package not in CREDIT_PACKAGES:
-        package = 'basic'
+        return 'Invalid credit package.', 400
     pkg = CREDIT_PACKAGES[package]
     amount_kobo, amount_ngn, rate = usd_to_kobo(pkg['usd'])
     ref_code = request.args.get('ref_code', request.form.get('ref_code', session.get('ref_code','')))
@@ -2023,9 +2018,9 @@ def confirm_crypto():
     email = request.form.get('email','').strip()
     tx_hash = request.form.get('tx_hash','').strip()
     coin = request.form.get('coin','').strip()
-    package = request.form.get('package','mini')
+    package = request.form.get('package','starter')
     if package not in CREDIT_PACKAGES:
-        package = 'mini'
+        return 'Invalid credit package.', 400
     pkg = CREDIT_PACKAGES[package]
 
     request_obj = PaymentRequest(
@@ -2154,7 +2149,7 @@ def admin_activate_manual():
     email = request.form.get('email','').strip()
     package = request.form.get('package','basic')
     if package not in CREDIT_PACKAGES:
-        package = 'basic'
+        return 'Invalid credit package.', 400
     pkg = CREDIT_PACKAGES[package]
     if email:
         ref = "manual-"+make_ref()
@@ -2163,7 +2158,7 @@ def admin_activate_manual():
         save_credit_purchase(email, package, pkg['ads'], pkg['usd'], "manual", "manual", ref, "activated", ref_code=ref_code)
         add_credits(email, pkg['ads'])
         if ref_code:
-            commission = round(pkg['usd'] * 0.4, 2)
+            commission = round(pkg['usd'] * 0.25, 2)
             record_referral(ref_code, email, commission, ref)
         session['admin_flash'] = f"{pkg['ads']} credits manually added for {email}"
     return redirect('/admin')
