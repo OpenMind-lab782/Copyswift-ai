@@ -6,8 +6,8 @@ import subprocess
 import tempfile
 import xml.etree.ElementTree as ET
 import logging
-import os
-import time
+import base64
+import pymupdf
 from pathlib import Path
 
 
@@ -43,43 +43,41 @@ class NativeMuPDFAdapter:
                 raise RuntimeError(f"Native MuPDF could not parse {name!r}.") from exc
 
             images_by_page = {}
-            if self.mutool and self.IMAGE_SCRIPT_PATH.exists():
-                try:
-                    logger.info("DS_IMPORT_MUPDF_IMAGES_START mutool=%r script=%r", self.mutool, str(self.IMAGE_SCRIPT_PATH))
-                    image_command = [
-                        self.mutool, "run", str(self.IMAGE_SCRIPT_PATH), str(source),
-                    ]
-                    image_started = time.monotonic()
-                    image_process = subprocess.Popen(
-                        image_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                        text=True,
-                    )
-                    logger.info("DS_IMPORT_MUPDF_IMAGES_PROCESS_STARTED pid=%d parent_pid=%d", image_process.pid, os.getpid())
-                    while image_process.poll() is None:
-                        elapsed = time.monotonic() - image_started
-                        logger.info("DS_IMPORT_MUPDF_IMAGES_PROCESS_ALIVE pid=%d elapsed=%.1fs", image_process.pid, elapsed)
-                        if elapsed >= 60:
-                            image_process.kill()
-                            stdout, stderr = image_process.communicate()
-                            raise subprocess.TimeoutExpired(image_command, 60, output=stdout, stderr=stderr)
-                        time.sleep(2)
-                    stdout, stderr = image_process.communicate()
-                    elapsed = time.monotonic() - image_started
-                    logger.info("DS_IMPORT_MUPDF_IMAGES_PROCESS_EXIT pid=%d returncode=%d elapsed=%.1fs stdout_bytes=%d stderr_bytes=%d", image_process.pid, image_process.returncode, elapsed, len(stdout.encode()), len(stderr.encode()))
-                    if image_process.returncode != 0:
-                        raise subprocess.CalledProcessError(image_process.returncode, image_command, output=stdout, stderr=stderr)
-                    image_data = json.loads(stdout)
-                    logger.info("DS_IMPORT_MUPDF_IMAGES_COMPLETE")
-                    for page_entry in image_data.get("pages", []):
-                        images_by_page[page_entry["page_index"]] = page_entry.get("images", [])
-                except subprocess.TimeoutExpired as exc:
-                    logger.exception("DS_IMPORT_MUPDF_IMAGES_TIMEOUT timeout_seconds=60")
-                    images_by_page = {}
-                except Exception as exc:
-                    logger.exception("DS_IMPORT_MUPDF_IMAGES_FAILURE")
-                    # Image extraction is best-effort; text extraction must not
-                    # fail just because image extraction had a problem.
-                    images_by_page = {}
+            try:
+                logger.info("DS_IMPORT_MUPDF_IMAGES_START native=pymupdf")
+                pdf_doc = pymupdf.open(stream=data, filetype="pdf")
+                image_total = 0
+                for page_index in range(pdf_doc.page_count):
+                    page = pdf_doc.load_page(page_index)
+                    page_images = []
+                    for image_info in page.get_image_info(xrefs=True):
+                        bbox = image_info.get("bbox")
+                        xref = image_info.get("xref", 0)
+                        if not bbox:
+                            continue
+                        try:
+                            if xref:
+                                pix = pymupdf.Pixmap(pdf_doc, xref)
+                                png_bytes = pix.tobytes("png")
+                            else:
+                                pix = page.get_pixmap(clip=pymupdf.Rect(bbox), alpha=True)
+                                png_bytes = pix.tobytes("png")
+                            page_images.append({
+                                "x": bbox[0],
+                                "y": bbox[1],
+                                "width": bbox[2] - bbox[0],
+                                "height": bbox[3] - bbox[1],
+                                "png_base64": base64.b64encode(png_bytes).decode("ascii"),
+                            })
+                            image_total += 1
+                        except Exception:
+                            logger.exception("DS_IMPORT_MUPDF_IMAGE_FAILURE page=%d xref=%d", page_index, xref)
+                    images_by_page[page_index] = page_images
+                pdf_doc.close()
+                logger.info("DS_IMPORT_MUPDF_IMAGES_COMPLETE pages=%d images=%d", len(images_by_page), image_total)
+            except Exception:
+                logger.exception("DS_IMPORT_MUPDF_IMAGES_FAILURE")
+                images_by_page = {}
 
         pages = []
         for page_index, page_node in enumerate(root.findall("page"), 1):
