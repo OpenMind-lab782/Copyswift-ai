@@ -53,7 +53,8 @@ class NativeMuPDFAdapter:
                     logger.info("DS_IMPORT_MUPDF_IMAGES_COMPLETE")
                     for page_entry in image_data.get("pages", []):
                         images_by_page[page_entry["page_index"]] = page_entry.get("images", [])
-                except Exception:
+                except Exception as exc:
+                    logger.exception("DS_IMPORT_MUPDF_IMAGES_FAILURE")
                     # Image extraction is best-effort; text extraction must not
                     # fail just because image extraction had a problem.
                     images_by_page = {}
