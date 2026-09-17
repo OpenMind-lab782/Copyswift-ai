@@ -161,21 +161,30 @@ def document_studio_import():
         return jsonify({"error": "A PDF file is required."}), 400
     if not uploaded.filename.lower().endswith(".pdf"):
         return jsonify({"error": "Document Studio MVP currently accepts PDF files only."}), 400
+    logger.info("DS_IMPORT_START filename=%r", uploaded.filename)
     try:
         original_bytes = uploaded.read()
+        logger.info("DS_IMPORT_READ_COMPLETE bytes=%d", len(original_bytes))
+        logger.info("DS_IMPORT_PARSE_START")
         document = document_kernel.document_studio.import_binary_document(
             original_bytes,
             file_name=uploaded.filename,
         )
+        logger.info("DS_IMPORT_PARSE_COMPLETE pages=%d", len(document.get("pages") or []))
+        logger.info("DS_IMPORT_WORKSPACE_INIT_START")
         workspace = _get_document_studio_workspace_repository()
+        logger.info("DS_IMPORT_WORKSPACE_INIT_COMPLETE")
+        logger.info("DS_IMPORT_WORKSPACE_CREATE_START")
         public_document = workspace.create(
             document,
             original_bytes,
             owner_email=session.get("user_email") or None,
         )
+        logger.info("DS_IMPORT_WORKSPACE_CREATE_COMPLETE")
+        logger.info("DS_IMPORT_SUCCESS")
         return jsonify(public_document), 200
     except Exception as exc:
-        logger.exception("Document Studio import failed")
+        logger.exception("DS_IMPORT_FAILURE")
         return jsonify({"error": "Document import failed.", "detail": str(exc)}), 500
 
 

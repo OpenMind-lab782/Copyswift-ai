@@ -1,8 +1,11 @@
 import hashlib
 import json
 import secrets
+import logging
 from sqlalchemy import text
 from payment_engine.database.postgres import PostgreSQLDatabase
+
+logger = logging.getLogger("copyswift.document_studio.workspace")
 
 DOCUMENT_STUDIO_WORKSPACE_SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS document_studio_workspaces (
@@ -23,8 +26,10 @@ class DocumentStudioWorkspaceRepository:
 
     @staticmethod
     def initialize_schema(database):
+        logger.info("DS_IMPORT_WORKSPACE_SCHEMA_START")
         with database.engine.begin() as connection:
             connection.execute(text(DOCUMENT_STUDIO_WORKSPACE_SCHEMA_SQL))
+        logger.info("DS_IMPORT_WORKSPACE_SCHEMA_COMPLETE")
 
     @staticmethod
     def _token_hash(token):
@@ -47,6 +52,7 @@ class DocumentStudioWorkspaceRepository:
         return public_document
 
     def create(self, document, original_bytes, owner_email=None):
+        logger.info("DS_IMPORT_WORKSPACE_INSERT_START bytes=%d", len(original_bytes) if isinstance(original_bytes, (bytes, bytearray)) else -1)
         if not isinstance(document, dict):
             raise TypeError("Document workspace requires a canonical document.")
         if not isinstance(original_bytes, (bytes, bytearray)):
@@ -78,6 +84,7 @@ class DocumentStudioWorkspaceRepository:
                 "baseline_document": self._serialize_document(stored_document),
             })
 
+        logger.info("DS_IMPORT_WORKSPACE_INSERT_COMPLETE")
         public_document = self._public_document(stored_document)
         public_document["document_token"] = token
         return public_document

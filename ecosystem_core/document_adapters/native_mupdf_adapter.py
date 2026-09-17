@@ -5,8 +5,11 @@ import shutil
 import subprocess
 import tempfile
 import xml.etree.ElementTree as ET
+import logging
 from pathlib import Path
 
+
+logger = logging.getLogger("copyswift.document_studio.mupdf")
 
 class NativeMuPDFAdapter:
     """PDF parser backed by Termux native mutool."""
@@ -17,6 +20,7 @@ class NativeMuPDFAdapter:
         self.mutool = shutil.which("mutool")
 
     def parse(self, data, file_name):
+        logger.info("DS_IMPORT_MUPDF_START bytes=%d filename=%r", len(data) if isinstance(data, (bytes, bytearray)) else -1, file_name)
         mutool = shutil.which("mutool")
         if not mutool:
             raise RuntimeError("Native MuPDF mutool is unavailable.")
@@ -32,6 +36,7 @@ class NativeMuPDFAdapter:
             try:
                 subprocess.run(command, check=True, capture_output=True, text=True)
                 root = ET.parse(output).getroot()
+                logger.info("DS_IMPORT_MUPDF_TEXT_COMPLETE")
             except Exception as exc:
                 raise RuntimeError(f"Native MuPDF could not parse {name!r}.") from exc
 
@@ -45,6 +50,7 @@ class NativeMuPDFAdapter:
                         image_command, capture_output=True, text=True, check=True,
                     )
                     image_data = json.loads(image_result.stdout)
+                    logger.info("DS_IMPORT_MUPDF_IMAGES_COMPLETE")
                     for page_entry in image_data.get("pages", []):
                         images_by_page[page_entry["page_index"]] = page_entry.get("images", [])
                 except Exception:
@@ -108,6 +114,7 @@ class NativeMuPDFAdapter:
                 "elements": elements,
             })
 
+        logger.info("DS_IMPORT_MUPDF_COMPLETE pages=%d", len(pages))
         return {
             "name": name,
             "pages": pages,
