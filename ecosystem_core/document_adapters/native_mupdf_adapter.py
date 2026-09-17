@@ -43,16 +43,21 @@ class NativeMuPDFAdapter:
             images_by_page = {}
             if self.mutool and self.IMAGE_SCRIPT_PATH.exists():
                 try:
+                    logger.info("DS_IMPORT_MUPDF_IMAGES_START mutool=%r script=%r", self.mutool, str(self.IMAGE_SCRIPT_PATH))
                     image_command = [
                         self.mutool, "run", str(self.IMAGE_SCRIPT_PATH), str(source),
                     ]
                     image_result = subprocess.run(
-                        image_command, capture_output=True, text=True, check=True,
+                        image_command, capture_output=True, text=True, check=True, timeout=60,
                     )
+                    logger.info("DS_IMPORT_MUPDF_IMAGES_PROCESS_COMPLETE returncode=%d stdout_bytes=%d stderr_bytes=%d", image_result.returncode, len(image_result.stdout.encode()), len(image_result.stderr.encode()))
                     image_data = json.loads(image_result.stdout)
                     logger.info("DS_IMPORT_MUPDF_IMAGES_COMPLETE")
                     for page_entry in image_data.get("pages", []):
                         images_by_page[page_entry["page_index"]] = page_entry.get("images", [])
+                except subprocess.TimeoutExpired as exc:
+                    logger.exception("DS_IMPORT_MUPDF_IMAGES_TIMEOUT timeout_seconds=60")
+                    images_by_page = {}
                 except Exception as exc:
                     logger.exception("DS_IMPORT_MUPDF_IMAGES_FAILURE")
                     # Image extraction is best-effort; text extraction must not
