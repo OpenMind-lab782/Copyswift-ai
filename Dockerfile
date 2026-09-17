@@ -14,4 +14,4 @@ ENV PYTHONUNBUFFERED=1
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "exec gunicorn app:app --bind 0.0.0.0:${PORT:-10000}"]
+CMD ["sh", "-c", "exec gunicorn app:app --bind 0.0.0.0:${PORT:-10000} --timeout 90"]
