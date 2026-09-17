@@ -122,6 +122,17 @@ from ecosystem_core.document_renderers.mutool_overlay_renderer import MutoolOver
 document_kernel = EcosystemKernel()
 document_kernel.document_renderer.engine = MutoolOverlayRenderer()
 document_kernel.register_document_adapter("pdf", NativeMuPDFAdapter())
+from ecosystem_core.document_studio_workspace import DocumentStudioWorkspaceRepository
+
+_document_studio_workspace_repository = None
+
+def _get_document_studio_workspace_repository():
+    global _document_studio_workspace_repository
+    if _document_studio_workspace_repository is None:
+        _document_studio_workspace_repository = DocumentStudioWorkspaceRepository()
+        DocumentStudioWorkspaceRepository.initialize_schema(_document_studio_workspace_repository.db)
+    return _document_studio_workspace_repository
+
 
 
 app.register_blueprint(merchant_api, url_prefix="/api/v1")
@@ -151,25 +162,55 @@ def document_studio_import():
     if not uploaded.filename.lower().endswith(".pdf"):
         return jsonify({"error": "Document Studio MVP currently accepts PDF files only."}), 400
     try:
+        original_bytes = uploaded.read()
         document = document_kernel.document_studio.import_binary_document(
-            uploaded.read(),
+            original_bytes,
             file_name=uploaded.filename,
         )
-        return jsonify(document), 200
+        workspace = _get_document_studio_workspace_repository()
+        public_document = workspace.create(
+            document,
+            original_bytes,
+            owner_email=session.get("user_email") or None,
+        )
+        return jsonify(public_document), 200
     except Exception as exc:
         logger.exception("Document Studio import failed")
         return jsonify({"error": "Document import failed.", "detail": str(exc)}), 500
 
 
+DOCUMENT_STUDIO_EXPORT_CREDITS = 60
 
 @app.route("/document-studio/export", methods=["POST"])
 def document_studio_export():
+    user_email = session.get("user_email", "")
+    is_admin = session.get("admin_logged_in", False)
+    if not user_email and not is_admin:
+        return jsonify({"error": "Document Studio export requires login."}), 401
+
     payload = request.get_json(silent=True) or {}
+    document_token = payload.get("document_token")
     document = payload.get("document")
-    if not isinstance(document, dict):
-        return jsonify({"error": "A canonical document is required."}), 400
+    if not document_token or not isinstance(document, dict):
+        return jsonify({"error": "A document token and canonical document are required."}), 400
+
     try:
-        pdf_bytes = document_kernel.document_studio.export_document(document, output_name="document-studio-output.pdf")
+        workspace = _get_document_studio_workspace_repository()
+        stored = workspace.get(document_token, None if is_admin else user_email)
+        if stored is None:
+            return jsonify({"error": "Document workspace was not found."}), 404
+
+        authoritative_document = dict(document)
+        authoritative_document.pop("document_token", None)
+        authoritative_document.pop("original_bytes", None)
+        authoritative_document["original_bytes"] = stored["original_bytes"]
+        authoritative_document["original_sha256"] = stored["original_sha256"]
+        pdf_bytes = document_kernel.document_studio.export_document(
+            authoritative_document,
+            output_name="document-studio-output.pdf",
+        )
+        if not is_admin and not deduct_credits(user_email, DOCUMENT_STUDIO_EXPORT_CREDITS):
+            return jsonify({"error": "Insufficient credits. Document Studio export requires 60 credits."}), 402
         from flask import Response
         return Response(pdf_bytes, mimetype="application/pdf", headers={"Content-Disposition": "attachment; filename=document-studio-output.pdf"})
     except Exception as exc:
@@ -778,6 +819,15 @@ def update_streak(email):
 
     return {"current_streak": current_streak, "longest_streak": longest_streak, "milestone_hit": milestone_hit, "bonus_credits": bonus_credits}
 
+
+def deduct_credits(email, amount):
+    """Atomically deduct an exact credit amount when sufficient balance exists."""
+    if not email or amount <= 0:
+        return False
+    with get_db() as db:
+        cur = db.execute("UPDATE credits SET balance = balance - ? WHERE email=? AND balance >= ?", (amount, email, amount))
+        db.commit()
+        return cur.rowcount == 1
 
 def deduct_credit(email):
     with get_db() as db:

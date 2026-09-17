@@ -9,6 +9,7 @@ left byte-for-byte untouched.
 """
 
 import hashlib
+import base64
 import json
 import shutil
 import subprocess
@@ -52,7 +53,7 @@ class MutoolOverlayRenderer:
         current_pages = document.get("pages") or []
         baseline_pages = document.get("original_pages") or []
 
-        ops = self._build_ops(current_pages, baseline_pages)
+        ops = MutoolOverlayRenderer._build_ops(current_pages, baseline_pages)
         ops["audit"] = {
             "original_sha256": computed_hash,
             "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -82,6 +83,17 @@ class MutoolOverlayRenderer:
                 )
 
             return output_path.read_bytes()
+
+    @staticmethod
+    def _image_payload(element):
+        value = element.get("image_data")
+        if value is None:
+            value = element.get("image_data_base64")
+        if isinstance(value, bytes):
+            return base64.b64encode(value).decode("ascii")
+        if isinstance(value, str):
+            return value
+        return ""
 
     @staticmethod
     def _build_ops(current_pages, baseline_pages):
@@ -125,7 +137,12 @@ class MutoolOverlayRenderer:
                 is_new = baseline_element is None
                 is_changed = (
                     baseline_element is not None
-                    and baseline_element.get("content") != element.get("content")
+                    and (
+                        baseline_element.get("content") != element.get("content")
+                        or baseline_element.get("font") != element.get("font")
+                        or baseline_element.get("font_size") != element.get("font_size")
+                        or baseline_element.get("color") != element.get("color")
+                    )
                 )
 
                 if not is_new and not is_changed:
@@ -165,8 +182,8 @@ class MutoolOverlayRenderer:
                 is_new = baseline_element is None
                 is_changed = (
                     baseline_element is not None
-                    and baseline_element.get("image_data_base64")
-                        != element.get("image_data_base64")
+                    and MutoolOverlayRenderer._image_payload(baseline_element)
+                        != MutoolOverlayRenderer._image_payload(element)
                 )
 
                 if not is_new and not is_changed:
@@ -204,7 +221,7 @@ class MutoolOverlayRenderer:
                     "y": y,
                     "width": width,
                     "height": height,
-                    "png_base64": element.get("image_data_base64", ""),
+                    "png_base64": MutoolOverlayRenderer._image_payload(element),
                 })
 
             for element_id, baseline_element in baseline_images.items():
