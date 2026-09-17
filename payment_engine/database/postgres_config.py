@@ -15,10 +15,15 @@ class PostgreSQLConfig:
 
     @staticmethod
     def database_url():
-        return os.getenv(
+        url = os.getenv(
             "DATABASE_URL",
             "postgresql+psycopg://user:password@localhost:5432/swift_payment",
         )
+        if url.startswith("postgres://"):
+            return "postgresql+psycopg://" + url[len("postgres://"):]
+        if url.startswith("postgresql://"):
+            return "postgresql+psycopg://" + url[len("postgresql://"):]
+        return url
 
     @staticmethod
     def is_configured():
