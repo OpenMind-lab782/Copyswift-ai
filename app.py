@@ -196,6 +196,7 @@ def document_studio_export():
     logger.info("DS_EXPORT_START")
     user_email = session.get("user_email", "")
     is_admin = session.get("admin_logged_in", False)
+    logger.info("DS_EXPORT_SESSION_READ_COMPLETE has_user_email=%s is_admin=%s", bool(user_email), bool(is_admin))
     if not user_email and not is_admin:
         return jsonify({"error": "Document Studio export requires login."}), 401
 
