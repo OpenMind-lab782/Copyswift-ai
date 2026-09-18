@@ -192,6 +192,8 @@ DOCUMENT_STUDIO_EXPORT_CREDITS = 60
 
 @app.route("/document-studio/export", methods=["POST"])
 def document_studio_export():
+    export_started = time.monotonic()
+    logger.info("DS_EXPORT_START")
     user_email = session.get("user_email", "")
     is_admin = session.get("admin_logged_in", False)
     if not user_email and not is_admin:
@@ -204,8 +206,10 @@ def document_studio_export():
         return jsonify({"error": "A document token and canonical document are required."}), 400
 
     try:
+        logger.info("DS_EXPORT_WORKSPACE_GET_START elapsed=%.3f", time.monotonic() - export_started)
         workspace = _get_document_studio_workspace_repository()
         stored = workspace.get(document_token, None if is_admin else user_email)
+        logger.info("DS_EXPORT_WORKSPACE_GET_COMPLETE elapsed=%.3f found=%s", time.monotonic() - export_started, stored is not None)
         if stored is None:
             return jsonify({"error": "Document workspace was not found."}), 404
 
@@ -214,13 +218,17 @@ def document_studio_export():
         authoritative_document.pop("original_bytes", None)
         authoritative_document["original_bytes"] = stored["original_bytes"]
         authoritative_document["original_sha256"] = stored["original_sha256"]
+        logger.info("DS_EXPORT_RENDER_START elapsed=%.3f", time.monotonic() - export_started)
         pdf_bytes = document_kernel.document_studio.export_document(
             authoritative_document,
             output_name="document-studio-output.pdf",
         )
+        logger.info("DS_EXPORT_RENDER_COMPLETE elapsed=%.3f bytes=%d", time.monotonic() - export_started, len(pdf_bytes))
         if not is_admin and not deduct_credits(user_email, DOCUMENT_STUDIO_EXPORT_CREDITS):
             return jsonify({"error": "Insufficient credits. Document Studio export requires 60 credits."}), 402
+        logger.info("DS_EXPORT_CREDIT_COMPLETE elapsed=%.3f admin=%s", time.monotonic() - export_started, is_admin)
         from flask import Response
+        logger.info("DS_EXPORT_SUCCESS elapsed=%.3f bytes=%d", time.monotonic() - export_started, len(pdf_bytes))
         return Response(pdf_bytes, mimetype="application/pdf", headers={"Content-Disposition": "attachment; filename=document-studio-output.pdf"})
     except Exception as exc:
         logger.exception("Document Studio export failed")
