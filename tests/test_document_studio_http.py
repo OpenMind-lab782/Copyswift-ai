@@ -28,6 +28,32 @@ class DocumentStudioHttpTests(unittest.TestCase):
         app_module._document_studio_workspace_repository = self.previous_repository
         self.database.dispose()
 
+    def test_identity_sets_user_email_session(self):
+        response = self.client.post("/document-studio/identity", json={"email": " U@Example.COM "})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {"user_email": "u@example.com"})
+        with self.client.session_transaction() as session:
+            self.assertEqual(session.get("user_email"), "u@example.com")
+
+    def test_identity_rejects_missing_email(self):
+        response = self.client.post("/document-studio/identity", json={"email": ""})
+        self.assertEqual(response.status_code, 400)
+        with self.client.session_transaction() as session:
+            self.assertIsNone(session.get("user_email"))
+
+    def test_identity_then_import_binds_workspace_to_session_email(self):
+        identity = self.client.post("/document-studio/identity", json={"email": "owner@example.com"})
+        self.assertEqual(identity.status_code, 200)
+        original = b"%PDF-identity-http-boundary%"
+        parsed = {"name": "test.pdf", "page_count": 1, "pages": [], "original_bytes": original}
+        with patch.object(app_module.document_kernel.document_studio, "import_binary_document", return_value=parsed):
+            response = self.client.post("/document-studio/import", data={"file": (BytesIO(original), "test.pdf")}, content_type="multipart/form-data")
+        self.assertEqual(response.status_code, 200)
+        token = response.get_json()["document_token"]
+        stored = self.repository.get(token, "owner@example.com")
+        self.assertIsNotNone(stored)
+        self.assertEqual(stored["original_bytes"], original)
+
     def test_export_uses_server_stored_original(self):
         original = b'%PDF-server-original%'
         public = self.repository.create({'name': 'test.pdf', 'page_count': 1, 'pages': []}, original, 'u@example.com')

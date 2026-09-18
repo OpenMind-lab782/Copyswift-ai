@@ -154,6 +154,15 @@ app.register_blueprint(reconciliation_settlement_api, url_prefix="/api/v1")
 def document_studio():
     return render_template("document_studio.html")
 
+@app.route("/document-studio/identity", methods=["POST"])
+def document_studio_identity():
+    data = request.get_json(silent=True) or {}
+    email = str(data.get("email", "")).strip().lower()
+    if not email or "@" not in email or email.startswith("@") or email.endswith("@"):
+        return jsonify({"error": "A valid email address is required."}), 400
+    session["user_email"] = email
+    return jsonify({"user_email": email}), 200
+
 @app.route("/document-studio/import", methods=["POST"])
 def document_studio_import():
     uploaded = request.files.get("file")
