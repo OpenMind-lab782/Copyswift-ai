@@ -23,6 +23,7 @@ from payment_engine.api.index import index_api
 from payment_engine.api.frontend import frontend_api
 from payment_engine.api.auth_routes import auth_api
 import os, hashlib, json, requests, time, sqlite3, base64, logging
+from payment_engine.database.postgres import PostgreSQLDatabase
 import cloudinary
 import cloudinary.uploader
 from datetime import datetime, timedelta, UTC
@@ -875,19 +876,31 @@ def save_credit_purchase(email, package, ads, amount_usd, amount_local, method, 
         db.commit()
 
 def activate_credit_purchase(tx_ref):
-    """Mark a pending credit_purchases row as activated and credit the user."""
+    """Atomically activate a pending purchase, credit the user, and record referral commission."""
     with get_db() as db:
-        row = db.execute("SELECT * FROM credit_purchases WHERE tx_ref=? AND status='pending'", (tx_ref,)).fetchone()
-        if not row:
-            return None
-        add_credits(row["email"], row["ads"])
-        if row["ref_code"]:
-            commission = round(row["amount_usd"] * 0.25, 2)
-            record_referral(row["ref_code"], row["email"], commission, tx_ref)
-        db.execute("UPDATE credit_purchases SET status='activated', activated_at=datetime('now') WHERE id=?", (row["id"],))
-        db.commit()
-    return dict(row)
+        try:
+            row = db.execute("SELECT * FROM credit_purchases WHERE tx_ref=? AND status='pending'", (tx_ref,)).fetchone()
+            if not row:
+                return None
 
+            cur = db.execute("UPDATE credit_purchases SET status='activated', activated_at=datetime('now') WHERE id=? AND status='pending'", (row["id"],))
+            if cur.rowcount != 1:
+                return None
+
+            db.execute("INSERT INTO credits (email, balance) VALUES (?, ?) ON CONFLICT(email) DO UPDATE SET balance = balance + ?", (row["email"], row["ads"], row["ads"]))
+
+            if row["ref_code"]:
+                commission = round(row["amount_usd"] * 0.25, 2)
+                existing = db.execute("SELECT 1 FROM referrals WHERE tx_ref=?", (tx_ref,)).fetchone()
+                if not existing:
+                    db.execute("INSERT INTO referrals (ref_code, subscriber_email, amount_earned, tx_ref) VALUES (?,?,?,?)", (row["ref_code"], row["email"], commission, tx_ref))
+                    db.execute("UPDATE affiliates SET total_earned=total_earned+?, pending_payout=pending_payout+? WHERE ref_code=?", (commission, commission, row["ref_code"]))
+
+            db.commit()
+            return dict(row)
+        except Exception:
+            db.rollback()
+            raise
 
 def get_fingerprint():
     ip = request.headers.get("X-Forwarded-For", request.remote_addr or "unknown")
@@ -2126,30 +2139,48 @@ def pay_paystack():
 
 @app.route('/verify-paystack')
 def verify_paystack():
-    ref = request.args.get('reference') or session.get('pay_ref','')
+    ref = request.args.get('reference') or session.get('pay_ref', '')
     if ref and PAYSTACK_SECRET:
-        res = paystack_verify(ref)
-        if res.get('data',{}).get('status') == 'success':
-            email = session.get('pay_email','')
-            purchase = activate_credit_purchase(ref)
-            if email:
-                session['user_email'] = email
-
+        with get_db() as db:
+            purchase_row = db.execute("SELECT * FROM credit_purchases WHERE tx_ref=? AND status='pending'", (ref,)).fetchone()
+        if purchase_row:
+            res = paystack_verify(ref)
+            data = res.get("data") or {}
+            customer = data.get("customer") or {}
+            stored_amount = str(purchase_row["amount_local"] or "").replace("₦", "").replace(",", "").strip()
             try:
-                send_notification_email(
-                    email,
-                    "Payment Successful - CopySwift AI™",
-                    f"""
-                    <h2>Payment Successful</h2>
-                    <p>Hello,</p>
-                    <p>Your payment has been received successfully.</p>
-                    <p>Your AI credits have been activated and are now available in your account.</p>
-                    <hr>
-                    <p><b>Thank you for choosing CopySwift AI™.</b></p>
-                    """
-                )
-            except Exception as e:
-                print(f"[Email] {e}")
+                expected_kobo = int(round(float(stored_amount) * 100))
+            except (TypeError, ValueError):
+                expected_kobo = None
+            verified = (
+                data.get("status") == "success"
+                and data.get("reference") == ref
+                and data.get("currency") == "NGN"
+                and expected_kobo is not None
+                and data.get("amount") == expected_kobo
+                and str(customer.get("email", "")).strip().lower() == str(purchase_row["email"]).strip().lower()
+            )
+            if verified:
+                email = purchase_row["email"]
+                purchase = activate_credit_purchase(ref)
+                if email:
+                    session["user_email"] = email
+                if purchase:
+                    try:
+                        send_notification_email(
+                            email,
+                            "Payment Successful - CopySwift AI™",
+                            f"""
+                            <h2>Payment Successful</h2>
+                            <p>Hello,</p>
+                            <p>Your payment has been received successfully.</p>
+                            <p>Your AI credits have been activated and are now available in your account.</p>
+                            <hr>
+                            <p><b>Thank you for choosing CopySwift AI™.</b></p>
+                            """
+                        )
+                    except Exception as e:
+                        print(f"[Email] {e}")
     return redirect('/')
 
 @app.route('/confirm-crypto', methods=['POST'])
