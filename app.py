@@ -2115,23 +2115,6 @@ def pay_paystack():
             session['pay_email'] = email
             session['pay_package'] = package
             save_credit_purchase(email, package, pkg['ads'], pkg['usd'], f"₦{amount_ngn:,.2f}", "paystack", ref, ref_code=resolve_ref_code(email))
-            engine_result = payment_engine.create_payment(
-                gateway="paystack",
-                amount=amount_ngn,
-                currency="NGN",
-                customer={
-                    "email": email
-                }
-            )
-
-            if (
-                isinstance(engine_result, dict)
-                and engine_result.get("authorization_url")
-            ):
-                return redirect(
-                    engine_result["authorization_url"]
-                )
-
             res = paystack_init(email, amount_kobo, ref)
 
             if res.get('status'):
@@ -2145,12 +2128,6 @@ def pay_paystack():
 def verify_paystack():
     ref = request.args.get('reference') or session.get('pay_ref','')
     if ref and PAYSTACK_SECRET:
-
-        engine_result = payment_engine.verify_payment(
-            "paystack",
-            ref
-        )
-
         res = paystack_verify(ref)
         if res.get('data',{}).get('status') == 'success':
             email = session.get('pay_email','')
