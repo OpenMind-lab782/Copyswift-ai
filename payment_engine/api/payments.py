@@ -200,6 +200,10 @@ def verify_payment(reference):
     if payment is None:
         return jsonify({"error": "Payment not found"}), 404
 
+    merchant = getattr(g, "merchant", None)
+    if merchant is not None and payment.get("merchant_id") != merchant["merchant_id"]:
+        return jsonify({"error": "Payment not found"}), 404
+
     payment_service.update_status(
         reference,
         "verified",
@@ -220,6 +224,10 @@ def refund_payment(reference):
     if payment is None:
         return jsonify({"error": "Payment not found"}), 404
 
+    merchant = getattr(g, "merchant", None)
+    if merchant is not None and payment.get("merchant_id") != merchant["merchant_id"]:
+        return jsonify({"error": "Payment not found"}), 404
+
     payment_service.update_status(
         reference,
         "refunded",
@@ -238,6 +246,10 @@ def cancel_payment(reference):
     payment = payment_service.get(reference)
 
     if payment is None:
+        return jsonify({"error": "Payment not found"}), 404
+
+    merchant = getattr(g, "merchant", None)
+    if merchant is not None and payment.get("merchant_id") != merchant["merchant_id"]:
         return jsonify({"error": "Payment not found"}), 404
 
     payment_service.update_status(
