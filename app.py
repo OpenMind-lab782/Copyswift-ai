@@ -40,6 +40,7 @@ from payment_engine.deployment import ProductionValidator
 from payment_engine.deployment.postgresql_readiness import (
     PostgreSQLReadinessService,
 )
+from payment_engine.database.postgres_schema import initialize_postgres_schema
 
 load_dotenv()
 # --- Application logging ---------------------------------------------------
@@ -343,6 +344,9 @@ def diagnostics():
 
 
 
+
+if os.getenv("SWIFT_DB_BACKEND", "sqlite").strip().lower() == "postgres":
+    initialize_postgres_schema(PostgreSQLDatabase())
 
 payment_engine = PaymentEngine()
 
