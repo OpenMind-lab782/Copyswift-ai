@@ -66,6 +66,8 @@ class TestPaymentEngine(unittest.TestCase):
             customer="test@example.com"
         )
         self.assertEqual(tx.status, "pending")
+        tx.set_status("refunded")
+        self.assertEqual(tx.status, "refunded")
 
     def test_payment_request(self):
         req = PaymentRequest(

@@ -11,6 +11,7 @@ VALID_STATUSES = (
     "activated",
     "failed",
     "cancelled",
+    "refunded",
 )
 
 
