@@ -1,6 +1,6 @@
 # Swift Payment Engine
 
-![Version](https://img.shields.io/badge/version-2.0.0-blue)
+![Version](https://img.shields.io/badge/version-5.0.0-blue)
 ![Status](https://img.shields.io/badge/status-Production-green)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 
