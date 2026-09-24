@@ -24,6 +24,8 @@ jobs:
         run: |
           set -euo pipefail
 
+          echo "::add-mask::$DATABASE_URL"
+
           if [ -z "${DATABASE_URL:-}" ]; then
             echo "ERROR: PRODUCTION_DATABASE_URL is not configured."
             exit 1
