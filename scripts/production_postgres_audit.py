@@ -4,11 +4,7 @@ import sys
 from sqlalchemy import create_engine, inspect, text
 
 REQUIRED_TABLES = (
-    "credits",
-    "credit_purchases",
     "payments",
-    "referrals",
-    "affiliates",
     "payment_events",
     "settlements",
     "reconciliation_records",
