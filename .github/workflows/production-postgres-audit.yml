@@ -1,0 +1,120 @@
+name: Production PostgreSQL Read-Only Audit
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+
+    env:
+      DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+
+    steps:
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Validate database secret
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "::add-mask::$DATABASE_URL"
+
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo "ERROR: PRODUCTION_DATABASE_URL is not configured."
+            exit 1
+          fi
+
+          case "$DATABASE_URL" in
+            postgresql://*|postgres://*)
+              echo "PostgreSQL connection URL detected."
+              ;;
+            *)
+              echo "ERROR: Use the Render PostgreSQL connection URL."
+              exit 1
+              ;;
+          esac
+
+      - name: Run read-only production audit
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          export PGSSLMODE=require
+
+          psql "$DATABASE_URL" \
+            --set=ON_ERROR_STOP=1 \
+            --tuples-only \
+            --no-align \
+            <<'SQL'
+          BEGIN READ ONLY;
+
+          SELECT
+              'DATABASE',
+              current_database(),
+              current_user,
+              current_setting('server_version');
+
+          SELECT
+              'TABLE',
+              table_schema,
+              table_name
+          FROM information_schema.tables
+          WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
+          ORDER BY table_schema, table_name;
+
+          SELECT
+              'COPY_SWIFT_TABLE',
+              table_name
+          FROM information_schema.tables
+          WHERE table_schema = 'public'
+            AND table_name IN (
+              'credits',
+              'credit_purchases',
+              'payments',
+              'referrals',
+              'affiliates'
+            )
+          ORDER BY table_name;
+
+          SELECT
+              'PAYMENT_ENGINE_TABLE',
+              table_name
+          FROM information_schema.tables
+          WHERE table_schema = 'public'
+            AND table_name IN (
+              'payment_events',
+              'settlements',
+              'reconciliation_records',
+              'reconciliation_report_records'
+            )
+          ORDER BY table_name;
+
+          SELECT
+              'COLUMN',
+              table_name,
+              column_name,
+              data_type
+          FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name IN (
+              'credits',
+              'credit_purchases',
+              'payments',
+              'referrals',
+              'affiliates',
+              'payment_events',
+              'settlements',
+              'reconciliation_records',
+              'reconciliation_report_records'
+            )
+          ORDER BY table_name, ordinal_position;
+
+          ROLLBACK;
+          SQL
