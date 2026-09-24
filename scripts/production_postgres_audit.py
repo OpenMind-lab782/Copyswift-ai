@@ -54,6 +54,6 @@ if __name__ == "__main__":
     try:
         audit()
     except Exception as exc:
-        print("AUDIT FAILED:", type(exc).__name__, file=sys.stderr)
+        print("AUDIT FAILED:", type(exc).__name__ + ": " + str(exc), file=sys.stderr)
         sys.exit(1)
     print("AUDIT PASSED")
