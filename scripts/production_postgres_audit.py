@@ -39,6 +39,7 @@ def audit():
                 print("DATABASE:", identity[0])
                 print("POSTGRESQL:", identity[2])
                 print("TABLES FOUND:", len(tables))
+                print("TABLE NAMES:", ", ".join(sorted(tables)))
                 print("REQUIRED TABLES:", len(REQUIRED_TABLES))
                 if missing:
                     raise RuntimeError("Missing required tables: " + ", ".join(missing))
