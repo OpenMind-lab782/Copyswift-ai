@@ -2252,6 +2252,15 @@ def admin_logout():
     session.pop('admin_logged_in', None)
     return redirect('/admin/login')
 
+# READONLY_CREDIT_PURCHASES_SCHEMA_AUDIT
+@app.route('/admin/schema/credit-purchases', methods=['GET'])
+@admin_required
+def admin_credit_purchases_schema():
+    with get_db() as db:
+        table_info=[dict(r) for r in db.execute("PRAGMA table_info(credit_purchases)").fetchall()]
+        index_list=[dict(r) for r in db.execute("PRAGMA index_list(credit_purchases)").fetchall()]
+    return jsonify({"table":"credit_purchases","table_info":table_info,"index_list":index_list})
+
 @app.route('/admin')
 @admin_required
 def admin_dashboard():
