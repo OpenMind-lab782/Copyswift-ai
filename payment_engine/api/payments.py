@@ -204,11 +204,11 @@ def verify_payment(reference):
     if merchant is not None and payment.get("merchant_id") != merchant["merchant_id"]:
         return jsonify({"error": "Payment not found"}), 404
 
-    payment_service.update_status(
-        reference,
-        "verified",
-    )
+    gateway = payment.get("gateway")
+    if not gateway:
+        return jsonify({"error": "Payment gateway is missing"}), 400
 
+    engine.verify_payment(gateway, reference)
     return jsonify(payment_service.get(reference))
 
 
