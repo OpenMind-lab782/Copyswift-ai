@@ -695,6 +695,25 @@ def init_db():
         db.execute("CREATE TABLE IF NOT EXISTS ip_usage (id INTEGER PRIMARY KEY AUTOINCREMENT, ip TEXT NOT NULL, date TEXT NOT NULL, count INTEGER DEFAULT 1, UNIQUE(ip, date))")
         db.commit()
 
+        business_profile_columns = {
+            "brand_voice": "TEXT DEFAULT 'Professional'",
+            "brand_style": "TEXT DEFAULT 'Modern'",
+            "brand_goal": "TEXT DEFAULT 'Sales'",
+            "brand_keywords": "TEXT DEFAULT ''",
+            "brand_cta": "TEXT DEFAULT 'Order Now'",
+            "winning_headlines": "TEXT",
+            "winning_ctas": "TEXT",
+            "customer_objections": "TEXT",
+            "marketing_notes": "TEXT",
+            "seasonal_campaigns": "TEXT",
+            "last_campaign_summary": "TEXT",
+        }
+        existing_business_profile_columns = {row["name"] for row in db.execute("PRAGMA table_info(business_profiles)")}
+        for name, definition in business_profile_columns.items():
+            if name not in existing_business_profile_columns:
+                db.execute(f"ALTER TABLE business_profiles ADD COLUMN {name} {definition}")
+        db.commit()
+
 init_db()
 
 def is_pro_email(email):

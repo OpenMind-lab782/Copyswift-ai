@@ -15,6 +15,18 @@ def build_prompt(profile, offer, customer, hesitation, platform, tone):
 
     return f"""{memory}
 
+You are generating marketing copy from supplied business information.
+FACTUAL-GROUNDING RULE:
+- Treat only the supplied business/profile information below as business facts.
+- Never invent or assume a phone number, email address, URL, price, discount,
+  coupon code, promotion, guarantee, testimonial, review, rating, customer quote,
+  location, opening hours, delivery time, availability, certification, statistic,
+  quantity, or performance result.
+- Do not turn a marketing suggestion into an existing business fact.
+- If a fact is not supplied, omit it.
+- A generic call to action such as "Message us to learn more" is allowed.
+- Persuasive wording is allowed only when it does not introduce unsupported facts.
+
 Write 3 short ad copy variations for {platform}, in a {tone} tone.
 
 What's being sold:
