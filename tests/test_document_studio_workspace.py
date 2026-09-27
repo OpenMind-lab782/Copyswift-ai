@@ -19,9 +19,15 @@ class DocumentStudioWorkspaceRepositoryTests(unittest.TestCase):
         public = self.repository.create({"name": "x.pdf", "pages": []}, original, "u@example.com")
         self.assertIn("document_token", public)
         self.assertNotIn("original_bytes", public)
+        self.assertIsInstance(public["created_at"], str)
+        self.assertIsInstance(public["updated_at"], str)
+        self.assertTrue(public["created_at"])
+        self.assertTrue(public["updated_at"])
         stored = self.repository.get(public["document_token"], "u@example.com")
         self.assertEqual(stored["original_bytes"], original)
         self.assertEqual(stored["original_sha256"], hashlib.sha256(original).hexdigest())
+        self.assertEqual(stored["created_at"], public["created_at"])
+        self.assertEqual(stored["updated_at"], public["updated_at"])
         self.assertIsNone(self.repository.get(public["document_token"], "other@example.com"))
 
     def test_tampered_original_is_rejected(self):
