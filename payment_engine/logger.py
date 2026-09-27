@@ -27,17 +27,29 @@ if not logger.handlers:
     logger.addHandler(console_handler)
 
 
-def log_payment_event(event, **kwargs):
-    details = " | ".join(
-        f"{k}={v}" for k, v in kwargs.items()
+_SENSITIVE_LOG_FIELDS = {
+    "authorization_url",
+    "access_code",
+    "customer",
+}
+
+
+def _redact_log_value(key, value):
+    if key in _SENSITIVE_LOG_FIELDS:
+        return "[REDACTED]"
+    return value
+
+
+def _format_log_details(kwargs):
+    return " | ".join(
+        f"{k}={_redact_log_value(k, v)}" for k, v in kwargs.items()
     )
 
-    logger.info(f"{event} | {details}")
+
+def log_payment_event(event, **kwargs):
+    logger.info(f"{event} | {_format_log_details(kwargs)}")
 
 
 def log_error(event, error, **kwargs):
-    details = " | ".join(
-        f"{k}={v}" for k, v in kwargs.items()
-    )
-
+    details = _format_log_details(kwargs)
     logger.error(f"{event} | {details} | error={error}")

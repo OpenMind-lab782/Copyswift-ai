@@ -125,6 +125,78 @@ class PaystackEngineAdapterTests(unittest.TestCase):
         self.assertEqual(result["status"], "failed")
         self.assertIn("amount", result["message"].lower())
 
+    def test_sandbox_verification_rejects_null_currency(self):
+        http = FakePaystackHttp(
+            verify_body={
+                "status": True,
+                "message": "Verification successful",
+                "data": {
+                    "status": "success",
+                    "reference": "COPY-TEST-1",
+                    "amount": 10000,
+                    "currency": None,
+                },
+            }
+        )
+        gateway = PaystackGateway(
+            mode=ProviderMode.SANDBOX,
+            secret_key="sk_test_unit",
+            http_client=http,
+        )
+
+        result = gateway.verify_payment(
+            "COPY-TEST-1",
+            expected_amount=100,
+            expected_currency="NGN",
+        )
+
+        self.assertEqual(result["status"], "failed")
+        self.assertIn("currency", result["message"].lower())
+
+    def test_sandbox_verification_rejects_missing_data(self):
+        http = FakePaystackHttp(
+            verify_body={
+                "status": True,
+                "message": "Verification successful",
+            }
+        )
+        gateway = PaystackGateway(
+            mode=ProviderMode.SANDBOX,
+            secret_key="sk_test_unit",
+            http_client=http,
+        )
+
+        result = gateway.verify_payment(
+            "COPY-TEST-1",
+            expected_amount=100,
+            expected_currency="NGN",
+        )
+
+        self.assertEqual(result["status"], "failed")
+        self.assertIn("status", result["message"].lower())
+
+    def test_sensitive_payment_fields_are_redacted_from_logs(self):
+        with patch("payment_engine.logger.logger.info") as mock_info:
+            from payment_engine.logger import log_payment_event
+
+            log_payment_event(
+                "payment_initialized",
+                authorization_url="https://checkout.paystack.com/secret",
+                access_code="secret-access-code",
+                customer="customer@example.com",
+                reference="COPY-TEST-1",
+                amount=100,
+                currency="NGN",
+            )
+
+        message = mock_info.call_args.args[0]
+        self.assertNotIn("https://checkout.paystack.com/secret", message)
+        self.assertNotIn("secret-access-code", message)
+        self.assertNotIn("customer@example.com", message)
+        self.assertEqual(message.count("[REDACTED]"), 3)
+        self.assertIn("reference=COPY-TEST-1", message)
+        self.assertIn("amount=100", message)
+
     def test_engine_can_select_sandbox_without_changing_default(self):
         with patch.dict(
             os.environ,
