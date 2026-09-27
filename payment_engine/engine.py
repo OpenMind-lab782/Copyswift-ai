@@ -193,10 +193,14 @@ class PaymentEngine:
             context,
         )
 
-        result = self.get_gateway(gateway).initialize_payment(
+        initialize_method = self.get_gateway(gateway).initialize_payment
+
+        result = self.circuit_breaker.execute(
+            self.retry.execute,
+            initialize_method,
             amount,
             currency,
-            customer
+            customer,
         )
 
         if isinstance(result, dict):

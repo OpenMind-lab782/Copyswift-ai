@@ -197,6 +197,32 @@ class PaystackEngineAdapterTests(unittest.TestCase):
         self.assertIn("reference=COPY-TEST-1", message)
         self.assertIn("amount=100", message)
 
+    def test_engine_initialization_uses_retry_policy(self):
+        class FailingGateway:
+            def __init__(self):
+                self.calls = 0
+
+            def initialize_payment(self, amount, currency, customer):
+                self.calls += 1
+                raise RuntimeError("transport failure")
+
+        engine = PaymentEngine(payment_service=object())
+        gateway = FailingGateway()
+
+        with patch.object(engine, "get_gateway", return_value=gateway):
+            with self.assertRaises(RuntimeError):
+                engine.create_payment(
+                    "paystack",
+                    100,
+                    "NGN",
+                    {"email": "customer@example.com"},
+                )
+
+        self.assertEqual(
+            gateway.calls,
+            engine.config.retry_attempts,
+        )
+
     def test_engine_can_select_sandbox_without_changing_default(self):
         with patch.dict(
             os.environ,

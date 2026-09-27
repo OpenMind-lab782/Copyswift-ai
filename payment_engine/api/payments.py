@@ -108,10 +108,17 @@ def initialize_payment():
         result["idempotency_key"] = idempotency_key
         result["idempotency_fingerprint"] = idempotency_fingerprint
 
-    print("=" * 60)
-    print("PAYMENT BEFORE SAVE")
-    print("=" * 60)
-    print(result)
+    from payment_engine.logger import log_payment_event
+
+    if isinstance(result, dict):
+        log_payment_event(
+            "payment_before_save",
+            gateway=result.get("gateway"),
+            mode=result.get("mode"),
+            reference=result.get("reference"),
+            amount=result.get("amount"),
+            currency=result.get("currency"),
+        )
 
     payment_service.save(result)
 
