@@ -83,8 +83,16 @@ class DocumentStudioWorkspaceRepository:
                 "original_bytes": original_bytes,
                 "baseline_document": self._serialize_document(stored_document),
             })
+            timestamps = connection.execute(
+                text("SELECT created_at, updated_at FROM document_studio_workspaces WHERE token_hash = :token_hash LIMIT 1"),
+                {"token_hash": token_hash},
+            ).mappings().first()
 
         logger.info("DS_IMPORT_WORKSPACE_INSERT_COMPLETE")
+        if timestamps is None:
+            raise RuntimeError("Document Studio workspace timestamps could not be persisted.")
+        stored_document["created_at"] = timestamps["created_at"].isoformat() if hasattr(timestamps["created_at"], "isoformat") else str(timestamps["created_at"])
+        stored_document["updated_at"] = timestamps["updated_at"].isoformat() if hasattr(timestamps["updated_at"], "isoformat") else str(timestamps["updated_at"])
         public_document = self._public_document(stored_document)
         public_document["document_token"] = token
         return public_document
@@ -94,7 +102,7 @@ class DocumentStudioWorkspaceRepository:
             return None
         statement = text("""
             SELECT token_hash, owner_email, original_sha256,
-                   original_bytes, baseline_document
+                   original_bytes, baseline_document, created_at, updated_at
             FROM document_studio_workspaces
             WHERE token_hash = :token_hash
             LIMIT 1
@@ -121,4 +129,6 @@ class DocumentStudioWorkspaceRepository:
             "document": document,
             "original_bytes": original_bytes,
             "original_sha256": row["original_sha256"],
+            "created_at": row["created_at"].isoformat() if hasattr(row["created_at"], "isoformat") else str(row["created_at"]),
+            "updated_at": row["updated_at"].isoformat() if hasattr(row["updated_at"], "isoformat") else str(row["updated_at"]),
         }
