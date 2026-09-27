@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import os
 from payment_engine.registry import GatewayRegistry
 from payment_engine.health import HealthRegistry
 from payment_engine.idempotency import IdempotencyManager
@@ -62,7 +63,13 @@ class PaymentEngine:
             )
 
         self.gateway_config.configure('crypto')
-        self.gateway_config.configure('paystack')
+        self.gateway_config.configure(
+            'paystack',
+            os.getenv('PAYSTACK_ENGINE_MODE', 'mock'),
+        )
+        self.get_gateway('paystack').set_mode(
+            self.gateway_config.mode('paystack')
+        )
         self.gateway_config.configure('flutterwave')
         self.gateway_config.configure('dpo')
 
@@ -94,6 +101,10 @@ class PaymentEngine:
 
     def configure_gateway(self, gateway_name, mode):
         self.gateway_config.configure(gateway_name, mode)
+        gateway = self.get_gateway(gateway_name)
+        set_mode = getattr(gateway, 'set_mode', None)
+        if set_mode is not None:
+            set_mode(mode)
 
 
 
@@ -257,11 +268,22 @@ class PaymentEngine:
 
             return duplicate
 
+        payment = self.payment_service.get(reference)
+        verify_method = self.get_gateway(gateway).verify_payment
+
+        verify_args = (reference,)
+        if gateway == 'paystack' and payment is not None:
+            verify_args = (
+                reference,
+                payment.get('amount'),
+                payment.get('currency'),
+            )
+
         with Timer() as timer:
             result = self.circuit_breaker.execute(
                 self.retry.execute,
-                self.get_gateway(gateway).verify_payment,
-                reference,
+                verify_method,
+                *verify_args,
             )
 
         self.latency.record(gateway, timer.elapsed)
