@@ -28,10 +28,13 @@ def learning_summary(score):
     }
 
 
-def persist_learning(db, profile_id, campaign_text, score):
+def persist_learning(db, profile_id, campaign_text, score, validated=True):
     """
-    Save high-quality campaigns into the Business Brain.
+    Save high-quality, validated campaigns into the Business Brain.
+    Generated copy must pass the grounding boundary before it becomes memory.
     """
+    if not validated:
+        return False
 
     if not should_learn(score):
         return False
