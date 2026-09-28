@@ -67,6 +67,88 @@ class DocumentStudioHttpTests(unittest.TestCase):
         self.assertEqual(exported_document['original_bytes'], original)
         self.assertEqual(exported_document['original_sha256'], hashlib.sha256(original).hexdigest())
 
+    def test_export_uses_server_stored_baseline(self):
+        original = b"%PDF-server-baseline%"
+        server_baseline = {
+            "name": "test.pdf",
+            "page_count": 1,
+            "pages": [{
+                "number": 1,
+                "width": 300,
+                "height": 300,
+                "elements": [{
+                    "id": "server-text",
+                    "type": "text",
+                    "content": "Server baseline",
+                    "x": 10,
+                    "y": 20,
+                    "width": 100,
+                    "height": 20,
+                }],
+            }],
+        }
+        public = self.repository.create(server_baseline, original, "u@example.com")
+        client_document = {
+            "name": "test.pdf",
+            "page_count": 1,
+            "pages": [{
+                "number": 1,
+                "width": 300,
+                "height": 300,
+                "elements": [{
+                    "id": "client-text",
+                    "type": "text",
+                    "content": "Legitimate edit",
+                    "x": 30,
+                    "y": 40,
+                    "width": 100,
+                    "height": 20,
+                }],
+            }],
+            "original_pages": [{
+                "number": 1,
+                "width": 300,
+                "height": 300,
+                "elements": [{
+                    "id": "attacker-text",
+                    "type": "text",
+                    "content": "Attacker baseline",
+                    "x": 1,
+                    "y": 2,
+                    "width": 100,
+                    "height": 20,
+                }],
+            }],
+        }
+        with self.client.session_transaction() as session:
+            session["user_email"] = "u@example.com"
+        with patch.object(app_module, "deduct_credits", return_value=True), patch.object(
+            app_module.document_kernel.document_studio,
+            "export_document",
+            return_value=b"%PDF-output%",
+        ) as export_mock:
+            response = self.client.post(
+                "/document-studio/export",
+                json={
+                    "document_token": public["document_token"],
+                    "document": client_document,
+                },
+            )
+        self.assertEqual(response.status_code, 200)
+        exported_document = export_mock.call_args.args[0]
+        self.assertEqual(
+            exported_document["pages"],
+            client_document["pages"],
+        )
+        self.assertEqual(
+            exported_document["original_pages"],
+            server_baseline["pages"],
+        )
+        self.assertNotEqual(
+            exported_document["original_pages"],
+            client_document["original_pages"],
+        )
+
     def test_export_requires_login(self):
         original = b'%PDF-login-required%'
         public = self.repository.create({'name': 'test.pdf', 'page_count': 1, 'pages': []}, original, 'u@example.com')

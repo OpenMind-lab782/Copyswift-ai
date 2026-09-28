@@ -230,6 +230,7 @@ def document_studio_export():
         authoritative_document.pop("original_bytes", None)
         authoritative_document["original_bytes"] = stored["original_bytes"]
         authoritative_document["original_sha256"] = stored["original_sha256"]
+        authoritative_document["original_pages"] = (stored["document"].get("original_pages") or stored["document"].get("pages") or [])
         logger.info("DS_EXPORT_RENDER_START elapsed=%.3f", time.monotonic() - export_started)
         pdf_bytes = document_kernel.document_studio.export_document(
             authoritative_document,
