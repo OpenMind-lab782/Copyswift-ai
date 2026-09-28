@@ -199,6 +199,92 @@ def document_studio_import():
         return jsonify({"error": "Document import failed.", "detail": str(exc)}), 500
 
 
+@app.route("/document-studio/save", methods=["POST"])
+def document_studio_save():
+    save_started = time.monotonic()
+    logger.info("DS_SAVE_START")
+    user_email = session.get("user_email", "")
+    is_admin = session.get("admin_logged_in", False)
+    logger.info(
+        "DS_SAVE_SESSION_READ_COMPLETE has_user_email=%s is_admin=%s",
+        bool(user_email),
+        bool(is_admin),
+    )
+    if not user_email and not is_admin:
+        return jsonify({"error": "Document Studio save requires login."}), 401
+
+    payload = request.get_json(silent=True) or {}
+    document_token = payload.get("document_token")
+    document = payload.get("document")
+    expected_revision = payload.get("expected_revision")
+
+    if not document_token or not isinstance(document, dict):
+        return jsonify({
+            "error": "A document token and canonical document are required."
+        }), 400
+    if (
+        not isinstance(expected_revision, int)
+        or isinstance(expected_revision, bool)
+        or expected_revision < 0
+    ):
+        return jsonify({
+            "error": "A non-negative document revision is required."
+        }), 400
+
+    try:
+        logger.info(
+            "DS_SAVE_WORKSPACE_START elapsed=%.3f",
+            time.monotonic() - save_started,
+        )
+        workspace = _get_document_studio_workspace_repository()
+        saved = workspace.save_current(
+            document_token,
+            document,
+            expected_revision,
+            None if is_admin else user_email,
+        )
+        logger.info(
+            "DS_SAVE_WORKSPACE_COMPLETE elapsed=%.3f found=%s",
+            time.monotonic() - save_started,
+            saved is not None,
+        )
+        if saved is None:
+            return jsonify({"error": "Document workspace was not found."}), 404
+
+        logger.info(
+            "DS_SAVE_SUCCESS elapsed=%.3f revision=%s",
+            time.monotonic() - save_started,
+            saved["revision"],
+        )
+        return jsonify({
+            "document_token": document_token,
+            "document": saved["document"],
+            "revision": saved["revision"],
+        }), 200
+    except ValueError as exc:
+        if str(exc) == "Document Studio workspace revision conflict.":
+            return jsonify({
+                "error": "Document Studio workspace revision conflict."
+            }), 409
+        logger.exception("DS_SAVE_VALIDATION_FAILURE")
+        return jsonify({
+            "error": "Document Studio save rejected.",
+            "detail": str(exc),
+        }), 400
+    except (TypeError, KeyError) as exc:
+        logger.exception("DS_SAVE_VALIDATION_FAILURE")
+        return jsonify({
+            "error": "Document Studio save rejected.",
+            "detail": str(exc),
+        }), 400
+    except Exception as exc:
+        logger.exception("DS_SAVE_FAILURE")
+        return jsonify({
+            "error": "Document Studio save failed.",
+            "detail": str(exc),
+        }), 500
+
+
 DOCUMENT_STUDIO_EXPORT_CREDITS = 60
 
 @app.route("/document-studio/export", methods=["POST"])
@@ -213,9 +299,15 @@ def document_studio_export():
 
     payload = request.get_json(silent=True) or {}
     document_token = payload.get("document_token")
-    document = payload.get("document")
-    if not document_token or not isinstance(document, dict):
-        return jsonify({"error": "A document token and canonical document are required."}), 400
+    expected_revision = payload.get("expected_revision")
+    if not document_token:
+        return jsonify({"error": "A document token is required."}), 400
+    if (
+        not isinstance(expected_revision, int)
+        or isinstance(expected_revision, bool)
+        or expected_revision < 0
+    ):
+        return jsonify({"error": "A non-negative document revision is required."}), 400
 
     try:
         logger.info("DS_EXPORT_WORKSPACE_GET_START elapsed=%.3f", time.monotonic() - export_started)
@@ -225,12 +317,10 @@ def document_studio_export():
         if stored is None:
             return jsonify({"error": "Document workspace was not found."}), 404
 
-        authoritative_document = dict(document)
-        authoritative_document.pop("document_token", None)
-        authoritative_document.pop("original_bytes", None)
-        authoritative_document["original_bytes"] = stored["original_bytes"]
-        authoritative_document["original_sha256"] = stored["original_sha256"]
-        authoritative_document["original_pages"] = (stored["document"].get("original_pages") or stored["document"].get("pages") or [])
+        if stored["revision"] != expected_revision:
+            return jsonify({"error": "Document Studio workspace revision conflict."}), 409
+
+        authoritative_document = stored["document"]
         logger.info("DS_EXPORT_RENDER_START elapsed=%.3f", time.monotonic() - export_started)
         pdf_bytes = document_kernel.document_studio.export_document(
             authoritative_document,
