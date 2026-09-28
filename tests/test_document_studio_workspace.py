@@ -38,5 +38,201 @@ class DocumentStudioWorkspaceRepositoryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "integrity verification"):
             self.repository.get(public["document_token"], "u@example.com")
 
+    def test_create_starts_revision_at_zero(self):
+        public = self.repository.create(
+            {"name": "x.pdf", "pages": []},
+            b"%PDF-revision%",
+            "u@example.com",
+        )
+        self.assertEqual(public["revision"], 0)
+        stored = self.repository.get(public["document_token"], "u@example.com")
+        self.assertEqual(stored["revision"], 0)
+
+    def test_save_current_advances_revision_and_persists_edit(self):
+        original = b"%PDF-save%"
+        baseline = {
+            "name": "x.pdf",
+            "pages": [{
+                "number": 1,
+                "width": 300,
+                "height": 300,
+                "elements": [{
+                    "id": "text-1",
+                    "type": "text",
+                    "content": "Before",
+                    "x": 10,
+                    "y": 20,
+                    "width": 100,
+                    "height": 20,
+                }],
+            }],
+        }
+        public = self.repository.create(baseline, original, "u@example.com")
+
+        proposed = {
+            "pages": [{
+                "number": 1,
+                "width": 300,
+                "height": 300,
+                "elements": [{
+                    "id": "text-1",
+                    "type": "text",
+                    "content": "After",
+                    "x": 30,
+                    "y": 40,
+                    "width": 100,
+                    "height": 20,
+                }],
+            }],
+        }
+
+        saved = self.repository.save_current(
+            public["document_token"],
+            proposed,
+            0,
+            "u@example.com",
+        )
+
+        self.assertEqual(saved["revision"], 1)
+        self.assertEqual(
+            saved["document"]["pages"][0]["elements"][0]["content"],
+            "After",
+        )
+
+        stored = self.repository.get(public["document_token"], "u@example.com")
+        self.assertEqual(stored["revision"], 1)
+        self.assertEqual(
+            stored["document"]["pages"][0]["elements"][0]["content"],
+            "After",
+        )
+
+    def test_save_current_rejects_stale_revision(self):
+        baseline = {
+            "name": "x.pdf",
+            "pages": [{
+                "number": 1,
+                "width": 300,
+                "height": 300,
+                "elements": [{
+                    "id": "text-1",
+                    "type": "text",
+                    "content": "Before",
+                    "x": 10,
+                    "y": 20,
+                    "width": 100,
+                    "height": 20,
+                }],
+            }],
+        }
+        public = self.repository.create(baseline, b"%PDF-stale%", "u@example.com")
+
+        proposed = {
+            "pages": [{
+                "number": 1,
+                "width": 300,
+                "height": 300,
+                "elements": [{
+                    "id": "text-1",
+                    "type": "text",
+                    "content": "First save",
+                    "x": 10,
+                    "y": 20,
+                    "width": 100,
+                    "height": 20,
+                }],
+            }],
+        }
+
+        self.repository.save_current(
+            public["document_token"],
+            proposed,
+            0,
+            "u@example.com",
+        )
+
+        stale = {
+            "pages": [{
+                "number": 1,
+                "width": 300,
+                "height": 300,
+                "elements": [{
+                    "id": "text-1",
+                    "type": "text",
+                    "content": "Stale overwrite",
+                    "x": 10,
+                    "y": 20,
+                    "width": 100,
+                    "height": 20,
+                }],
+            }],
+        }
+
+        with self.assertRaisesRegex(ValueError, "revision conflict"):
+            self.repository.save_current(
+                public["document_token"],
+                stale,
+                0,
+                "u@example.com",
+            )
+
+        stored = self.repository.get(public["document_token"], "u@example.com")
+        self.assertEqual(stored["revision"], 1)
+        self.assertEqual(
+            stored["document"]["pages"][0]["elements"][0]["content"],
+            "First save",
+        )
+
+    def test_save_current_rejects_server_owned_fields(self):
+        public = self.repository.create(
+            {"name": "x.pdf", "pages": []},
+            b"%PDF-owned%",
+            "u@example.com",
+        )
+        proposed = {
+            "document_token": public["document_token"],
+            "pages": [],
+        }
+
+        with self.assertRaisesRegex(ValueError, "server-owned fields"):
+            self.repository.save_current(
+                public["document_token"],
+                proposed,
+                0,
+                "u@example.com",
+            )
+
+    def test_save_current_keeps_baseline_page_metadata_server_authoritative(self):
+        baseline = {
+            "name": "x.pdf",
+            "pages": [{
+                "number": 1,
+                "width": 300,
+                "height": 300,
+                "elements": [],
+            }],
+        }
+        public = self.repository.create(
+            baseline,
+            b"%PDF-metadata%",
+            "u@example.com",
+        )
+
+        proposed = {
+            "pages": [{
+                "number": 99,
+                "width": 999,
+                "height": 999,
+                "elements": [],
+            }],
+        }
+
+        with self.assertRaisesRegex(ValueError, "server-authoritative"):
+            self.repository.save_current(
+                public["document_token"],
+                proposed,
+                0,
+                "u@example.com",
+            )
+
 if __name__ == "__main__":
     unittest.main()
