@@ -40,6 +40,44 @@ class NativeMuPDFAdapterTests(unittest.TestCase):
             page_file.unlink(missing_ok=True)
             pdf_file.unlink(missing_ok=True)
 
+    def test_adapter_reports_text_and_image_structure_counts(self):
+        page_file = Path("native-mupdf-counts-page.txt")
+        pdf_file = Path("native-mupdf-counts.pdf")
+        try:
+            page_file.write_text(
+                "%%MediaBox 0 0 300 300\nBT\n/F1 12 Tf\n72 200 Td\n"
+                "(Count Test Text) Tj\nET\n"
+            )
+            subprocess.run(
+                ["mutool", "create", "-o", str(pdf_file), str(page_file)],
+                check=True,
+                capture_output=True,
+            )
+            result = NativeMuPDFAdapter().parse(
+                pdf_file.read_bytes(), "native-mupdf-counts.pdf"
+            )
+            pages = result["pages"]
+            text_elements = [
+                element
+                for page in pages
+                for element in page["elements"]
+                if element.get("type") == "text"
+            ]
+            image_elements = [
+                element
+                for page in pages
+                for element in page["elements"]
+                if element.get("type") == "image"
+            ]
+            text_chars = sum(len(element.get("content") or "") for element in text_elements)
+
+            self.assertGreater(len(text_elements), 0)
+            self.assertGreater(text_chars, 0)
+            self.assertEqual(len(image_elements), 0)
+        finally:
+            page_file.unlink(missing_ok=True)
+            pdf_file.unlink(missing_ok=True)
+
     def test_adapter_parses_real_pdf(self):
         page_file = Path("native-mupdf-test-page.txt")
         pdf_file = Path("native-mupdf-test.pdf")

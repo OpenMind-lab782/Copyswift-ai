@@ -135,7 +135,10 @@ class NativeMuPDFAdapter:
                 "elements": elements,
             })
 
-        logger.info("DS_IMPORT_MUPDF_COMPLETE pages=%d", len(pages))
+        text_element_total = sum(1 for page in pages for element in page["elements"] if element.get("type") == "text")
+        text_char_total = sum(len(element.get("content") or "") for page in pages for element in page["elements"] if element.get("type") == "text")
+        image_element_total = sum(1 for page in pages for element in page["elements"] if element.get("type") == "image")
+        logger.info("DS_IMPORT_MUPDF_COMPLETE pages=%d text_elements=%d text_chars=%d image_elements=%d", len(pages), text_element_total, text_char_total, image_element_total)
         return {
             "name": name,
             "pages": pages,
