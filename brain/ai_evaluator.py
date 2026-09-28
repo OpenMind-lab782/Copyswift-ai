@@ -3,6 +3,23 @@ AI Campaign Evaluation Engine
 """
 
 import json
+import math
+
+
+_SCORE_FIELDS = (
+    "overall",
+    "hook",
+    "clarity",
+    "cta",
+    "urgency",
+    "trust",
+    "emotional_appeal",
+    "benefit",
+)
+
+_REQUIRED_FIELDS = frozenset(
+    _SCORE_FIELDS + ("reasoning", "strengths", "improvement_tips")
+)
 
 
 def build_evaluation_prompt(campaign):
@@ -41,8 +58,39 @@ Rules:
 """
 
 
+def _valid_score(value):
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+        and 0 <= value <= 100
+    )
+
+
 def parse_evaluation(text):
     try:
-        return json.loads(text)
-    except Exception:
+        parsed = json.loads(text)
+    except (TypeError, ValueError):
         return None
+
+    if not isinstance(parsed, dict):
+        return None
+
+    if set(parsed) != _REQUIRED_FIELDS:
+        return None
+
+    if not all(_valid_score(parsed[field]) for field in _SCORE_FIELDS):
+        return None
+
+    if not isinstance(parsed["reasoning"], str):
+        return None
+
+    if not all(isinstance(item, str) for item in parsed["strengths"]):
+        return None
+
+    if not all(
+        isinstance(item, str) for item in parsed["improvement_tips"]
+    ):
+        return None
+
+    return parsed
