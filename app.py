@@ -51,6 +51,24 @@ logging.basicConfig(
 logger = logging.getLogger("copyswift")
 
 
+def _ad_copy_evaluation_provenance(evaluation_result):
+    """Return non-sensitive server-side provenance for an evaluation."""
+    items = evaluation_result.get("items") or []
+    sources = [
+        (item.get("score") or {}).get("evaluation_source")
+        for item in items
+    ]
+    return {
+        "request_id": request.headers.get("Rndr-Id") or request.headers.get("X-Request-ID") or None,
+        "edge_request_id": request.headers.get("CF-Ray") or None,
+        "deployment_commit": os.getenv("RENDER_GIT_COMMIT") or None,
+        "deployment_instance": os.getenv("RENDER_INSTANCE_ID") or None,
+        "evaluator": "EvaluationEngine",
+        "policy": "bounded-score-0-100-v1",
+        "sources": sources,
+    }
+
+
 # --- Groq HTTP API compatibility client ------------------------------------
 class _GroqHTTPResponse:
     def __init__(self, data):
@@ -3372,6 +3390,17 @@ def ad_copy_generate():
         )
         best_item = evaluation_result["best"] or {"content": "", "score": {}}
         campaign_score = best_item["score"]
+        evaluation_provenance = _ad_copy_evaluation_provenance(evaluation_result)
+        logger.info(
+            "AD_COPY_EVALUATION request_id=%s deployment_commit=%s "
+            "instance=%s policy=%s sources=%s best_score=%s",
+            evaluation_provenance["request_id"],
+            evaluation_provenance["deployment_commit"],
+            evaluation_provenance["deployment_instance"],
+            evaluation_provenance["policy"],
+            evaluation_provenance["sources"],
+            campaign_score.get("overall"),
+        )
 
         campaign_context = (
             "Offer: " + offer + "\n"
@@ -3431,6 +3460,7 @@ def ad_copy_generate():
         "best_variation_index": evaluation_result["best_index"],
         "strategist": strategist,
         "campaign_score": campaign_score,
+        "evaluation_provenance": evaluation_provenance,
         "learning": learning,
         "remaining_uses": _ad_copy_remaining_uses(),
     })
