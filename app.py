@@ -419,6 +419,12 @@ def diagnostics():
         "status": "ok" if report["ready"] else "degraded",
         "version": "5.0.0",
         "environment": "production",
+        "deployment": {
+            "commit": os.getenv("RENDER_GIT_COMMIT") or None,
+            "branch": os.getenv("RENDER_GIT_BRANCH") or None,
+            "instance": os.getenv("RENDER_INSTANCE_ID") or None,
+            "service": os.getenv("RENDER_SERVICE_ID") or None,
+        },
         "services": {
             "payment_engine": "ok",
             "database": (
