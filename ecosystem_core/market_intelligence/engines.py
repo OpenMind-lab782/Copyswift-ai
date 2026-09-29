@@ -6,27 +6,18 @@ are intentionally NOT specific to marketing/ad-copy. Each takes a
 domain "schema" describing what it should remember, evaluate, or
 recommend for a particular product area. The marketing domain schema
 (brand voice, campaign scoring rubric, ad-copy strategy fields) is
-just the first specialization plugged in — other CopySwiftAI
-ecosystem products (SwiftRide, SwiftSteps, etc.) can define their own
-schemas and reuse the same underlying engines rather than each
-product reimplementing memory/evaluation/strategy logic from scratch.
+just the first specialization plugged into the generic engines.
 
 This is deliberately separate from payment_engine/core/market_brain.py
-and market_strategist.py, which are unrelated trading-market classes
-(bullish/bearish/buy/sell logic for the future Forex/Arbitrage bot).
+and market_strategist.py, which are unrelated trading-market classes.
 """
 
 import json
+import math
 
 
 class MemoryEngine:
-    """Generic, schema-driven memory formatter.
-
-    A schema is a list of (title, key) tuples describing which
-    fields to pull from an entity's profile dict, and what label to
-    show each one under when formatting it into an AI-prompt-ready
-    text block.
-    """
+    """Generic, schema-driven memory formatter."""
 
     def __init__(self, schema, provider=None):
         self.schema = schema
@@ -47,17 +38,7 @@ class MemoryEngine:
         return "\n".join(sections)
 
     def format_learned_patterns(self, records, max_records=3):
-        """Format a list of past structured outcomes into a
-        memory-block string, so future prompts can be informed by
-        what has actually worked before, not just static profile
-        fields.
-
-        Each record's shape is domain-defined (e.g. a past
-        high-scoring campaign with its winning variation, score
-        breakdown, and generated strategy) - this formatter is
-        intentionally simple and generic; it does not assume any
-        particular record structure beyond being displayable.
-        """
+        """Format past structured outcomes into a prompt-ready block."""
 
         if not records:
             return ""
@@ -70,7 +51,7 @@ class MemoryEngine:
 
 
 class EvaluationEngine:
-    """Generic AI-first evaluator with heuristic fallback.
+    """Generic AI-first evaluator with bounded-score validation.
 
     A rubric defines:
       - "dimensions": dict of dimension_name -> list of keywords
@@ -84,9 +65,29 @@ class EvaluationEngine:
         self.rubric = rubric
         self.provider = provider
 
+    def _valid_ai_result(self, result):
+        """Accept AI scores only when every supplied score is 0..100."""
+
+        if not isinstance(result, dict) or "overall" not in result:
+            return False
+
+        score_fields = {"overall", *self.rubric.get("dimensions", {})}
+        for field in score_fields:
+            if field not in result:
+                continue
+            value = result[field]
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(value)
+                or not 0 <= value <= 100
+            ):
+                return False
+
+        return True
+
     def evaluate(self, content, model=None):
-        """Evaluate content via AI first, falling back to heuristic
-        scoring if the AI call fails or returns unusable output."""
+        """Evaluate content via AI, falling back on invalid AI output."""
 
         if self.provider is not None:
             try:
@@ -96,7 +97,7 @@ class EvaluationEngine:
                 result = self.provider.generate_json(
                     prompt, model=model
                 )
-                if isinstance(result, dict) and "overall" in result:
+                if self._valid_ai_result(result):
                     result["evaluation_source"] = "ai"
                     return result
             except Exception:
@@ -107,12 +108,7 @@ class EvaluationEngine:
         return fallback
 
     def evaluate_many(self, items, model=None):
-        """Evaluate multiple candidate items individually (e.g. ad
-        copy variations, alternative driver-response drafts, etc.),
-        returning a per-item score plus identification of the
-        strongest candidate. Generic across any domain that needs
-        to compare several outputs rather than treat them as one
-        blob."""
+        """Evaluate multiple candidate items and identify the strongest."""
 
         results = []
         for item in items:
@@ -134,9 +130,7 @@ class EvaluationEngine:
         }
 
     def heuristic_score(self, content):
-        """Rule-based fallback scoring using the rubric's keyword
-        banks. Each dimension starts at a base score and gains
-        points per matching keyword found in the content."""
+        """Rule-based fallback scoring using the rubric's keyword banks."""
 
         text = (content or "").strip()
         text_lower = text.lower()
@@ -156,9 +150,6 @@ class EvaluationEngine:
             score = min(cap, base + matches * per_match)
             scores[name] = score
 
-        # Special-cased structural bonuses, applied only if the
-        # dimension exists in this rubric (keeps this generic for
-        # rubrics that don't define a "hook"/"clarity" dimension).
         if "hook" in scores:
             hook = scores["hook"]
             if "!" in text:
@@ -205,14 +196,7 @@ class EvaluationEngine:
 
 
 class StrategyEngine:
-    """Generic AI-driven strategy generator with safe empty fallback.
-
-    A schema defines:
-      - "fields": list of field names the strategy object should
-        contain
-      - "ai_prompt_template": a format-string template used to ask
-        an AI provider to produce a JSON strategy object
-    """
+    """Generic AI-driven strategy generator with safe empty fallback."""
 
     def __init__(self, schema, provider=None):
         self.schema = schema
@@ -224,15 +208,7 @@ class StrategyEngine:
         return {field: "" for field in self.schema.get("fields", [])}
 
     def generate(self, context, model=None, evaluation=None):
-        """Generate a structured strategy via AI, falling back to
-        the schema's empty default if generation fails.
-
-        If `evaluation` is supplied (e.g. the output of an
-        EvaluationEngine's evaluate() or evaluate_many()), its
-        findings are woven into the prompt so the strategy is
-        grounded in actually-detected strengths/weaknesses rather
-        than generated blind from content alone.
-        """
+        """Generate a structured strategy with safe fallback."""
 
         if self.provider is not None:
             try:
