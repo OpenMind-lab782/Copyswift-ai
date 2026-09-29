@@ -38,6 +38,37 @@ class DocumentStudioWorkspaceRepositoryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "integrity verification"):
             self.repository.get(public["document_token"], "u@example.com")
 
+    def test_tampered_current_document_is_rejected(self):
+        baseline = {
+            "name": "x.pdf",
+            "pages": [{
+                "number": 1,
+                "width": 300,
+                "height": 300,
+                "elements": [],
+            }],
+        }
+        public = self.repository.create(
+            baseline,
+            b"%PDF-current-tamper%",
+            "u@example.com",
+        )
+        tampered = {
+            "pages": [{
+                "number": 1,
+                "width": 999,
+                "height": 300,
+                "elements": [],
+            }],
+        }
+        with self.engine.begin() as connection:
+            connection.execute(
+                text("UPDATE document_studio_workspaces SET current_document = :current_document"),
+                {"current_document": self.repository._serialize_document(tampered)},
+            )
+        with self.assertRaisesRegex(ValueError, "width is server-authoritative"):
+            self.repository.get(public["document_token"], "u@example.com")
+
     def test_create_starts_revision_at_zero(self):
         public = self.repository.create(
             {"name": "x.pdf", "pages": []},
