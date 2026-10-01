@@ -168,19 +168,19 @@ class DocumentStudioBrowserE2ETest(unittest.TestCase):
 
                 count_before_add = page.locator(".ds-element[data-element-id]").count()
                 page.locator("#ds-add-text").click()
-                page.wait_for_function("n => document.querySelectorAll('.ds-element[data-element-id]').length >= n", count_before_add + 1)
+                page.wait_for_function("n => document.querySelectorAll('.ds-element[data-element-id]').length >= n", arg=count_before_add + 1)
                 page.locator(".ds-element[data-element-id]").last.click()
                 page.locator("#ds-inspector textarea").fill("Added browser text")
 
                 with page.expect_file_chooser() as chooser_info:
                     page.locator("#ds-add-image").click()
                 chooser_info.value.set_files(str(self.image))
-                page.wait_for_function("n => document.querySelectorAll('.ds-element[data-element-id]').length >= n", count_before_add + 2)
+                page.wait_for_function("n => document.querySelectorAll('.ds-element[data-element-id]').length >= n", arg=count_before_add + 2)
 
                 page.locator("#ds-duplicate").click()
-                page.wait_for_function("n => document.querySelectorAll('.ds-element[data-element-id]').length === n", count_before_add + 3)
+                page.wait_for_function("n => document.querySelectorAll('.ds-element[data-element-id]').length === n", arg=count_before_add + 3)
                 page.locator("#ds-delete").click()
-                page.wait_for_function("n => document.querySelectorAll('.ds-element[data-element-id]').length === n", count_before_add + 2)
+                page.wait_for_function("n => document.querySelectorAll('.ds-element[data-element-id]').length === n", arg=count_before_add + 2)
 
                 self.assertEqual(page.locator("#ds-dirty").inner_text(), "Unsaved changes")
                 with page.expect_response(lambda r: r.url.endswith("/document-studio/save") and r.request.method == "POST") as save_response:
