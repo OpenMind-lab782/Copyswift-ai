@@ -124,7 +124,7 @@ class DocumentStudioBrowserE2ETest(unittest.TestCase):
                 imported = response.json()
                 self.assertEqual(response.status, 200)
                 self.assertEqual(imported["original_sha256"], FIXTURE_SHA256)
-                imported_doc = imported["document"]
+                imported_doc = imported
                 imported_page = imported_doc["pages"][0]
                 self.assertEqual(imported_page["width"], 612)
                 self.assertEqual(imported_page["height"], 792)
