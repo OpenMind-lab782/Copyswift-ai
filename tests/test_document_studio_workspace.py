@@ -137,6 +137,65 @@ class DocumentStudioWorkspaceRepositoryTests(unittest.TestCase):
             "After",
         )
 
+    def test_save_current_image_replacement_removes_stale_base64(self):
+        baseline = {
+            "name": "x.pdf",
+            "pages": [{
+                "number": 1,
+                "width": 300,
+                "height": 300,
+                "elements": [{
+                    "id": "image-1",
+                    "type": "image",
+                    "x": 10,
+                    "y": 20,
+                    "width": 100,
+                    "height": 100,
+                    "image_data_base64": "OLD-IMAGE",
+                    "image_format": "png",
+                }],
+            }],
+        }
+        public = self.repository.create(
+            baseline,
+            b"%PDF-image-replacement%",
+            "u@example.com",
+        )
+
+        proposed = {
+            "pages": [{
+                "number": 1,
+                "width": 300,
+                "height": 300,
+                "elements": [{
+                    "id": "image-1",
+                    "type": "image",
+                    "x": 10,
+                    "y": 20,
+                    "width": 100,
+                    "height": 100,
+                    "image_data": "NEW-IMAGE",
+                    "image_format": "png",
+                }],
+            }],
+        }
+
+        saved = self.repository.save_current(
+            public["document_token"],
+            proposed,
+            0,
+            "u@example.com",
+        )
+
+        saved_image = saved["document"]["pages"][0]["elements"][0]
+        self.assertEqual(saved_image["image_data"], "NEW-IMAGE")
+        self.assertNotIn("image_data_base64", saved_image)
+
+        stored = self.repository.get(public["document_token"], "u@example.com")
+        stored_image = stored["document"]["pages"][0]["elements"][0]
+        self.assertEqual(stored_image["image_data"], "NEW-IMAGE")
+        self.assertNotIn("image_data_base64", stored_image)
+
     def test_save_current_rejects_stale_revision(self):
         baseline = {
             "name": "x.pdf",
