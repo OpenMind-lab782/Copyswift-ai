@@ -424,8 +424,9 @@
         handle.onpointerdown = function (event) {
           event.preventDefault();
           event.stopPropagation();
-          selectElement(element.id, page.number);
           const rect = surface.getBoundingClientRect();
+          const scale = pageScale(page, surface);
+          selectElement(element.id, page.number);
           dragState = {
             mode: "resize",
             elementId: String(element.id),
@@ -434,7 +435,7 @@
             startY: event.clientY,
             startWidth: Number(element.width) || 1,
             startHeight: Number(element.height) || 1,
-            scale: pageScale(page, surface),
+            scale: scale,
             surfaceRect: rect
           };
           handle.setPointerCapture(event.pointerId);
@@ -447,6 +448,7 @@
           }
           event.preventDefault();
           event.stopPropagation();
+          const scale = pageScale(page, surface);
           selectElement(element.id, page.number);
           dragState = {
             mode: "move",
@@ -456,7 +458,7 @@
             startY: event.clientY,
             startElementX: Number(element.x) || 0,
             startElementY: Number(element.y) || 0,
-            scale: pageScale(page, surface)
+            scale: scale
           };
           wrapper.setPointerCapture(event.pointerId);
         };
