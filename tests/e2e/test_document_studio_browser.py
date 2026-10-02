@@ -217,14 +217,15 @@ class DocumentStudioBrowserE2ETest(unittest.TestCase):
                 self.assertEqual(conflict["status"], 409)
                 self.assertEqual(page.locator("#ds-dirty").inner_text(), "Saved")
 
-                with page.expect_response(
-                    lambda r: r.url.endswith("/document-studio/export") and r.request.method == "POST"
-                ) as export_response:
-                    page.locator("#exportBtn").click()
+                with page.expect_download() as download_info:
+                    with page.expect_response(
+                        lambda r: r.url.endswith("/document-studio/export") and r.request.method == "POST"
+                    ) as export_response:
+                        page.locator("#exportBtn").click()
                 response = export_response.value
                 self.assertEqual(response.status, 200)
                 exported_path = self.artifacts / "exported.pdf"
-                exported_path.write_bytes(response.body())
+                download_info.value.save_as(str(exported_path))
                 self.assertGreater(exported_path.stat().st_size, 0)
                 import fitz
                 exported_pdf = fitz.open(exported_path)
