@@ -51,6 +51,24 @@ logging.basicConfig(
 logger = logging.getLogger("copyswift")
 
 
+def _ad_copy_evaluation_provenance(evaluation_result):
+    """Return non-sensitive server-side provenance for an evaluation."""
+    items = evaluation_result.get("items") or []
+    sources = [
+        (item.get("score") or {}).get("evaluation_source")
+        for item in items
+    ]
+    return {
+        "request_id": request.headers.get("Rndr-Id") or request.headers.get("X-Request-ID") or None,
+        "edge_request_id": request.headers.get("CF-Ray") or None,
+        "deployment_commit": os.getenv("RENDER_GIT_COMMIT") or None,
+        "deployment_instance": os.getenv("RENDER_INSTANCE_ID") or None,
+        "evaluator": "EvaluationEngine",
+        "policy": "bounded-score-0-100-v1",
+        "sources": sources,
+    }
+
+
 # --- Groq HTTP API compatibility client ------------------------------------
 class _GroqHTTPResponse:
     def __init__(self, data):
@@ -473,6 +491,12 @@ def diagnostics():
         "status": "ok" if report["ready"] else "degraded",
         "version": "5.0.0",
         "environment": "production",
+        "deployment": {
+            "commit": os.getenv("RENDER_GIT_COMMIT") or None,
+            "branch": os.getenv("RENDER_GIT_BRANCH") or None,
+            "instance": os.getenv("RENDER_INSTANCE_ID") or None,
+            "service": os.getenv("RENDER_SERVICE_ID") or None,
+        },
         "services": {
             "payment_engine": "ok",
             "database": (
@@ -801,7 +825,10 @@ def init_db():
             amount_local TEXT, method TEXT NOT NULL,
             tx_ref TEXT, status TEXT DEFAULT 'pending',
             created_at TEXT DEFAULT (datetime('now')),
-            activated_at TEXT)""")
+            activated_at TEXT,
+            crypto_amount REAL,
+            crypto_network TEXT,
+            crypto_address TEXT)""")
         db.execute("CREATE TABLE IF NOT EXISTS affiliates (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL, ref_code TEXT UNIQUE NOT NULL, wallet_coin TEXT DEFAULT 'USDT', wallet_address TEXT DEFAULT '', total_earned REAL DEFAULT 0, pending_payout REAL DEFAULT 0, created_at TEXT DEFAULT (datetime('now')))")
         db.execute("CREATE TABLE IF NOT EXISTS referrals (id INTEGER PRIMARY KEY AUTOINCREMENT, ref_code TEXT NOT NULL, subscriber_email TEXT NOT NULL, amount_earned REAL DEFAULT 2.0, status TEXT DEFAULT 'pending', created_at TEXT DEFAULT (datetime('now')), paid_at TEXT)")
         db.execute("CREATE TABLE IF NOT EXISTS customer_referrals (email TEXT PRIMARY KEY, ref_code TEXT NOT NULL, created_at TEXT DEFAULT (datetime('now')))")
@@ -825,6 +852,11 @@ def init_db():
             last_milestone_awarded INTEGER DEFAULT 0,
             created_at TEXT DEFAULT (datetime('now'))
         )""")
+        for column, definition in (("crypto_amount", "REAL"), ("crypto_network", "TEXT"), ("crypto_address", "TEXT")):
+            try:
+                db.execute(f"ALTER TABLE credit_purchases ADD COLUMN {column} {definition}")
+            except Exception:
+                pass
         try:
             db.execute("ALTER TABLE credit_purchases ADD COLUMN ref_code TEXT DEFAULT \'\'")
         except Exception:
@@ -1035,11 +1067,11 @@ def deduct_credit(email):
     update_streak(email)
     return True
 
-def save_credit_purchase(email, package, ads, amount_usd, amount_local, method, tx_ref="", status="pending", ref_code=""):
+def save_credit_purchase(email, package, ads, amount_usd, amount_local, method, tx_ref="", status="pending", ref_code="", crypto_amount=None, crypto_network="", crypto_address=""):
     with get_db() as db:
-        db.execute("INSERT INTO credit_purchases (email,package,ads,amount_usd,amount_local,method,tx_ref,status) "
-                   "VALUES (?,?,?,?,?,?,?,?)",
-                   (email, package, ads, amount_usd, amount_local, method, tx_ref, status))
+        db.execute("INSERT INTO credit_purchases (email,package,ads,amount_usd,amount_local,method,tx_ref,status,crypto_amount,crypto_network,crypto_address) "
+                   "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                   (email, package, ads, amount_usd, amount_local, method, tx_ref, status, crypto_amount, crypto_network, crypto_address))
         db.execute("UPDATE credit_purchases SET ref_code=? WHERE id=last_insert_rowid()", (ref_code,))
         db.commit()
 
@@ -2360,6 +2392,10 @@ def confirm_crypto():
     if package not in CREDIT_PACKAGES:
         return 'Invalid credit package.', 400
     pkg = CREDIT_PACKAGES[package]
+    wallet = CRYPTO_WALLETS.get(coin)
+    if not wallet:
+        return "Invalid cryptocurrency.", 400
+    crypto_amount = round(pkg["usd"] * float(wallet["rate"]), 4)
 
     request_obj = PaymentRequest(
         gateway="crypto",
@@ -2376,7 +2412,7 @@ def confirm_crypto():
     payment_engine.submit_payment(request_obj)
 
     save_payment(email, "crypto", f"${pkg['usd']} {coin}", tx_hash, coin, "pending")
-    save_credit_purchase(email, package, pkg['ads'], pkg['usd'], f"{coin}", "crypto", tx_hash, "pending", ref_code=resolve_ref_code(email))
+    save_credit_purchase(email, package, pkg['ads'], pkg['usd'], f"{coin}", "crypto", tx_hash, "pending", ref_code=resolve_ref_code(email), crypto_amount=crypto_amount, crypto_network=wallet["network"], crypto_address=wallet["address"])
     session['user_email'] = email
     return render_template_string(PENDING_HTML, email=email, tx_hash=tx_hash)
 
@@ -3420,6 +3456,17 @@ def ad_copy_generate():
         )
         best_item = evaluation_result["best"] or {"content": "", "score": {}}
         campaign_score = best_item["score"]
+        evaluation_provenance = _ad_copy_evaluation_provenance(evaluation_result)
+        logger.info(
+            "AD_COPY_EVALUATION request_id=%s deployment_commit=%s "
+            "instance=%s policy=%s sources=%s best_score=%s",
+            evaluation_provenance["request_id"],
+            evaluation_provenance["deployment_commit"],
+            evaluation_provenance["deployment_instance"],
+            evaluation_provenance["policy"],
+            evaluation_provenance["sources"],
+            campaign_score.get("overall"),
+        )
 
         campaign_context = (
             "Offer: " + offer + "\n"
@@ -3479,6 +3526,7 @@ def ad_copy_generate():
         "best_variation_index": evaluation_result["best_index"],
         "strategist": strategist,
         "campaign_score": campaign_score,
+        "evaluation_provenance": evaluation_provenance,
         "learning": learning,
         "remaining_uses": _ad_copy_remaining_uses(),
     })

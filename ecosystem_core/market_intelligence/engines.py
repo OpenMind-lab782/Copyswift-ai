@@ -17,6 +17,7 @@ and market_strategist.py, which are unrelated trading-market classes
 """
 
 import json
+import math
 
 
 class MemoryEngine:
@@ -84,6 +85,27 @@ class EvaluationEngine:
         self.rubric = rubric
         self.provider = provider
 
+    def _valid_ai_result(self, result):
+        """Accept AI scores only when every supplied score is 0..100."""
+
+        if not isinstance(result, dict) or "overall" not in result:
+            return False
+
+        score_fields = {"overall", *self.rubric.get("dimensions", {})}
+        for field in score_fields:
+            if field not in result:
+                continue
+            value = result[field]
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(value)
+                or not 0 <= value <= 100
+            ):
+                return False
+
+        return True
+
     def evaluate(self, content, model=None):
         """Evaluate content via AI first, falling back to heuristic
         scoring if the AI call fails or returns unusable output."""
@@ -96,7 +118,7 @@ class EvaluationEngine:
                 result = self.provider.generate_json(
                     prompt, model=model
                 )
-                if isinstance(result, dict) and "overall" in result:
+                if self._valid_ai_result(result):
                     result["evaluation_source"] = "ai"
                     return result
             except Exception:

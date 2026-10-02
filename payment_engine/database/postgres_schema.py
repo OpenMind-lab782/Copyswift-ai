@@ -58,6 +58,47 @@ CREATE TABLE IF NOT EXISTS reconciliation_report_records (
 )
 """
 
+CREDIT_PURCHASES_SCHEMA_SQL = """
+CREATE TABLE IF NOT EXISTS credit_purchases (
+    id BIGSERIAL PRIMARY KEY,
+    payment_reference VARCHAR(100) NOT NULL UNIQUE,
+    customer_email VARCHAR(255) NOT NULL,
+    package VARCHAR(50) NOT NULL,
+    credits INTEGER NOT NULL,
+    amount DOUBLE PRECISION NOT NULL,
+    currency VARCHAR(10) NOT NULL,
+    gateway VARCHAR(50) NOT NULL,
+    status VARCHAR(30) NOT NULL,
+    ref_code VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    activated_at TIMESTAMP NULL
+)
+"""
+
+CREDIT_ACCOUNTS_SCHEMA_SQL = """
+CREATE TABLE IF NOT EXISTS credit_accounts (
+    email VARCHAR(255) PRIMARY KEY,
+    balance INTEGER NOT NULL DEFAULT 0 CHECK (balance >= 0),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+"""
+
+CREDIT_LEDGER_SCHEMA_SQL = """
+CREATE TABLE IF NOT EXISTS credit_ledger (
+    id BIGSERIAL PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    amount INTEGER NOT NULL CHECK (amount <> 0),
+    balance_after INTEGER NOT NULL CHECK (balance_after >= 0),
+    entry_type VARCHAR(50) NOT NULL,
+    source_reference VARCHAR(255),
+    metadata TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (entry_type, source_reference)
+)
+"""
+
+
 
 def initialize_postgres_schema(database):
     """
@@ -74,6 +115,9 @@ def initialize_postgres_schema(database):
         SETTLEMENTS_SCHEMA_SQL,
         RECONCILIATION_RECORDS_SCHEMA_SQL,
         RECONCILIATION_REPORT_RECORDS_SCHEMA_SQL,
+        CREDIT_PURCHASES_SCHEMA_SQL,
+        CREDIT_ACCOUNTS_SCHEMA_SQL,
+        CREDIT_LEDGER_SCHEMA_SQL,
     )
 
     with database.engine.begin() as connection:
