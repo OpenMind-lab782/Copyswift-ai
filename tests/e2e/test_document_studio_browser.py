@@ -198,7 +198,8 @@ class DocumentStudioBrowserE2ETest(unittest.TestCase):
                 self.assertNotEqual(saved_by_id[original_text["id"]]["width"], original_text_before["width"])
                 self.assertEqual(saved_by_id[unrelated["id"]], unrelated_before)
                 self.assertEqual(saved_by_id[original_image["id"]]["type"], "image")
-                self.assertNotEqual(saved_by_id[original_image["id"]].get("image_data"), original_image_before.get("image_data_base64"))
+                self.assertEqual(saved_by_id[original_image["id"]].get("image_data"), PNG_B64)
+                self.assertEqual(saved_by_id[original_image["id"]].get("image_format"), "image/png")
                 self.assertNotIn("image_data_base64", saved_by_id[original_image["id"]])
 
                 stale_revision = max(0, revision - 1)
