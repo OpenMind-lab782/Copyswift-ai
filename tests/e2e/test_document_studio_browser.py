@@ -78,6 +78,7 @@ class DocumentStudioBrowserE2ETest(unittest.TestCase):
             try:
                 with urlopen(cls.base_url + "/document-studio", timeout=2) as response:
                     if response.status == 200:
+                        cls.server_log_handle = log
                         return proc
             except Exception:
                 time.sleep(0.25)
@@ -99,6 +100,9 @@ class DocumentStudioBrowserE2ETest(unittest.TestCase):
             except subprocess.TimeoutExpired:
                 proc.kill()
                 proc.wait(timeout=5)
+        log = getattr(cls, "server_log_handle", None)
+        if log is not None and not log.closed:
+            log.close()
         if hasattr(cls, "tmp"):
             shutil.rmtree(cls.tmp, ignore_errors=True)
 
