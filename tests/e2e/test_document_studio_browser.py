@@ -242,7 +242,7 @@ class DocumentStudioBrowserE2ETest(unittest.TestCase):
                 self.assertEqual(reopened_response.status, 200)
                 self.assertEqual(reopened["document_token"], token)
                 self.assertEqual(reopened["revision"], revision)
-                self.assertEqual(reopened["original_sha256"], FIXTURE_SHA256)
+                self.assertEqual(reopened["document"]["original_sha256"], FIXTURE_SHA256)
                 reopened_page = reopened["document"]["pages"][0]
                 self.assertEqual(reopened_page["width"], 612)
                 self.assertEqual(reopened_page["height"], 792)
