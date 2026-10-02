@@ -217,6 +217,60 @@ def document_studio_import():
         return jsonify({"error": "Document import failed.", "detail": str(exc)}), 500
 
 
+@app.route("/document-studio/reopen", methods=["POST"])
+def document_studio_reopen():
+    reopen_started = time.monotonic()
+    logger.info("DS_REOPEN_START")
+
+    user_email = session.get("user_email", "")
+    is_admin = session.get("admin_logged_in", False)
+
+    if not user_email and not is_admin:
+        return jsonify({"error": "Document Studio reopen requires login."}), 401
+
+    payload = request.get_json(silent=True) or {}
+    document_token = payload.get("document_token")
+
+    if not document_token or not isinstance(document_token, str):
+        return jsonify({"error": "A document token is required."}), 400
+
+    try:
+        logger.info("DS_REOPEN_WORKSPACE_GET_START elapsed=%.3f",
+                    time.monotonic() - reopen_started)
+        workspace = _get_document_studio_workspace_repository()
+        stored = workspace.get(document_token, None if is_admin else user_email)
+        logger.info("DS_REOPEN_WORKSPACE_GET_COMPLETE elapsed=%.3f found=%s",
+                    time.monotonic() - reopen_started, stored is not None)
+
+        if stored is None:
+            return jsonify({"error": "Document workspace was not found."}), 404
+
+        document = dict(stored["baseline_document"])
+        document["pages"] = stored["current_document"]["pages"]
+        document = workspace._public_document(document)
+        revision = stored["revision"]
+
+        logger.info("DS_REOPEN_SUCCESS elapsed=%.3f revision=%s",
+                    time.monotonic() - reopen_started, revision)
+        return jsonify({
+            "document_token": document_token,
+            "document": document,
+            "revision": revision,
+        }), 200
+
+    except ValueError as exc:
+        logger.exception("DS_REOPEN_INTEGRITY_FAILURE")
+        return jsonify({
+            "error": "Document workspace integrity validation failed.",
+            "detail": str(exc),
+        }), 500
+    except Exception as exc:
+        logger.exception("DS_REOPEN_FAILURE")
+        return jsonify({
+            "error": "Document Studio reopen failed.",
+            "detail": str(exc),
+        }), 500
+
 @app.route("/document-studio/save", methods=["POST"])
 def document_studio_save():
     save_started = time.monotonic()

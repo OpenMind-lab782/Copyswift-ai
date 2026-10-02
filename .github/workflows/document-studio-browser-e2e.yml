@@ -1,0 +1,65 @@
+name: Document Studio Browser E2E
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  browser-e2e:
+    name: Real Chromium Document Studio E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      E2E_ARTIFACT_DIR: ${{ github.workspace }}/e2e-artifacts
+      SWIFT_DB_BACKEND: sqlite
+      SWIFT_DATABASE: ${{ github.workspace }}/e2e-artifacts/swift_payment.db
+      DATABASE_URL: sqlite:///${{ github.workspace }}/e2e-artifacts/document_studio.db
+      SECRET_KEY: document-studio-e2e-secret
+      ADMIN_PASSWORD: document-studio-e2e-admin
+      PAYSTACK_ENGINE_MODE: mock
+      SWIFT_GATEWAY_MODE: mock
+      SWIFT_ENV: development
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install MuPDF
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mupdf-tools
+
+      - name: Install application dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-e2e.txt
+
+      - name: Install Chromium
+        run: python -m playwright install --with-deps chromium
+
+      - name: Run Document Studio browser E2E
+        run: |
+          mkdir -p e2e-artifacts
+          python -m unittest tests.e2e.test_document_studio_browser
+
+      - name: Record verified commit
+        if: always()
+        run: printf '%s\n' "$GITHUB_SHA" > e2e-artifacts/commit.txt
+
+      - name: Upload browser E2E artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: document-studio-browser-e2e-${{ github.run_id }}
+          path: e2e-artifacts/
+          if-no-files-found: ignore
+          retention-days: 14

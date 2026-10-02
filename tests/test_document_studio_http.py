@@ -75,6 +75,48 @@ class DocumentStudioHttpTests(unittest.TestCase):
         self.assertEqual(stored["revision"], 1)
         self.assertEqual(stored["document"]["pages"][0]["elements"][0]["content"], "After")
 
+    def test_reopen_returns_server_saved_document_and_revision(self):
+        baseline = {
+            "name": "test.pdf",
+            "page_count": 1,
+            "pages": [{
+                "number": 1,
+                "width": 300,
+                "height": 300,
+                "elements": [{
+                    "id": "text-1",
+                    "type": "text",
+                    "content": "Saved",
+                    "x": 30,
+                    "y": 40,
+                    "width": 100,
+                    "height": 20,
+                }],
+            }],
+        }
+        public = self.repository.create(
+            baseline,
+            b"%PDF-reopen-http%",
+            "u@example.com",
+        )
+
+        with self.client.session_transaction() as session:
+            session["user_email"] = "u@example.com"
+
+        response = self.client.post(
+            "/document-studio/reopen",
+            json={"document_token": public["document_token"]},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_json()
+        self.assertEqual(body["document_token"], public["document_token"])
+        self.assertEqual(body["revision"], 0)
+        expected_document = dict(baseline)
+        expected_document["original_sha256"] = public["original_sha256"]
+        self.assertEqual(body["document"], expected_document)
+        self.assertNotIn("original_bytes", body["document"])
+
     def test_save_rejects_wrong_owner(self):
         public = self.repository.create({"name": "test.pdf", "pages": []}, b"%PDF-save-owner%", "u@example.com")
         with self.client.session_transaction() as session:

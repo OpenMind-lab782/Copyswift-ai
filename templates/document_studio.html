@@ -1,1 +1,976 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CopySwiftAI™ Document Studio</title><style>body{font-family:system-ui,sans-serif;margin:0;background:#f5f7fb;color:#172033}.wrap{max-width:1100px;margin:auto;padding:24px}.panel{background:white;border:1px solid #dfe4ec;border-radius:14px;padding:20px;margin-top:18px}button{padding:11px 18px;border:0;border-radius:8px;cursor:pointer;margin-right:8px}#importBtn{background:#172033;color:white}#exportBtn{background:#176b45;color:white}button:disabled{opacity:.5;cursor:not-allowed}pre{white-space:pre-wrap;overflow:auto;background:#f3f5f8;padding:14px;border-radius:8px;max-height:500px}#status{margin-top:14px;font-weight:600}</style></head><body><main class="wrap"><h1>CopySwiftAI™ Document Studio</h1><p>Edit and export existing PDF documents.</p><section class="panel"><h2>1. Your email</h2><p>Enter the email associated with your CopySwiftAI credits before importing.</p><input id="email" type="email" placeholder="you@email.com" autocomplete="email"><button id="identityBtn">Continue</button><div id="identityStatus"></div></section><section class="panel"><h2>2. Import PDF</h2><input id="file" type="file" accept=".pdf,application/pdf"><button id="importBtn" disabled>Import PDF</button><div id="status">Enter your email to begin.</div></section><section class="panel"><h2>3. Imported Document</h2><pre id="document">No document imported yet.</pre></section><section class="panel"><h2>4. Export</h2><button id="exportBtn" type="button" disabled>Export PDF</button></section></main><script>let documentData=null;const emailInput=document.getElementById("email"),identityBtn=document.getElementById("identityBtn"),identityStatus=document.getElementById("identityStatus"),fileInput=document.getElementById("file"),importBtn=document.getElementById("importBtn"),exportBtn=document.getElementById("exportBtn"),status=document.getElementById("status"),documentBox=document.getElementById("document");identityBtn.onclick=async()=>{const email=emailInput.value.trim();if(!email){identityStatus.textContent="Please enter your email address.";return}identityStatus.textContent="Saving email...";try{const r=await fetch("/document-studio/identity",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})});const data=await r.json();if(!r.ok)throw new Error(data.error||"Unable to save email.");emailInput.value=data.user_email;identityBtn.disabled=true;emailInput.disabled=true;importBtn.disabled=false;identityStatus.textContent="Email confirmed. You can now import your PDF.";status.textContent="Ready to import PDF."}catch(e){identityStatus.textContent="Email setup failed: "+e.message}};importBtn.onclick=async()=>{const file=fileInput.files[0];if(!file){status.textContent="Please select a PDF first.";return}status.textContent="Importing PDF...";const form=new FormData();form.append("file",file);try{const r=await fetch("/document-studio/import",{method:"POST",body:form});const raw=await r.text();let data=null;try{data=raw?JSON.parse(raw):null}catch(_){throw new Error("Import response was not valid JSON.")}if(!r.ok)throw new Error(data&&data.error?data.error:"Import failed.");if(!data)throw new Error("Import response was empty.");documentData=data;documentBox.textContent=JSON.stringify(data,null,2);exportBtn.disabled=false;status.textContent="PDF imported successfully."}catch(e){status.textContent="Import failed: "+e.message}};exportBtn.addEventListener("click",async()=>{status.textContent="Export button clicked.";console.log("DS_EXPORT_CLICK",!!documentData,documentData&&documentData.document_token);if(!documentData){status.textContent="Export failed: no imported document data.";return;}status.textContent="Exporting PDF...";try{const r=await fetch("/document-studio/export",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({document_token:documentData.document_token,expected_revision:documentData.revision})});if(!r.ok){const data=await r.json().catch(()=>({}));throw new Error(data.error||"Export failed.")}const blob=await r.blob();const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="document-studio-output.pdf";a.click();URL.revokeObjectURL(url);status.textContent="PDF exported successfully."}catch(e){status.textContent="Export failed: "+e.message}});</script></body></html>
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CopySwiftAI™ Document Studio</title><style>body{font-family:system-ui,sans-serif;margin:0;background:#f5f7fb;color:#172033}.wrap{max-width:1100px;margin:auto;padding:24px}.panel{background:white;border:1px solid #dfe4ec;border-radius:14px;padding:20px;margin-top:18px}button{padding:11px 18px;border:0;border-radius:8px;cursor:pointer;margin-right:8px}#importBtn{background:#172033;color:white}#exportBtn{background:#176b45;color:white}button:disabled{opacity:.5;cursor:not-allowed}pre{white-space:pre-wrap;overflow:auto;background:#f3f5f8;padding:14px;border-radius:8px;max-height:500px}#status{margin-top:14px;font-weight:600}</style></head><body><main class="wrap"><h1>CopySwiftAI™ Document Studio</h1><p>Edit and export existing PDF documents.</p><section class="panel"><h2>1. Your email</h2><p>Enter the email associated with your CopySwiftAI credits before importing.</p><input id="email" type="email" placeholder="you@email.com" autocomplete="email"><button id="identityBtn">Continue</button><div id="identityStatus"></div></section><section class="panel"><h2>2. Import PDF</h2><input id="file" type="file" accept=".pdf,application/pdf"><button id="importBtn" disabled>Import PDF</button><div id="status">Enter your email to begin.</div></section><section class="panel"><h2>3. Imported Document</h2><pre id="document">No document imported yet.</pre></section><section class="panel"><h2>4. Saved Document</h2><button id="reopenBtn" type="button" disabled>Reopen Saved Document</button><button id="exportBtn" type="button" disabled>Export PDF</button></section></main><script>
+(function () {
+  "use strict";
+
+  const emailInput = document.getElementById("email");
+  const identityBtn = document.getElementById("identityBtn");
+  const identityStatus = document.getElementById("identityStatus");
+  const fileInput = document.getElementById("file");
+  const importBtn = document.getElementById("importBtn");
+  const exportBtn = document.getElementById("exportBtn");
+  const reopenBtn = document.getElementById("reopenBtn");
+  const status = document.getElementById("status");
+  const documentBox = document.getElementById("document");
+
+  let documentData = null;
+  let workingDocument = null;
+  let savedDocument = null;
+  let selectedElementId = null;
+  let selectedPageNumber = null;
+  let dirty = false;
+  let dragState = null;
+
+  const EDITABLE_KEYS = new Set([
+    "id", "type", "content", "x", "y", "width", "height",
+    "font", "font_size", "color", "image_data",
+    "image_data_base64", "image_format"
+  ]);
+
+  function clone(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function canonicalDocument(document) {
+    return {
+      pages: (document && Array.isArray(document.pages))
+        ? document.pages.map(function (page) {
+            return {
+              number: page.number,
+              width: page.width,
+              height: page.height,
+              elements: Array.isArray(page.elements)
+                ? page.elements.map(function (element) {
+                    const result = {};
+                    for (const key of EDITABLE_KEYS) {
+                      if (Object.prototype.hasOwnProperty.call(element, key)) {
+                        result[key] = element[key];
+                      }
+                    }
+                    return result;
+                  })
+                : []
+            };
+          })
+        : []
+    };
+  }
+
+  function getImportedDocument(data) {
+    if (data && data.document && typeof data.document === "object") {
+      return data.document;
+    }
+    if (data && Array.isArray(data.pages)) {
+      return data;
+    }
+    return null;
+  }
+
+  function setStatus(message, error) {
+    status.textContent = message;
+    status.style.color = error ? "#a40000" : "";
+  }
+
+  function updateDirtyUI() {
+    saveBtn.disabled = !documentData || !dirty;
+    dirtyLabel.textContent = dirty ? "Unsaved changes" : "Saved";
+    dirtyLabel.style.color = dirty ? "#a40000" : "";
+  }
+
+  function markDirty() {
+    dirty = true;
+    updateDirtyUI();
+  }
+
+  function findElement(elementId) {
+    if (!workingDocument) {
+      return null;
+    }
+    for (const page of workingDocument.pages || []) {
+      for (const element of page.elements || []) {
+        if (String(element.id) === String(elementId)) {
+          return { page: page, element: element };
+        }
+      }
+    }
+    return null;
+  }
+
+  function findPage(pageNumber) {
+    return (workingDocument && (workingDocument.pages || []).find(function (page) {
+      return String(page.number) === String(pageNumber);
+    })) || null;
+  }
+
+  function newElementId() {
+    if (window.crypto && typeof window.crypto.randomUUID === "function") {
+      return "browser-" + window.crypto.randomUUID();
+    }
+    return "browser-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+  }
+
+  function elementImageSource(element) {
+    const value = element.image_data_base64 || element.image_data;
+    if (!value) {
+      return "";
+    }
+    if (String(value).startsWith("data:")) {
+      return String(value);
+    }
+    const format = element.image_format || "png";
+    return "data:image/" + String(format).replace(/^image\//, "") + ";base64," + value;
+  }
+
+  function makeNode(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) {
+      node.className = className;
+    }
+    if (text !== undefined) {
+      node.textContent = text;
+    }
+    return node;
+  }
+
+  function findElementNode(elementId, suffix) {
+    const nodes = documentBox.querySelectorAll(".ds-element");
+    for (const node of nodes) {
+      if (String(node.dataset.elementId) === String(elementId)) {
+        if (!suffix) {
+          return node;
+        }
+        return node.querySelector(suffix);
+      }
+    }
+    return null;
+  }
+
+  function pageScale(page, surface) {
+    const width = Number(page.width) || 1;
+    return surface.clientWidth / width;
+  }
+
+  function updateSelectedElementStyle() {
+    if (!selectedElementId) {
+      return;
+    }
+    const found = findElement(selectedElementId);
+    if (!found) {
+      return;
+    }
+    const node = findElementNode(selectedElementId);
+    const surface = node ? node.parentElement : null;
+    if (!node || !surface) {
+      return;
+    }
+    const scale = pageScale(found.page, surface);
+    node.style.left = (Number(found.element.x) || 0) * scale + "px";
+    node.style.top = (Number(found.element.y) || 0) * scale + "px";
+    node.style.width = Math.max(1, Number(found.element.width) || 1) * scale + "px";
+    node.style.height = Math.max(1, Number(found.element.height) || 1) * scale + "px";
+    if (String(found.element.type).toLowerCase() === "text") {
+      node.style.fontSize = Math.max(1, Number(found.element.font_size) || 12) * scale + "px";
+      node.style.color = found.element.color || "#111";
+      node.style.fontFamily = found.element.font || "sans-serif";
+      const textNode = node.querySelector(".ds-text-content");
+      if (textNode) {
+        textNode.textContent = found.element.content || "";
+      }
+    }
+  }
+
+  function refreshInspector() {
+    inspector.replaceChildren();
+    if (!selectedElementId) {
+      inspector.appendChild(makeNode("p", "ds-muted", "Select an element to edit it."));
+      return;
+    }
+
+    const found = findElement(selectedElementId);
+    if (!found) {
+      selectedElementId = null;
+      inspector.appendChild(makeNode("p", "ds-muted", "Select an element to edit it."));
+      return;
+    }
+
+    const e = found.element;
+    selectedPageNumber = found.page.number;
+
+    inspector.appendChild(makeNode("div", "ds-field-label", "Selected element"));
+    inspector.appendChild(makeNode("div", "ds-value", String(e.id)));
+    inspector.appendChild(makeNode("div", "ds-field-label", "Type"));
+    inspector.appendChild(makeNode("div", "ds-value", String(e.type)));
+
+    const pageLabel = makeNode("div", "ds-field-label", "Page");
+    const pageSelect = document.createElement("select");
+    (workingDocument.pages || []).forEach(function (page) {
+      const option = document.createElement("option");
+      option.value = page.number;
+      option.textContent = "Page " + page.number;
+      if (String(page.number) === String(found.page.number)) {
+        option.selected = true;
+      }
+      pageSelect.appendChild(option);
+    });
+    pageSelect.onchange = function () {
+      selectedPageNumber = pageSelect.value;
+    };
+    inspector.appendChild(pageLabel);
+    inspector.appendChild(pageSelect);
+
+    const grid = makeNode("div", "ds-grid");
+
+    function numberField(label, key, min) {
+      const wrapper = makeNode("label", "ds-control");
+      wrapper.appendChild(makeNode("span", "", label));
+      const input = document.createElement("input");
+      input.type = "number";
+      input.step = "1";
+      if (min !== undefined) {
+        input.min = String(min);
+      }
+      input.value = Number(e[key]) || 0;
+      input.onchange = function () {
+        const value = Number(input.value);
+        if (!Number.isFinite(value)) {
+          return;
+        }
+        e[key] = key === "width" || key === "height" ? Math.max(1, value) : value;
+        markDirty();
+        renderPages();
+        refreshInspector();
+      };
+      wrapper.appendChild(input);
+      grid.appendChild(wrapper);
+    }
+
+    numberField("X", "x");
+    numberField("Y", "y");
+    numberField("Width", "width", 1);
+    numberField("Height", "height", 1);
+    inspector.appendChild(grid);
+
+    if (String(e.type).toLowerCase() === "text") {
+      const contentWrap = makeNode("label", "ds-control");
+      contentWrap.appendChild(makeNode("span", "", "Text"));
+      const content = document.createElement("textarea");
+      content.value = e.content || "";
+      content.rows = 5;
+      content.oninput = function () {
+        e.content = content.value;
+        const node = findElementNode(e.id, ".ds-text-content");
+        if (node) {
+          node.textContent = e.content;
+        }
+        markDirty();
+      };
+      contentWrap.appendChild(content);
+      inspector.appendChild(contentWrap);
+
+      const font = makeNode("label", "ds-control");
+      font.appendChild(makeNode("span", "", "Font"));
+      const fontInput = document.createElement("input");
+      fontInput.value = e.font || "";
+      fontInput.placeholder = "sans-serif";
+      fontInput.onchange = function () {
+        e.font = fontInput.value.trim();
+        markDirty();
+        updateSelectedElementStyle();
+      };
+      font.appendChild(fontInput);
+      inspector.appendChild(font);
+
+      const fs = makeNode("label", "ds-control");
+      fs.appendChild(makeNode("span", "", "Font size"));
+      const fsInput = document.createElement("input");
+      fsInput.type = "number";
+      fsInput.min = "1";
+      fsInput.step = "1";
+      fsInput.value = Number(e.font_size) || 12;
+      fsInput.onchange = function () {
+        const value = Number(fsInput.value);
+        if (!Number.isFinite(value) || value < 1) {
+          return;
+        }
+        e.font_size = value;
+        markDirty();
+        renderPages();
+        refreshInspector();
+      };
+      fs.appendChild(fsInput);
+      inspector.appendChild(fs);
+
+      const color = makeNode("label", "ds-control");
+      color.appendChild(makeNode("span", "", "Color"));
+      const colorInput = document.createElement("input");
+      colorInput.type = "text";
+      colorInput.value = e.color || "";
+      colorInput.placeholder = "#111111";
+      colorInput.onchange = function () {
+        e.color = colorInput.value.trim();
+        markDirty();
+        updateSelectedElementStyle();
+      };
+      color.appendChild(colorInput);
+      inspector.appendChild(color);
+    }
+
+    if (String(e.type).toLowerCase() === "image") {
+      const replace = makeNode("label", "ds-control");
+      replace.appendChild(makeNode("span", "", "Replace image"));
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.onchange = async function () {
+        const file = input.files && input.files[0];
+        if (!file) {
+          return;
+        }
+        try {
+          const dataUrl = await readFileAsDataURL(file);
+          const comma = dataUrl.indexOf(",");
+          e.image_data = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+          e.image_format = file.type || "image/png";
+          delete e.image_data_base64;
+          markDirty();
+          renderPages();
+          refreshInspector();
+        } catch (error) {
+          setStatus("Image replacement failed: " + error.message, true);
+        }
+      };
+      replace.appendChild(input);
+      inspector.appendChild(replace);
+    }
+  }
+
+  function readFileAsDataURL(file) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.onload = function () { resolve(String(reader.result || "")); };
+      reader.onerror = function () { reject(new Error("Unable to read the image file.")); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function selectElement(elementId, pageNumber) {
+    selectedElementId = String(elementId);
+    selectedPageNumber = pageNumber;
+    renderPages();
+    refreshInspector();
+  }
+
+  function renderPages() {
+    pagesHost.replaceChildren();
+    if (!workingDocument || !Array.isArray(workingDocument.pages)) {
+      return;
+    }
+
+    for (const page of workingDocument.pages) {
+      const section = makeNode("section", "ds-page-section");
+      const heading = makeNode(
+        "div",
+        "ds-page-heading",
+        "Page " + page.number + " — " + (page.width || "?") + " × " + (page.height || "?")
+      );
+      section.appendChild(heading);
+
+      const surface = makeNode("div", "ds-page-surface");
+      surface.style.aspectRatio = String(Number(page.width) || 1) + " / " + String(Number(page.height) || 1);
+      surface.dataset.pageNumber = String(page.number);
+      surface.title = "Click the page background to select this page";
+      surface.onclick = function () {
+        selectedPageNumber = page.number;
+        selectedElementId = null;
+        refreshInspector();
+        renderPages();
+      };
+
+      section.appendChild(surface);
+      pagesHost.appendChild(section);
+
+      for (const element of page.elements || []) {
+        const wrapper = makeNode("div", "ds-element");
+        wrapper.dataset.elementId = String(element.id);
+        wrapper.dataset.pageNumber = String(page.number);
+        if (String(element.id) === String(selectedElementId)) {
+          wrapper.classList.add("selected");
+        }
+
+        const type = String(element.type || "").toLowerCase();
+        const scale = pageScale(page, surface);
+        wrapper.style.left = (Number(element.x) || 0) * scale + "px";
+        wrapper.style.top = (Number(element.y) || 0) * scale + "px";
+        wrapper.style.width = Math.max(1, Number(element.width) || 1) * scale + "px";
+        wrapper.style.height = Math.max(1, Number(element.height) || 1) * scale + "px";
+
+        if (type === "text") {
+          const textNode = makeNode("div", "ds-text-content", element.content || "");
+          textNode.style.fontSize = Math.max(1, Number(element.font_size) || 12) * scale + "px";
+          textNode.style.fontFamily = element.font || "sans-serif";
+          textNode.style.color = element.color || "#111";
+          wrapper.appendChild(textNode);
+        } else if (type === "image") {
+          const image = document.createElement("img");
+          image.alt = "Document image";
+          image.draggable = false;
+          image.src = elementImageSource(element);
+          wrapper.appendChild(image);
+        } else {
+          wrapper.appendChild(makeNode("div", "ds-unsupported", "Unsupported element type: " + type));
+        }
+
+        const handle = makeNode("div", "ds-resize-handle");
+        handle.title = "Resize";
+        handle.onpointerdown = function (event) {
+          event.preventDefault();
+          event.stopPropagation();
+          const rect = surface.getBoundingClientRect();
+          const scale = pageScale(page, surface);
+          selectElement(element.id, page.number);
+          dragState = {
+            mode: "resize",
+            elementId: String(element.id),
+            pageNumber: page.number,
+            startX: event.clientX,
+            startY: event.clientY,
+            startWidth: Number(element.width) || 1,
+            startHeight: Number(element.height) || 1,
+            scale: scale,
+            surfaceRect: rect
+          };
+          handle.setPointerCapture(event.pointerId);
+        };
+        wrapper.appendChild(handle);
+
+        wrapper.onpointerdown = function (event) {
+          if (event.target === handle) {
+            return;
+          }
+          event.preventDefault();
+          event.stopPropagation();
+          const scale = pageScale(page, surface);
+          selectElement(element.id, page.number);
+          dragState = {
+            mode: "move",
+            elementId: String(element.id),
+            pageNumber: page.number,
+            startX: event.clientX,
+            startY: event.clientY,
+            startElementX: Number(element.x) || 0,
+            startElementY: Number(element.y) || 0,
+            scale: scale
+          };
+          wrapper.setPointerCapture(event.pointerId);
+        };
+
+        surface.appendChild(wrapper);
+      }
+
+    }
+
+    updateDirtyUI();
+  }
+
+  window.addEventListener("pointermove", function (event) {
+    if (!dragState) {
+      return;
+    }
+    const found = findElement(dragState.elementId);
+    if (!found) {
+      dragState = null;
+      return;
+    }
+
+    const dx = (event.clientX - dragState.startX) / dragState.scale;
+    const dy = (event.clientY - dragState.startY) / dragState.scale;
+
+    if (dragState.mode === "move") {
+      found.element.x = dragState.startElementX + dx;
+      found.element.y = dragState.startElementY + dy;
+    } else {
+      found.element.width = Math.max(1, dragState.startWidth + dx);
+      found.element.height = Math.max(1, dragState.startHeight + dy);
+    }
+    updateSelectedElementStyle();
+    updateInspectorValuesOnly();
+  });
+
+  window.addEventListener("pointerup", function () {
+    if (!dragState) {
+      return;
+    }
+    dragState = null;
+    markDirty();
+    refreshInspector();
+  });
+
+  function updateInspectorValuesOnly() {
+    if (!selectedElementId) {
+      return;
+    }
+    const found = findElement(selectedElementId);
+    if (!found) {
+      return;
+    }
+    const values = inspector.querySelectorAll('input[type="number"]');
+    if (values.length >= 4) {
+      values[0].value = Number(found.element.x) || 0;
+      values[1].value = Number(found.element.y) || 0;
+      values[2].value = Number(found.element.width) || 0;
+      values[3].value = Number(found.element.height) || 0;
+    }
+  }
+
+  function makeToolbarButton(label, handler) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = label;
+    button.onclick = handler;
+    return button;
+  }
+
+  const host = document.createElement("div");
+  host.className = "ds-editor-host";
+  host.innerHTML =
+    '<div class="ds-toolbar">' +
+      '<button type="button" id="ds-save">Save changes</button>' +
+      '<button type="button" id="ds-add-text">Add text</button>' +
+      '<button type="button" id="ds-add-image">Add image</button>' +
+      '<button type="button" id="ds-duplicate">Duplicate</button>' +
+      '<button type="button" id="ds-delete">Delete</button>' +
+      '<span id="ds-dirty" class="ds-dirty">Saved</span>' +
+    '</div>' +
+    '<div class="ds-layout">' +
+      '<div id="ds-pages"></div>' +
+      '<aside class="ds-inspector">' +
+        '<h3>Element</h3>' +
+        '<div id="ds-inspector"></div>' +
+      '</aside>' +
+    '</div>';
+
+  documentBox.replaceChildren(host);
+  documentBox.classList.add("ds-document-host");
+
+  const saveBtn = host.querySelector("#ds-save");
+  const addTextBtn = host.querySelector("#ds-add-text");
+  const addImageBtn = host.querySelector("#ds-add-image");
+  const duplicateBtn = host.querySelector("#ds-duplicate");
+  const deleteBtn = host.querySelector("#ds-delete");
+  const dirtyLabel = host.querySelector("#ds-dirty");
+  const pagesHost = host.querySelector("#ds-pages");
+  const inspector = host.querySelector("#ds-inspector");
+
+  function injectEditorStyles() {
+    if (document.getElementById("ds-editor-style")) {
+      return;
+    }
+    const style = document.createElement("style");
+    style.id = "ds-editor-style";
+    style.textContent =
+      ".ds-document-host{display:block;white-space:normal;padding:0}" +
+      ".ds-editor-host{font-family:system-ui,-apple-system,sans-serif}" +
+      ".ds-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0;padding:10px;border:1px solid #ccc;border-radius:8px;background:#f7f7f7}" +
+      ".ds-toolbar button{padding:7px 10px;cursor:pointer}" +
+      ".ds-toolbar button:disabled{cursor:not-allowed;opacity:.55}" +
+      ".ds-dirty{margin-left:auto;font-weight:600}" +
+      ".ds-layout{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px;align-items:start}" +
+      ".ds-page-section{margin:0 0 18px}" +
+      ".ds-page-heading{font-size:13px;font-weight:600;margin:0 0 6px;color:#555}" +
+      ".ds-page-surface{position:relative;width:min(100%,900px);margin:auto;background:#fff;border:1px solid #aaa;box-shadow:0 2px 8px rgba(0,0,0,.08);overflow:hidden;cursor:crosshair}" +
+      ".ds-element{position:absolute;box-sizing:border-box;border:1px solid transparent;overflow:visible;cursor:move;user-select:none}" +
+      ".ds-element.selected{border:2px solid #1565c0;background:rgba(21,101,192,.05)}" +
+      ".ds-element img{display:block;width:100%;height:100%;object-fit:fill;pointer-events:none}" +
+      ".ds-text-content{width:100%;height:100%;overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere;pointer-events:none}" +
+      ".ds-resize-handle{position:absolute;right:-6px;bottom:-6px;width:12px;height:12px;border:1px solid #1565c0;background:#fff;cursor:nwse-resize;display:none}" +
+      ".ds-element.selected .ds-resize-handle{display:block}" +
+      ".ds-inspector{border:1px solid #ccc;border-radius:8px;padding:12px;background:#fafafa;position:sticky;top:12px}" +
+      ".ds-inspector h3{margin:0 0 10px;font-size:16px}" +
+      ".ds-field-label{font-size:12px;font-weight:700;margin-top:8px;color:#555}" +
+      ".ds-value{font-size:12px;overflow-wrap:anywhere}" +
+      ".ds-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}" +
+      ".ds-control{display:block;font-size:12px;margin:8px 0}" +
+      ".ds-control span{display:block;font-weight:600;margin-bottom:4px}" +
+      ".ds-control input,.ds-control textarea,.ds-inspector select{box-sizing:border-box;width:100%;padding:6px}" +
+      ".ds-muted{color:#666;font-size:13px}" +
+      ".ds-unsupported{padding:4px;font-size:11px;color:#900}" +
+      "@media(max-width:800px){.ds-layout{grid-template-columns:1fr}.ds-inspector{position:static}}";
+    document.head.appendChild(style);
+  }
+
+  injectEditorStyles();
+
+  function addTextElement() {
+    if (!workingDocument || !workingDocument.pages || !workingDocument.pages.length) {
+      return;
+    }
+    const page = findPage(selectedPageNumber) || workingDocument.pages[0];
+    const element = {
+      id: newElementId(),
+      type: "text",
+      content: "Text",
+      x: 24,
+      y: 24,
+      width: Math.min(240, Number(page.width) || 240),
+      height: 48
+    };
+    page.elements = page.elements || [];
+    page.elements.push(element);
+    selectedElementId = element.id;
+    selectedPageNumber = page.number;
+    markDirty();
+    renderPages();
+    refreshInspector();
+  }
+
+  function addImageFromFile(file) {
+    if (!workingDocument || !file) {
+      return;
+    }
+    const page = findPage(selectedPageNumber) || workingDocument.pages[0];
+    readFileAsDataURL(file).then(function (dataUrl) {
+      const comma = dataUrl.indexOf(",");
+      const element = {
+        id: newElementId(),
+        type: "image",
+        image_data: comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl,
+        image_format: file.type || "image/png",
+        x: 24,
+        y: 24,
+        width: Math.min(240, Number(page.width) || 240),
+        height: Math.min(180, Number(page.height) || 180)
+      };
+      page.elements = page.elements || [];
+      page.elements.push(element);
+      selectedElementId = element.id;
+      selectedPageNumber = page.number;
+      markDirty();
+      renderPages();
+      refreshInspector();
+    }).catch(function (error) {
+      setStatus("Image import failed: " + error.message, true);
+    });
+  }
+
+  addTextBtn.onclick = addTextElement;
+
+  addImageBtn.onclick = function () {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = function () {
+      const file = input.files && input.files[0];
+      if (file) {
+        addImageFromFile(file);
+      }
+    };
+    input.click();
+  };
+
+  duplicateBtn.onclick = function () {
+    const found = findElement(selectedElementId);
+    if (!found) {
+      setStatus("Select an element to duplicate.", true);
+      return;
+    }
+    const duplicate = clone(found.element);
+    duplicate.id = newElementId();
+    duplicate.x = (Number(duplicate.x) || 0) + 20;
+    duplicate.y = (Number(duplicate.y) || 0) + 20;
+    found.page.elements.push(duplicate);
+    selectedElementId = duplicate.id;
+    selectedPageNumber = found.page.number;
+    markDirty();
+    renderPages();
+    refreshInspector();
+  };
+
+  deleteBtn.onclick = function () {
+    const found = findElement(selectedElementId);
+    if (!found) {
+      setStatus("Select an element to delete.", true);
+      return;
+    }
+    found.page.elements = found.page.elements.filter(function (element) {
+      return String(element.id) !== String(selectedElementId);
+    });
+    selectedElementId = null;
+    selectedPageNumber = found.page.number;
+    markDirty();
+    renderPages();
+    refreshInspector();
+  };
+
+  saveBtn.onclick = async function () {
+    if (!documentData || !workingDocument || !dirty) {
+      return;
+    }
+
+    const token = documentData.document_token;
+    const revision = documentData.revision;
+    if (!token || !Number.isInteger(revision) || revision < 0) {
+      setStatus("Save failed: invalid server workspace state.", true);
+      return;
+    }
+
+    saveBtn.disabled = true;
+    setStatus("Saving document...");
+    const payload = {
+      document_token: token,
+      document: canonicalDocument(workingDocument),
+      expected_revision: revision
+    };
+
+    try {
+      const response = await fetch("/document-studio/save", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(payload)
+      });
+      const raw = await response.text();
+      let data = null;
+      try {
+        data = raw ? JSON.parse(raw) : null;
+      } catch (_) {
+        throw new Error("Save response was not valid JSON.");
+      }
+      if (response.status === 409) {
+        throw new Error(data && data.error
+          ? data.error + " Your unsaved changes were kept."
+          : "Document revision conflict. Your unsaved changes were kept.");
+      }
+      if (!response.ok) {
+        throw new Error(data && data.error ? data.error : "Save failed.");
+      }
+      if (
+        !data ||
+        data.document_token !== token ||
+        !Number.isInteger(data.revision) ||
+        data.revision < 0 ||
+        !data.document ||
+        !Array.isArray(data.document.pages)
+      ) {
+        throw new Error("Save response did not contain a valid server-authoritative document.");
+      }
+
+      documentData = {
+        document_token: data.document_token,
+        revision: data.revision,
+        document: data.document
+      };
+      savedDocument = clone(data.document);
+      workingDocument = clone(data.document);
+      dirty = false;
+
+      if (selectedElementId && !findElement(selectedElementId)) {
+        selectedElementId = null;
+      }
+      renderPages();
+      refreshInspector();
+      setStatus("Document saved successfully.");
+    } catch (error) {
+      setStatus("Save failed: " + error.message, true);
+    } finally {
+      updateDirtyUI();
+    }
+  };
+
+  identityBtn.onclick = async function () {
+    const email = emailInput.value.trim();
+    if (!email) {
+      identityStatus.textContent = "Please enter your email address.";
+      return;
+    }
+    identityStatus.textContent = "Saving email...";
+    try {
+      const response = await fetch("/document-studio/identity", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({email: email})
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to save email.");
+      }
+      emailInput.value = data.user_email;
+      identityBtn.disabled = true;
+      emailInput.disabled = true;
+      importBtn.disabled = false;
+      identityStatus.textContent = "Email confirmed. You can now import your PDF.";
+      setStatus("Ready to import PDF.");
+    } catch (error) {
+      identityStatus.textContent = "Email setup failed: " + error.message;
+    }
+  };
+
+  importBtn.onclick = async function () {
+    const file = fileInput.files[0];
+    if (!file) {
+      setStatus("Please select a PDF first.", true);
+      return;
+    }
+    setStatus("Importing PDF...");
+    const form = new FormData();
+    form.append("file", file);
+
+    try {
+      const response = await fetch("/document-studio/import", {
+        method: "POST",
+        body: form
+      });
+      const raw = await response.text();
+      let data = null;
+      try {
+        data = raw ? JSON.parse(raw) : null;
+      } catch (_) {
+        throw new Error("Import response was not valid JSON.");
+      }
+      if (!response.ok) {
+        throw new Error(data && data.error ? data.error : "Import failed.");
+      }
+
+      const importedDocument = getImportedDocument(data);
+      if (
+        !data ||
+        !data.document_token ||
+        !Number.isInteger(data.revision) ||
+        data.revision < 0 ||
+        !importedDocument ||
+        !Array.isArray(importedDocument.pages)
+      ) {
+        throw new Error("Import response did not contain a valid Document Studio workspace.");
+      }
+
+      documentData = {
+        document_token: data.document_token,
+        revision: data.revision,
+        document: clone(importedDocument)
+      };
+      savedDocument = clone(importedDocument);
+      workingDocument = clone(importedDocument);
+      selectedElementId = null;
+      selectedPageNumber = workingDocument.pages.length
+        ? workingDocument.pages[0].number
+        : null;
+      dirty = false;
+
+      exportBtn.disabled = false;
+      reopenBtn.disabled = false;
+      renderPages();
+      refreshInspector();
+      updateDirtyUI();
+      setStatus("PDF imported successfully. Select an element to edit it.");
+    } catch (error) {
+      setStatus("Import failed: " + error.message, true);
+    }
+  };
+
+  reopenBtn.addEventListener("click", async function () {
+    if (!documentData || !documentData.document_token) {
+      setStatus("Reopen failed: no saved document token.", true);
+      return;
+    }
+
+    if (dirty) {
+      setStatus("Save changes before reopening the saved document.", true);
+      return;
+    }
+
+    setStatus("Reopening saved document...");
+    try {
+      const response = await fetch("/document-studio/reopen", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          document_token: documentData.document_token
+        })
+      });
+
+      const data = await response.json().catch(function () {
+        return {};
+      });
+
+      if (!response.ok) {
+        throw new Error(data.error || "Reopen failed.");
+      }
+
+      if (
+        !data.document_token ||
+        data.document_token !== documentData.document_token ||
+        !Number.isInteger(data.revision) ||
+        data.revision < 0 ||
+        !data.document ||
+        !Array.isArray(data.document.pages)
+      ) {
+        throw new Error("Reopen response did not contain a valid authoritative workspace.");
+      }
+
+      documentData = {
+        document_token: data.document_token,
+        revision: data.revision,
+        document: clone(data.document)
+      };
+      savedDocument = clone(data.document);
+      workingDocument = clone(data.document);
+      selectedElementId = selectedElementId && findElement(selectedElementId)
+        ? selectedElementId
+        : null;
+      selectedPageNumber = workingDocument.pages.length
+        ? workingDocument.pages[0].number
+        : null;
+      dirty = false;
+      exportBtn.disabled = false;
+      reopenBtn.disabled = false;
+      renderPages();
+      refreshInspector();
+      updateDirtyUI();
+      setStatus("Saved document reopened successfully.");
+    } catch (error) {
+      setStatus("Reopen failed: " + error.message, true);
+    }
+  });
+
+    exportBtn.addEventListener("click", async function () {
+    if (!documentData) {
+      setStatus("Export failed: no imported document data.", true);
+      return;
+    }
+    if (dirty) {
+      setStatus("Save changes before exporting the PDF.", true);
+      return;
+    }
+
+    setStatus("Exporting PDF...");
+    try {
+      const response = await fetch("/document-studio/export", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({document_token:documentData.document_token,expected_revision:documentData.revision})
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(function () { return {}; });
+        throw new Error(data.error || "Export failed.");
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "document-studio-output.pdf";
+      link.click();
+      URL.revokeObjectURL(url);
+      setStatus("PDF exported successfully.");
+    } catch (error) {
+      setStatus("Export failed: " + error.message, true);
+    }
+  });
+
+  window.addEventListener("beforeunload", function (event) {
+    if (!dirty) {
+      return;
+    }
+    event.preventDefault();
+    event.returnValue = "";
+  });
+
+  updateDirtyUI();
+})();
+</script></body></html>

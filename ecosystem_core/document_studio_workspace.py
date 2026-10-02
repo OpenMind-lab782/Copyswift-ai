@@ -214,6 +214,12 @@ class DocumentStudioWorkspaceRepository:
                     for key in cls._EDITABLE_ELEMENT_KEYS:
                         if key in element:
                             canonical_element[key] = element[key]
+
+                    if canonical_element.get("type") == "image":
+                        if "image_data" in element and "image_data_base64" not in element:
+                            canonical_element.pop("image_data_base64", None)
+                        elif "image_data_base64" in element and "image_data" not in element:
+                            canonical_element.pop("image_data", None)
                 else:
                     unexpected_element_keys = sorted(
                         set(element) - cls._EDITABLE_ELEMENT_KEYS
