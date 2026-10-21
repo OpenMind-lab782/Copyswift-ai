@@ -22,8 +22,6 @@ jobs:
       contents: read
     env:
       EXPECTED_REPOSITORY: OpenMind-lab782/Copyswift-ai
-      SOURCE_DIR: ${{ runner.temp }}/copyswift-review-source
-      VENV_DIR: ${{ runner.temp }}/copyswift-review-venv
     steps:
       - name: Validate trusted dispatch context
         shell: bash
@@ -43,13 +41,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test ! -e "$SOURCE_DIR"
-          mkdir -p "$SOURCE_DIR"
-          git -C "$SOURCE_DIR" init
-          git -C "$SOURCE_DIR" remote add origin "https://github.com/$EXPECTED_REPOSITORY.git"
-          git -C "$SOURCE_DIR" fetch --no-tags --depth=1 origin "$GITHUB_REF"
-          git -C "$SOURCE_DIR" checkout --detach FETCH_HEAD
-          actual="$(git -C "$SOURCE_DIR" rev-parse HEAD)"
+          source_dir="$RUNNER_TEMP/copyswift-review-source"
+          test ! -e "$source_dir"
+          mkdir -p "$source_dir"
+          git -C "$source_dir" init
+          git -C "$source_dir" remote add origin "https://github.com/$EXPECTED_REPOSITORY.git"
+          git -C "$source_dir" fetch --no-tags --depth=1 origin "$GITHUB_REF"
+          git -C "$source_dir" checkout --detach FETCH_HEAD
+          actual="$(git -C "$source_dir" rev-parse HEAD)"
           test "$actual" = "$GITHUB_SHA"
           printf '\nChecked-out commit verified: `%s`\n' "$actual" >> "$GITHUB_STEP_SUMMARY"
 
@@ -60,8 +59,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y mupdf-tools python3-venv
           python3 --version
-          python3 -m venv "$VENV_DIR"
-          "$VENV_DIR/bin/python" -m pip --version
+          venv_dir="$RUNNER_TEMP/copyswift-review-venv"
+          test ! -e "$venv_dir"
+          python3 -m venv "$venv_dir"
+          "$venv_dir/bin/python" -m pip --version
 
       - name: Install project dependencies
         shell: bash
@@ -69,7 +70,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -f requirements.txt ]; then
-            "$VENV_DIR/bin/python" -m pip install -r requirements.txt
+            "$RUNNER_TEMP/copyswift-review-venv/bin/python" -m pip install -r requirements.txt
           fi
 
       - name: Compile fixed application scope
