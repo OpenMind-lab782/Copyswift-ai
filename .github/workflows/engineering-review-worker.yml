@@ -78,14 +78,14 @@ jobs:
         working-directory: ${{ runner.temp }}/copyswift-review-source
         run: |
           set -euo pipefail
-          "$VENV_DIR/bin/python" -m compileall payment_engine
+          "$RUNNER_TEMP/copyswift-review-venv/bin/python" -m compileall payment_engine
 
       - name: Run fixed unit test suite
         shell: bash
         working-directory: ${{ runner.temp }}/copyswift-review-source
         run: |
           set -euo pipefail
-          "$VENV_DIR/bin/python" -m unittest discover tests
+          "$RUNNER_TEMP/copyswift-review-venv/bin/python" -m unittest discover tests
 
       - name: Record bounded result summary
         if: always()
