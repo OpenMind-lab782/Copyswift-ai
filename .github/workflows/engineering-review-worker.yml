@@ -1,0 +1,87 @@
+name: CopySwiftAI Review-Only Engineering Worker
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: engineering-review-worker-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  review-only:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      EXPECTED_REPOSITORY: OpenMind-lab782/Copyswift-ai
+      EXPECTED_REF: refs/heads/main
+    steps:
+      - name: Validate trusted dispatch context
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "$EXPECTED_REPOSITORY"
+          test "$GITHUB_REF" = "$EXPECTED_REF"
+          test "$GITHUB_EVENT_NAME" = "workflow_dispatch"
+          test "$GITHUB_SHA" != ""
+          printf 'Repository: %s\nRef: %s\nCommit: %s\nRun ID: %s\n' \
+            "$GITHUB_REPOSITORY" "$GITHUB_REF" "$GITHUB_SHA" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fetch exact dispatched commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://github.com/${EXPECTED_REPOSITORY}.git"
+          git fetch --no-tags --depth=1 origin "$GITHUB_SHA"
+          git checkout --detach FETCH_HEAD
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$GITHUB_SHA"
+          printf '\nChecked-out commit verified: `%s`\n' "$actual" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Set up pinned Python runtime
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # verified commit from actions/setup-python
+        with:
+          python-version: "3.13"
+
+      - name: Install fixed verification dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python --version
+          python -m pip install --upgrade pip
+          sudo apt-get update
+          sudo apt-get install -y mupdf-tools
+          if [ -f requirements.txt ]; then
+            python -m pip install -r requirements.txt
+          fi
+
+      - name: Compile fixed application scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall payment_engine
+
+      - name: Run fixed unit test suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover tests
+
+      - name: Record bounded result summary
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            printf '\n## Review-only worker result\n'
+            printf -- '- Repository: `%s`\n' "$GITHUB_REPOSITORY"
+            printf -- '- Commit requested: `%s`\n' "$GITHUB_SHA"
+            printf -- '- Workflow run: `%s`\n' "$GITHUB_RUN_ID"
+            printf -- '- Mode: fixed compile and unit tests only; no patch application, commit, deployment, or artifact upload\n'
+          } >> "$GITHUB_STEP_SUMMARY"
