@@ -31,13 +31,13 @@ jobs:
           test "$actual" = "$GITHUB_SHA"
           printf 'Verified source commit: %s\n' "$actual" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Verify Python 3.13 runtime
+      - name: Verify Python 3.12 runtime
         shell: bash
         run: |
           set -euo pipefail
-          command -v python3.13
-          python3.13 --version
-          python3.13 -c 'import sys; assert sys.version_info[:2] == (3, 13), sys.version'
+          command -v python3.12
+          python3.12 --version
+          python3.12 -c 'import sys; assert sys.version_info[:2] == (3, 12), sys.version'
 
       - name: Install system dependencies
         shell: bash
@@ -50,15 +50,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3.13 -m pip install --upgrade pip
+          python3.12 -m pip install --upgrade pip
           if [ -f requirements.txt ]; then
-            python3.13 -m pip install -r requirements.txt
+            python3.12 -m pip install -r requirements.txt
           fi
 
       - name: Compile
         shell: bash
-        run: python3.13 -m compileall payment_engine
+        run: python3.12 -m compileall payment_engine
 
       - name: Run Tests
         shell: bash
-        run: python3.13 -m unittest discover tests
+        run: python3.12 -m unittest discover tests
