@@ -14,7 +14,7 @@ permissions:
 jobs:
   browser-e2e:
     name: Real Chromium Document Studio E2E
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       E2E_ARTIFACT_DIR: ${{ github.workspace }}/e2e-artifacts
@@ -89,5 +89,5 @@ jobs:
             printf -- '- External actions used: none\n'
             printf -- '- Artifact upload: intentionally disabled to avoid blocked external actions; inspect test output in run logs\n'
             printf '\n### Files produced\n'
-            find e2e-artifacts -maxdepth 2 -type f -printf -- '- %p (%s bytes)\n' | head -100
+            find e2e-artifacts -maxdepth 2 -type f -printf '%p (%s bytes)\n' | sed 's/^/- /'
           } >> "$GITHUB_STEP_SUMMARY"
