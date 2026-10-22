@@ -41,13 +41,13 @@ jobs:
           test "$actual" = "$GITHUB_SHA"
           printf 'Verified source commit: %s\n' "$actual" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Verify Python 3.13 runtime
+      - name: Verify Python 3.12 runtime
         shell: bash
         run: |
           set -euo pipefail
-          command -v python3.13
-          python3.13 --version
-          python3.13 -c 'import sys; assert sys.version_info[:2] == (3, 13), sys.version'
+          command -v python3.12
+          python3.12 --version
+          python3.12 -c 'import sys; assert sys.version_info[:2] == (3, 12), sys.version'
 
       - name: Install MuPDF
         shell: bash
@@ -60,20 +60,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3.13 -m pip install --upgrade pip
-          python3.13 -m pip install -r requirements.txt
-          python3.13 -m pip install -r requirements-e2e.txt
+          python3.12 -m pip install --upgrade pip
+          python3.12 -m pip install -r requirements.txt
+          python3.12 -m pip install -r requirements-e2e.txt
 
       - name: Install Chromium
         shell: bash
-        run: python3.13 -m playwright install --with-deps chromium
+        run: python3.12 -m playwright install --with-deps chromium
 
       - name: Run Document Studio browser E2E
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p e2e-artifacts
-          python3.13 -m unittest tests.e2e.test_document_studio_browser
+          python3.12 -m unittest tests.e2e.test_document_studio_browser
 
       - name: Record verified commit and local artifact inventory
         if: always()
