@@ -46,7 +46,7 @@ jobs:
           mkdir -p "$source_dir"
           git -C "$source_dir" init
           git -C "$source_dir" remote add origin "https://github.com/$EXPECTED_REPOSITORY.git"
-          git -C "$source_dir" fetch --no-tags --depth=1 origin "$GITHUB_REF"
+          git -C "$source_dir" fetch --no-tags --depth=1 origin "$GITHUB_SHA"
           git -C "$source_dir" checkout --detach FETCH_HEAD
           actual="$(git -C "$source_dir" rev-parse HEAD)"
           test "$actual" = "$GITHUB_SHA"
