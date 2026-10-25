@@ -11,7 +11,7 @@ on:
 jobs:
   browser-e2e:
     name: Real Chromium Document Studio E2E
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       E2E_ARTIFACT_DIR: ${{ github.workspace }}/e2e-artifacts
@@ -53,7 +53,9 @@ jobs:
 
       - name: Record verified commit
         if: always()
-        run: printf '%s\n' "$GITHUB_SHA" > e2e-artifacts/commit.txt
+        run: |
+          mkdir -p e2e-artifacts
+          printf '%s\n' "$GITHUB_SHA" > e2e-artifacts/commit.txt
 
       - name: Upload browser E2E artifacts
         if: always()
