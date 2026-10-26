@@ -1,0 +1,69 @@
+name: Generate dependency lock candidate
+
+on:
+  push:
+    branches:
+      - proposal/engineering-review-worker-2026-10-21
+
+permissions:
+  contents: read
+
+jobs:
+  generate-lock-candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact proposal commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.13"
+
+      - name: Generate hash-locked candidate files
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m venv "$RUNNER_TEMP/lockgen"
+          "$RUNNER_TEMP/lockgen/bin/python" -m pip install "pip-tools==7.5.0"
+          "$RUNNER_TEMP/lockgen/bin/python" -m piptools compile \
+            --generate-hashes \
+            --allow-unsafe \
+            --resolver=backtracking \
+            --output-file=requirements.lock \
+            requirements.txt
+          python - <<'PY'
+          from pathlib import Path
+          base = Path("requirements.txt").read_text(encoding="utf-8")
+          e2e = Path("requirements-e2e.txt").read_text(encoding="utf-8")
+          Path("$RUNNER_TEMP/combined-requirements.in").write_text(
+              base.rstrip() + "\n\n" + e2e.rstrip() + "\n",
+              encoding="utf-8",
+          )
+          PY
+          "$RUNNER_TEMP/lockgen/bin/python" -m piptools compile \
+            --generate-hashes \
+            --allow-unsafe \
+            --resolver=backtracking \
+            --output-file=requirements-e2e.lock \
+            "$RUNNER_TEMP/combined-requirements.in"
+          test -s requirements.lock
+          test -s requirements-e2e.lock
+          grep -Eq -- '--hash=sha256:' requirements.lock
+          grep -Eq -- '--hash=sha256:' requirements-e2e.lock
+          printf 'Candidate lock files generated for source commit %s\n' "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload candidate lock files for review only
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: dependency-lock-candidate-${{ github.sha }}
+          path: |
+            requirements.lock
+            requirements-e2e.lock
+          if-no-files-found: error
+          retention-days: 3
