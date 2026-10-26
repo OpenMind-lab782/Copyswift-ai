@@ -1,0 +1,102 @@
+name: CopySwiftAI Review-Only Engineering Worker
+
+on:
+  push:
+    branches:
+      - proposal/engineering-review-worker-2026-10-21
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: engineering-review-worker-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  review-only:
+    if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || (github.event_name == 'push' && github.ref == 'refs/heads/proposal/engineering-review-worker-2026-10-21') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      EXPECTED_REPOSITORY: OpenMind-lab782/Copyswift-ai
+    steps:
+      - name: Validate trusted dispatch context
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "$EXPECTED_REPOSITORY"
+          test "$GITHUB_SHA" != ""
+          case "$GITHUB_EVENT_NAME:$GITHUB_REF" in
+            "workflow_dispatch:refs/heads/main") ;;
+            "push:refs/heads/proposal/engineering-review-worker-2026-10-21") ;;
+            *) printf 'Refusing unexpected event/ref: %s:%s\n' "$GITHUB_EVENT_NAME" "$GITHUB_REF" >&2; exit 1 ;;
+          esac
+          printf 'Repository: %s\nRef: %s\nCommit: %s\nRun ID: %s\n' \
+            "$GITHUB_REPOSITORY" "$GITHUB_REF" "$GITHUB_SHA" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fetch and verify exact source commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_dir="$RUNNER_TEMP/copyswift-review-source"
+          test ! -e "$source_dir"
+          mkdir -p "$source_dir"
+          git -C "$source_dir" init
+          git -C "$source_dir" remote add origin "https://github.com/$EXPECTED_REPOSITORY.git"
+          git -C "$source_dir" fetch --no-tags --depth=1 origin "$GITHUB_SHA"
+          git -C "$source_dir" checkout --detach FETCH_HEAD
+          actual="$(git -C "$source_dir" rev-parse HEAD)"
+          test "$actual" = "$GITHUB_SHA"
+          printf '\nChecked-out commit verified: `%s`\n' "$actual" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Prepare isolated Python environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y mupdf-tools python3-venv
+          python3 --version
+          venv_dir="$RUNNER_TEMP/copyswift-review-venv"
+          test ! -e "$venv_dir"
+          python3 -m venv "$venv_dir"
+          "$venv_dir/bin/python" -m pip --version
+
+      - name: Install project dependencies
+        shell: bash
+        working-directory: ${{ runner.temp }}/copyswift-review-source
+        run: |
+          set -euo pipefail
+          if [ -f requirements.txt ]; then
+            "$RUNNER_TEMP/copyswift-review-venv/bin/python" -m pip install -r requirements.txt
+          fi
+
+      - name: Compile fixed application scope
+        shell: bash
+        working-directory: ${{ runner.temp }}/copyswift-review-source
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/copyswift-review-venv/bin/python" -m compileall payment_engine
+
+      - name: Run fixed unit test suite
+        shell: bash
+        working-directory: ${{ runner.temp }}/copyswift-review-source
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/copyswift-review-venv/bin/python" -m unittest discover tests
+
+      - name: Record bounded result summary
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            printf '\n## Review-only worker result\n'
+            printf -- '- Repository: `%s`\n' "$GITHUB_REPOSITORY"
+            printf -- '- Commit requested: `%s`\n' "$GITHUB_SHA"
+            printf -- '- Workflow run: `%s`\n' "$GITHUB_RUN_ID"
+            printf -- '- Mode: fixed compile and unit tests only; no patch application, commit, deployment, secrets, or artifact upload\n'
+            printf -- '- Dependency limitation: requirements are not yet a complete hash-locked dependency set\n'
+          } >> "$GITHUB_STEP_SUMMARY"
