@@ -37,11 +37,14 @@ jobs:
             --resolver=backtracking \
             --output-file=requirements.lock \
             requirements.txt
+          export LOCK_INPUT="$RUNNER_TEMP/combined-requirements.in"
           python - <<'PY'
+          import os
           from pathlib import Path
           base = Path("requirements.txt").read_text(encoding="utf-8")
           e2e = Path("requirements-e2e.txt").read_text(encoding="utf-8")
-          Path("$RUNNER_TEMP/combined-requirements.in").write_text(
+          target = Path(os.environ["LOCK_INPUT"])
+          target.write_text(
               base.rstrip() + "\n\n" + e2e.rstrip() + "\n",
               encoding="utf-8",
           )
@@ -51,7 +54,7 @@ jobs:
             --allow-unsafe \
             --resolver=backtracking \
             --output-file=requirements-e2e.lock \
-            "$RUNNER_TEMP/combined-requirements.in"
+            "$LOCK_INPUT"
           test -s requirements.lock
           test -s requirements-e2e.lock
           grep -Eq -- '--hash=sha256:' requirements.lock
