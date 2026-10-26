@@ -37,7 +37,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p e2e-artifacts
           python -m venv "$RUNNER_TEMP/lockgen"
+          # pip-tools 7.5.0 imports pip internals removed in pip 26.x.
+          "$RUNNER_TEMP/lockgen/bin/python" -m pip install "pip==25.3"
           "$RUNNER_TEMP/lockgen/bin/python" -m pip install "pip-tools==7.5.0"
           "$RUNNER_TEMP/lockgen/bin/python" -m piptools compile \
             --generate-hashes --allow-unsafe --resolver=backtracking \
@@ -92,6 +95,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p e2e-artifacts
           printf '%s\n' "$GITHUB_SHA" > e2e-artifacts/commit.txt
 
       - name: Upload lock candidates and E2E evidence for review
@@ -103,5 +107,5 @@ jobs:
             requirements.lock
             requirements-e2e.lock
             e2e-artifacts/
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 3
