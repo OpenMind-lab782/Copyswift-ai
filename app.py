@@ -134,6 +134,10 @@ client = _GroqHTTPClient()
 
 app = Flask(__name__)
 
+from nature_renaissance import nature_renaissance_bp
+app.register_blueprint(nature_renaissance_bp)
+
+
 # --- CopySwiftAI Document Studio MVP ---
 from ecosystem_core.kernel import EcosystemKernel
 from ecosystem_core.document_adapters.native_mupdf_adapter import NativeMuPDFAdapter
